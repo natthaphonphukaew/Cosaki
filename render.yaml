@@ -26,6 +26,9 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      # Pin to Node 20 LTS — avoids compatibility issues with Node 24.
+      - key: NODE_VERSION
+        value: "20.11.1"
 
 databases:
   - name: cosaki-db
