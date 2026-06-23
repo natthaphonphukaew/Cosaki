@@ -1,0 +1,199 @@
+const { randomBytes } = require('crypto');
+const db = require('../../config/db');
+const { success, error } = require('../../utils/response');
+
+const generateToken = () => randomBytes(32).toString('hex');
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const VALID_TRANSITIONS = {
+  draft:           ['pending_kyc', 'cancelled'],
+  pending_kyc:     ['pending_payment', 'cancelled'],
+  pending_payment: ['escrowed', 'cancelled'],
+  escrowed:        ['shipped', 'disputed', 'cancelled'],
+  shipped:         ['returned', 'disputed'],
+  returned:        ['completed', 'disputed'],
+  disputed:        [],
+  completed:       [],
+  cancelled:       [],
+};
+
+const canTransition = (from, to) => VALID_TRANSITIONS[from]?.includes(to) ?? false;
+
+// ── Controllers ───────────────────────────────────────────────────────────────
+
+// POST /bookings — renter initiates booking
+const createBooking = async (req, res, next) => {
+  try {
+    const { item_id, rental_start, rental_end, notes } = req.body;
+
+    // Fetch item + shop info
+    const { rows: items } = await db.query(
+      'SELECT * FROM items WHERE id = $1 AND is_available = TRUE',
+      [item_id]
+    );
+    if (!items.length) return error(res, 'Item not found or unavailable', 404);
+    const item = items[0];
+
+    // Check calendar conflicts
+    const { rows: conflicts } = await db.query(
+      `SELECT id FROM bookings
+       WHERE item_id = $1
+         AND status NOT IN ('cancelled', 'completed')
+         AND rental_start < $3 AND rental_end > $2`,
+      [item_id, rental_start, rental_end]
+    );
+    if (conflicts.length) return error(res, 'Item is already booked for those dates', 409);
+
+    const days = Math.ceil(
+      (new Date(rental_end) - new Date(rental_start)) / (1000 * 60 * 60 * 24)
+    );
+    const rental_fee = parseFloat((item.daily_rate * days).toFixed(2));
+    const token = generateToken();
+
+    // Determine initial status based on renter's KYC
+    const { rows: [user] } = await db.query('SELECT kyc_status FROM users WHERE id = $1', [req.user.id]);
+    const initialStatus = user.kyc_status === 'verified' ? 'pending_payment' : 'pending_kyc';
+
+    const { rows } = await db.query(
+      `INSERT INTO bookings
+         (shop_id, renter_id, item_id, rental_start, rental_end, status,
+          payment_link_token, rental_fee, deposit_amount, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       RETURNING *`,
+      [
+        item.shop_id, req.user.id, item_id,
+        rental_start, rental_end, initialStatus,
+        token, rental_fee, item.deposit_amount, notes || null,
+      ]
+    );
+    return success(res, { booking: rows[0] }, 201);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /bookings — list bookings from an explicit perspective.
+//   ?as=renter → bookings I made as a buyer (b.renter_id = me)
+//   ?as=shop   → orders for my shop      (s.owner_id  = me)
+// A dual-mode user (a shop owner who also rents) MUST pass `as` to disambiguate.
+// When omitted, fall back to role: shop_admin → shop view, otherwise renter view.
+const listBookings = async (req, res, next) => {
+  try {
+    const { status, as, page = 1, limit = 20 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const perspective = as === 'shop' || as === 'renter'
+      ? as
+      : (req.user.role === 'shop_admin' ? 'shop' : 'renter');
+
+    const conditions = [perspective === 'shop' ? 's.owner_id = $1' : 'b.renter_id = $1'];
+    const params = [req.user.id];
+
+    if (status) {
+      params.push(status);
+      conditions.push(`b.status = $${params.length}`);
+    }
+
+    params.push(Number(limit), offset);
+
+    const { rows } = await db.query(
+      `SELECT b.*, i.name AS item_name, i.image_urls, s.shop_name,
+              u.display_name AS renter_name
+       FROM bookings b
+       JOIN shops s ON s.id = b.shop_id
+       JOIN items i ON i.id = b.item_id
+       JOIN users u ON u.id = b.renter_id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY b.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+    return success(res, { bookings: rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /bookings/:id
+const getBooking = async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT b.*, i.name AS item_name, i.image_urls, i.daily_rate,
+              s.shop_name, u.display_name AS renter_name, u.phone AS renter_phone
+       FROM bookings b
+       JOIN items i ON i.id = b.item_id
+       JOIN shops s ON s.id = b.shop_id
+       JOIN users u ON u.id = b.renter_id
+       WHERE b.id = $1`,
+      [req.params.id]
+    );
+    if (!rows.length) return error(res, 'Booking not found', 404);
+
+    const booking = rows[0];
+    // Only renter or shop owner can view
+    const isOwner = await isBookingOwner(req.user, booking);
+    if (!isOwner) return error(res, 'Forbidden', 403);
+
+    return success(res, { booking });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /bookings/:id/status — advance the state machine
+const updateStatus = async (req, res, next) => {
+  try {
+    const { status: newStatus } = req.body;
+    const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+    if (!rows.length) return error(res, 'Booking not found', 404);
+
+    const booking = rows[0];
+    const isOwner = await isBookingOwner(req.user, booking);
+    if (!isOwner) return error(res, 'Forbidden', 403);
+
+    if (!canTransition(booking.status, newStatus)) {
+      return error(res, `Cannot transition from '${booking.status}' to '${newStatus}'`, 422);
+    }
+
+    const { rows: updated } = await db.query(
+      `UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [newStatus, booking.id]
+    );
+    return success(res, { booking: updated[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /bookings/by-token/:token — shop creates payment link, renter opens it
+const getByToken = async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT b.*, i.name AS item_name, i.image_urls, i.daily_rate,
+              s.shop_name, s.logo_url
+       FROM bookings b
+       JOIN items i ON i.id = b.item_id
+       JOIN shops s ON s.id = b.shop_id
+       WHERE b.payment_link_token = $1`,
+      [req.params.token]
+    );
+    if (!rows.length) return error(res, 'Invalid payment link', 404);
+    return success(res, { booking: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Private helper ────────────────────────────────────────────────────────────
+const isBookingOwner = async (user, booking) => {
+  if (user.role === 'admin') return true;
+  if (user.role === 'renter') return booking.renter_id === user.id;
+  if (user.role === 'shop_admin') {
+    const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1 AND id = $2', [user.id, booking.shop_id]);
+    return rows.length > 0;
+  }
+  return false;
+};
+
+module.exports = { createBooking, listBookings, getBooking, updateStatus, getByToken };

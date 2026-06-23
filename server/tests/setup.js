@@ -1,0 +1,13 @@
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test_secret';
+process.env.JWT_REFRESH_SECRET = 'test_refresh_secret';
+process.env.JWT_EXPIRES_IN = '1h';
+process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+process.env.DATABASE_URL = 'postgresql://postgres:password@localhost:5432/cosaki_test';
+process.env.CLIENT_URL = 'http://localhost:3000';
+process.env.GOOGLE_CLIENT_ID = 'test';
+process.env.GOOGLE_CLIENT_SECRET = 'test';
+process.env.GOOGLE_CALLBACK_URL = 'http://localhost:5000/api/v1/auth/google/callback';
+process.env.FACEBOOK_APP_ID = 'test';
+process.env.FACEBOOK_APP_SECRET = 'test';
+process.env.FACEBOOK_CALLBACK_URL = 'http://localhost:5000/api/v1/auth/facebook/callback';

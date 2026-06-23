@@ -1,0 +1,32 @@
+# Render blueprint — one web service (API + bundled frontend) + a Postgres DB.
+# This is a TEST/feedback deployment, not a hardened production launch.
+# Deploy: push to GitHub → render.com → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: cosaki
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Demo login: any phone + this code works (no SMS provider needed).
+      - key: DEMO_OTP
+        value: "123456"
+      # Testers may share an IP — keep the limiter off for feedback.
+      - key: DISABLE_RATE_LIMIT
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cosaki-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+
+databases:
+  - name: cosaki-db
+    plan: free

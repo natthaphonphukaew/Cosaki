@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "PowerShell(cd \"C:\\\\Users\\\\nutth\\\\OneDrive\\\\เดสก์ท็อป\\\\Cosaki\\\\server\"; $env:NODE_ENV='development'; node -e \"require\\('./src/app.js'\\); setTimeout\\(\\(\\)=>process.exit\\(0\\), 1500\\)\" 2>&1 | Select-Object -First 5)",
+      "Bash(curl -s http://localhost:5000/health)",
+      "Bash(curl -s -X POST http://localhost:5000/api/v1/auth/send-otp -H \"Content-Type: application/json\" -d '{\"phone\":\"+66812345678\"}')",
+      "Read(//c/Users/nutth/AppData/Local/Temp/claude/C--Users-nutth-OneDrive-----------Cosaki/b7996e1c-7290-4bf5-8592-d00558508a0f/tasks/**)",
+      "Bash(node tmp_t.js \"C:/Users/nutth/AppData/Local/Temp/claude/C--Users-nutth-OneDrive-----------Cosaki/b7996e1c-7290-4bf5-8592-d00558508a0f/tasks/bfvwozmpq.output\")",
+      "Bash(curl -s \"http://localhost:5000/api/v1/items?fandom=Genshin\")",
+      "Bash(node -e \"process.stdin.on\\('data',d=>{const j=JSON.parse\\(d\\);console.log\\('Genshin filter →',j.data.items.length,'items'\\);}\\)\")",
+      "Bash(curl -s \"http://localhost:5000/api/v1/items?fandom=Arcane\")",
+      "Bash(node -e \"process.stdin.on\\('data',d=>{const j=JSON.parse\\(d\\);console.log\\('Arcane filter →',j.data.items.length,'items:',j.data.items.map\\(i=>i.fandom\\)\\);}\\)\")",
+      "Bash(curl -s \"http://localhost:5000/api/v1/items\")",
+      "Bash(node -e \"process.stdin.on\\('data',d=>{const j=JSON.parse\\(d\\);console.log\\('All items fandoms:',j.data.items.map\\(i=>i.fandom\\)\\);}\\)\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('Remaining items:',j.data.items.map\\(i=>i.name+' ['+i.fandom+']'\\)\\);}\\)\")",
+      "Bash(node tmp_flow.js \"C:/Users/nutth/AppData/Local/Temp/claude/C--Users-nutth-OneDrive-----------Cosaki/b7996e1c-7290-4bf5-8592-d00558508a0f/tasks/bpm5dkzf5.output\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/v1/auth/send-otp -H \"Content-Type: application/json\" -d '{\"phone\":\"+66900000001\"}')",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\);process.stdin.on\\('end',\\(\\)=>console.log\\('send-otp demoCode:',JSON.parse\\(s\\).data.demoCode\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:5000/api/v1/auth/verify-otp -H \"Content-Type: application/json\" -d '{\"phone\":\"+66900000001\",\"code\":\"123456\"}')",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('verify with demo code:',j.success,'| new user role:',j.data?.user?.role\\)}\\)\")",
+      "Bash(node -e \"console.log\\('client scripts:',JSON.stringify\\(require\\('./client/package.json'\\).scripts\\)\\)\")",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5000/)",
+      "Bash(curl -s http://localhost:5000/home)",
+      "Bash(curl -s http://localhost:5000/api/v1/items)",
+      "Bash(curl -s -X POST http://localhost:5000/api/v1/auth/send-otp -H \"Content-Type: application/json\" -d '{\"phone\":\"+66811112222\"}')"
+    ]
+  }
+}

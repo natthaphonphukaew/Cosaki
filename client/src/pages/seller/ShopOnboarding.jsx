@@ -1,0 +1,184 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Store, Camera, ImagePlus, CheckCircle, MapPin } from 'lucide-react';
+import PageHeader from '@/components/layout/PageHeader';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import useAuthStore from '@/store/authStore';
+import { createShop } from '@/api/shops';
+import { fileToDataUrl } from '@/utils/image';
+import toast from 'react-hot-toast';
+
+const CATEGORIES = ['Anime', 'Game', 'Movie & TV', 'K-Pop', 'Original Design', 'Props & Wigs'];
+
+export default function ShopOnboarding() {
+  const navigate = useNavigate();
+  const { applyShopCreated } = useAuthStore();
+  const [step, setStep]     = useState(0);   // 0 = details, 1 = success
+  const [loading, setLoading] = useState(false);
+  const [cover, setCover]   = useState(null);
+  const [logo, setLogo]     = useState(null);
+  const [form, setForm] = useState({
+    shop_name: '', description: '', location: 'Bangkok', categories: [],
+  });
+
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  const toggleCat = (c) =>
+    set('categories', form.categories.includes(c)
+      ? form.categories.filter((x) => x !== c)
+      : [...form.categories, c]);
+
+  const pick = (setter) => async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setter(await fileToDataUrl(file));
+    } catch {
+      toast.error('Could not read image');
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!form.shop_name.trim()) return toast.error('Please name your shop');
+    setLoading(true);
+    try {
+      const { data } = await createShop({
+        shop_name:   form.shop_name.trim(),
+        description: form.description.trim(),
+        location:    form.location,
+        categories:  form.categories,
+        logo_url:    logo,
+        cover_url:   cover,
+      });
+      // Persist shop + the fresh shop_admin token; flips into seller mode.
+      applyShopCreated(data.data);
+      setStep(1);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not create shop');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ── Success ── */
+  if (step === 1) return (
+    <div className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col items-center justify-center bg-surface-base px-6 text-center">
+      <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-green-100">
+        <CheckCircle size={56} className="text-green-500" strokeWidth={1.5} />
+      </div>
+      <h2 className="text-2xl font-bold text-gray-900">Your shop is live! 🎉</h2>
+      <p className="mt-2 text-sm text-gray-500">
+        {form.shop_name} is ready. You're now in <span className="font-semibold text-brand-purple">Selling mode</span>.
+      </p>
+      <Button className="mt-8 w-full" onClick={() => navigate('/seller/dashboard')}>Go to Dashboard</Button>
+      <Button variant="secondary" className="mt-3 w-full" onClick={() => navigate('/seller/items/new')}>
+        Add Your First Costume
+      </Button>
+    </div>
+  );
+
+  /* ── Form ── */
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      <PageHeader title="Open Your Shop" />
+
+      <div className="pb-32">
+        {/* Cover + logo */}
+        <div className="relative mb-12 px-4">
+          <label className="block h-32 w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-brand-purple/30 bg-brand-light/40">
+            {cover
+              ? <img src={cover} alt="cover" className="h-full w-full object-cover" />
+              : <div className="flex h-full flex-col items-center justify-center gap-1 text-brand-purple">
+                  <ImagePlus size={26} />
+                  <span className="text-xs font-medium">Add cover photo</span>
+                </div>
+            }
+            <input type="file" accept="image/*" className="hidden" onChange={pick(setCover)} />
+          </label>
+
+          {/* Logo overlapping bottom-left */}
+          <label className="absolute -bottom-8 left-8 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-4 border-surface-base bg-white shadow-md">
+            {logo
+              ? <img src={logo} alt="logo" className="h-full w-full object-cover" />
+              : <div className="flex flex-col items-center text-brand-purple">
+                  <Camera size={20} />
+                  <span className="text-[9px] font-medium">Logo</span>
+                </div>
+            }
+            <input type="file" accept="image/*" className="hidden" onChange={pick(setLogo)} />
+          </label>
+        </div>
+
+        <div className="space-y-5 px-4">
+          <Input
+            label="Shop Name *"
+            placeholder="e.g. Studio Hanjiku"
+            value={form.shop_name}
+            onChange={(e) => set('shop_name', e.target.value)}
+          />
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">About Your Shop</label>
+            <textarea
+              rows={3}
+              placeholder="Tell renters about your collection, specialty, and style..."
+              value={form.description}
+              onChange={(e) => set('description', e.target.value)}
+              className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">Location</label>
+            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-3">
+              <MapPin size={16} className="text-brand-purple" />
+              <input
+                value={form.location}
+                onChange={(e) => set('location', e.target.value)}
+                placeholder="City"
+                className="flex-1 text-sm outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">What do you rent?</label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => toggleCat(c)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                    form.categories.includes(c)
+                      ? 'bg-brand-purple text-white'
+                      : 'border border-gray-200 bg-white text-gray-600'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-2xl bg-brand-light p-4">
+            <Store size={18} className="mt-0.5 flex-shrink-0 text-brand-purple" />
+            <div>
+              <p className="text-sm font-semibold text-brand-purple">You can switch anytime</p>
+              <p className="mt-0.5 text-xs text-brand-purple/80">
+                Keep renting as a buyer and jump into Selling mode whenever you want — all from your Profile.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
+        <Button className="w-full" loading={loading} onClick={handleCreate}>
+          Create Shop
+        </Button>
+      </div>
+    </div>
+  );
+}
