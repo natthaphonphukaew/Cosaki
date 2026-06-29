@@ -32,9 +32,12 @@ router.post(
 
 router.get('/', requireRole('admin'), disputeCtrl.listDisputes);
 
+// Lookup the dispute (+ evidence) for a booking — for the Resolution Center.
+router.get('/by-booking/:bookingId', disputeCtrl.getDisputeByBooking);
+
+// Admin OR the owning shop may resolve (authorized inside the controller).
 router.patch(
   '/:id/resolve',
-  requireRole('admin'),
   [
     body('resolution').isIn(['resolved_shop', 'resolved_renter']),
     body('compensation_amount').optional().isFloat({ min: 0 }),

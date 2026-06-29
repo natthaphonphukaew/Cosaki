@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Bell, Settings, HelpCircle, Heart, ShoppingBag,
+import { ChevronRight, Settings, HelpCircle, Heart, ShoppingBag,
          CreditCard, Store, ArrowLeftRight, Repeat } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
+import NotificationBell from '@/components/ui/NotificationBell';
 import useAuthStore from '@/store/authStore';
 import { getMyShop } from '@/api/shops';
 
@@ -41,25 +42,28 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <span className="text-xl font-bold text-brand-purple">Cosaki</span>
-          <button className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
-            <Bell size={18} className="text-gray-600" />
-          </button>
+          <NotificationBell />
         </div>
 
         {/* Avatar + info */}
         <div className="flex flex-col items-center text-center">
-          <div className="relative mb-3">
+          <button onClick={() => navigate('/profile/edit')} className="relative mb-3">
             <div className="h-20 w-20 rounded-full bg-brand-light flex items-center justify-center text-3xl font-bold text-brand-purple border-4 border-white shadow-md overflow-hidden">
               {user?.avatar_url
                 ? <img src={user.avatar_url} alt="avatar" className="h-full w-full rounded-full object-cover" />
                 : (user?.display_name?.[0] || 'C')
               }
             </div>
-            <div className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-brand-purple border-2 border-white">
-              <span className="text-white text-xs">✓</span>
-            </div>
-          </div>
-          <h2 className="text-lg font-bold text-gray-900">{user?.display_name || 'Cosplayer'}</h2>
+            {user?.kyc_status === 'verified' && (
+              <div className="absolute bottom-0 right-0 flex h-6 w-6 items-center justify-center rounded-full bg-brand-purple border-2 border-white">
+                <span className="text-white text-xs">✓</span>
+              </div>
+            )}
+          </button>
+          <button onClick={() => navigate('/profile/edit')} className="text-lg font-bold text-gray-900">{user?.display_name || 'Cosplayer'}</button>
+          <span className={`mt-1 text-[11px] font-semibold ${user?.kyc_status === 'verified' ? 'text-green-600' : 'text-amber-600'}`}>
+            {user?.kyc_status === 'verified' ? '✓ Identity Verified' : 'Identity not verified'}
+          </span>
           <p className="text-sm text-gray-400 mt-0.5">
             {isSeller ? 'Cosplayer & Shop Owner' : 'Cosplayer & Pro Stylist'} • Bangkok
           </p>

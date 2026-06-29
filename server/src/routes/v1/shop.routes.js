@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const shopCtrl = require('../../controllers/shop/shop.controller');
 const itemCtrl = require('../../controllers/shop/item.controller');
+const reviewCtrl = require('../../controllers/review/review.controller');
 const { authenticate, requireRole } = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const {
@@ -15,6 +16,7 @@ const isShopAdmin = [authenticate, requireRole('shop_admin', 'admin')];
 router.post('/',      authenticate,   createShopRules,  validate, shopCtrl.createShop);
 router.get('/me',     ...isShopAdmin,                             shopCtrl.getMyShop);
 router.patch('/me',   ...isShopAdmin, updateShopRules,  validate, shopCtrl.updateShop);
+router.get('/:id/reviews', reviewCtrl.listShopReviews);   // public
 router.get('/:id',    shopCtrl.getShop);   // public
 
 // ── Items (scoped to own shop) ────────────────────────────────────────────────

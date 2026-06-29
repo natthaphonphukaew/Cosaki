@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
+const { notify, shopOwnerId } = require('../../services/notification/notification.service');
 
 // POST /payments/charge — create a charge via Omise (placeholder)
 const createCharge = async (req, res, next) => {
@@ -33,6 +34,11 @@ const createCharge = async (req, res, next) => {
       `UPDATE bookings SET status = 'escrowed', updated_at = NOW() WHERE id = $1`,
       [booking_id]
     );
+
+    // Notify the shop owner that payment cleared and it's time to ship.
+    const ownerId = await shopOwnerId(booking.shop_id);
+    await notify(ownerId, 'payment_received', 'Payment received',
+      'Funds are held in escrow — ship the item to start the rental.', booking_id);
 
     return success(res, { payment: rows[0] }, 201);
   } catch (err) {

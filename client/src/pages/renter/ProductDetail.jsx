@@ -4,6 +4,9 @@ import { ArrowLeft, Heart, Share2, Shield, Star, Truck, Zap } from 'lucide-react
 import Button from '@/components/ui/Button';
 import ProductImage from '@/components/ui/ProductImage';
 import { getItem } from '@/api/items';
+import { getShopReviews } from '@/api/reviews';
+import { isFavorite, toggleFavorite } from '@/utils/favorites';
+import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
   const { id }      = useParams();
@@ -11,10 +14,42 @@ export default function ProductDetail() {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [slide, setSlide] = useState(0);
+  const [reviews, setReviews] = useState([]);
+  const [faved, setFaved] = useState(false);
 
   useEffect(() => {
-    getItem(id).then(({ data }) => setItem(data.data.item)).finally(() => setLoading(false));
+    setFaved(isFavorite(id));
+    getItem(id).then(({ data }) => {
+      const it = data.data.item;
+      setItem(it);
+      if (it?.shop_id) getShopReviews(it.shop_id).then(({ data }) => setReviews(data.data.reviews)).catch(() => {});
+    }).finally(() => setLoading(false));
   }, [id]);
+
+  const onFav = () => { toggleFavorite(item); setFaved((f) => !f); };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: item?.name, url });
+      else { await navigator.clipboard.writeText(url); toast.success('Link copied to clipboard'); }
+    } catch { /* user cancelled share */ }
+  };
+
+  const [following, setFollowing] = useState(false);
+  useEffect(() => {
+    if (item?.shop_id) {
+      const f = JSON.parse(localStorage.getItem('cosaki-follows') || '[]');
+      setFollowing(f.includes(item.shop_id));
+    }
+  }, [item?.shop_id]);
+  const toggleFollow = () => {
+    const f = JSON.parse(localStorage.getItem('cosaki-follows') || '[]');
+    const next = f.includes(item.shop_id) ? f.filter((x) => x !== item.shop_id) : [...f, item.shop_id];
+    localStorage.setItem('cosaki-follows', JSON.stringify(next));
+    setFollowing(next.includes(item.shop_id));
+    toast.success(next.includes(item.shop_id) ? `Following ${item.shop_name}` : 'Unfollowed');
+  };
 
   const onScroll = (e) => {
     const w = e.target.clientWidth;
@@ -61,10 +96,10 @@ export default function ProductDetail() {
           <ArrowLeft size={20} />
         </button>
         <div className="absolute right-4 top-12 flex gap-2">
-          <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm">
-            <Heart size={18} className="text-gray-700" />
+          <button onClick={onFav} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm">
+            <Heart size={18} className={faved ? 'text-brand-pink' : 'text-gray-700'} fill={faved ? '#EC4899' : 'none'} />
           </button>
-          <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm">
+          <button onClick={handleShare} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm">
             <Share2 size={18} className="text-gray-700" />
           </button>
         </div>
@@ -83,10 +118,15 @@ export default function ProductDetail() {
         <div className="mt-2 flex items-center gap-3">
           <div className="flex items-center gap-1 text-amber-500">
             <Star size={14} fill="currentColor" />
-            <span className="text-sm font-semibold">{item.shop_rating || '5.0'}</span>
+            <span className="text-sm font-semibold">{Number(item.shop_rating || 5).toFixed(1)}</span>
+            {item.shop_review_count > 0 && (
+              <span className="text-xs text-gray-400">({item.shop_review_count})</span>
+            )}
           </div>
           <span className="text-sm text-gray-400">{item.shop_name}</span>
-          <button className="ml-auto text-xs font-semibold text-brand-purple">FOLLOW</button>
+          <button onClick={toggleFollow} className={`ml-auto text-xs font-semibold ${following ? 'text-gray-400' : 'text-brand-purple'}`}>
+            {following ? 'FOLLOWING' : 'FOLLOW'}
+          </button>
         </div>
 
         {/* Rental options */}
@@ -137,6 +177,37 @@ export default function ProductDetail() {
             <p className="mb-2 text-sm font-semibold text-gray-700">Sizes: {item.sizes.join(', ')}</p>
           </div>
         )}
+
+        {/* Reviews */}
+        <div className="mt-5">
+          <h3 className="font-semibold text-gray-900">
+            Reviews {reviews.length > 0 && <span className="text-sm font-normal text-gray-400">({reviews.length})</span>}
+          </h3>
+          {reviews.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-400">No reviews yet — be the first to rent &amp; review.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {reviews.slice(0, 5).map((r) => (
+                <div key={r.id} className="rounded-xl bg-gray-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-800">{r.reviewer_name || 'Cosplayer'}</span>
+                    <span className="flex items-center gap-0.5 text-amber-500">
+                      {Array.from({ length: r.rating }).map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
+                    </span>
+                  </div>
+                  {r.comment && <p className="mt-1 text-sm text-gray-600">{r.comment}</p>}
+                  {r.tags?.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {r.tags.map((t) => (
+                        <span key={t} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-brand-purple">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sticky footer */}

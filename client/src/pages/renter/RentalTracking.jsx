@@ -137,6 +137,12 @@ export default function RentalTracking() {
           </div>
         )}
 
+        {booking.status === 'completed' && (
+          <Button className="w-full" onClick={() => navigate(`/bookings/${bookingId}/review`)}>
+            Leave a Review
+          </Button>
+        )}
+
         {['escrowed','shipped','returned'].includes(booking.status) && (
           <button onClick={handleDispute} className="w-full text-center text-sm font-semibold text-red-500 py-2">
             Report an Issue

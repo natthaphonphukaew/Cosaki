@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bookingCtrl = require('../../controllers/booking/booking.controller');
+const reviewCtrl = require('../../controllers/review/review.controller');
 const { authenticate } = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const { createBookingRules, updateStatusRules } = require('../../validators/booking.validator');
@@ -14,5 +15,6 @@ router.post('/',                  createBookingRules,  validate, bookingCtrl.cre
 router.get('/',                                                   bookingCtrl.listBookings);
 router.get('/:id',                                                bookingCtrl.getBooking);
 router.patch('/:id/status',       updateStatusRules,   validate, bookingCtrl.updateStatus);
+router.post('/:id/reviews',                                      reviewCtrl.createReview);
 
 module.exports = router;

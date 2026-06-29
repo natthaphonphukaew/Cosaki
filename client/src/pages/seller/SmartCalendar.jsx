@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import { listBookings } from '@/api/bookings';
@@ -20,6 +21,7 @@ export default function SmartCalendar() {
   const [month, setMonth]     = useState(new Date());
   const [bookings, setBookings] = useState([]);
   const [selected, setSelected] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     listBookings({ as: 'shop', limit: 50 })
@@ -55,7 +57,7 @@ export default function SmartCalendar() {
             <h2 className="text-xl font-bold text-gray-900">Inventory Scheduler</h2>
             <p className="text-xs text-gray-400">Track your rentals and costume availability</p>
           </div>
-          <button className="flex items-center gap-1 rounded-full bg-brand-purple px-3 py-2 text-xs font-semibold text-white">
+          <button onClick={() => navigate('/seller/items/new')} className="flex items-center gap-1 rounded-full bg-brand-purple px-3 py-2 text-xs font-semibold text-white">
             <Plus size={14} /> LIST NEW
           </button>
         </div>

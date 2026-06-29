@@ -20,6 +20,30 @@ export default function OrderManagement() {
       .catch(() => {});
   }, [tab]);
 
+  // Open a printable shipping label in a new window.
+  const printLabel = (e, b) => {
+    e.stopPropagation();
+    const w = window.open('', '_blank', 'width=420,height=600');
+    if (!w) return;
+    const dates = b.rental_start && b.rental_end
+      ? `${format(new Date(b.rental_start), 'MMM d')} – ${format(new Date(b.rental_end), 'MMM d')}`
+      : '';
+    w.document.write(`
+      <body style="font-family:sans-serif;padding:24px">
+        <h2 style="color:#7C3AED;margin:0">Cosaki Shipping Label</h2>
+        <hr/>
+        <p><b>Order:</b> #CSK-${b.id.slice(0, 8).toUpperCase()}</p>
+        <p><b>Item:</b> ${b.item_name}</p>
+        <p><b>Recipient:</b> ${b.renter_name || ''}</p>
+        <p><b>Rental:</b> ${dates}</p>
+        <p><b>Total:</b> $${b.total_amount}</p>
+        <hr/>
+        <p style="font-size:12px;color:#888">Handle with care — costume rental.</p>
+        <script>window.onload = () => window.print()</script>
+      </body>`);
+    w.document.close();
+  };
+
   return (
     <AppShell>
       <div className="px-4 pt-5">
@@ -77,7 +101,7 @@ export default function OrderManagement() {
                 </p>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-sm font-bold text-brand-purple">${b.total_amount}</span>
-                  <button className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700">Print Label</button>
+                  <button onClick={(e) => printLabel(e, b)} className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700">Print Label</button>
                 </div>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
+import { createReview } from '@/api/reviews';
 import toast from 'react-hot-toast';
 
 export default function ReviewRating() {
@@ -22,9 +23,11 @@ export default function ReviewRating() {
     if (!rating) return toast.error('Please select a rating');
     try {
       setLoading(true);
-      await new Promise((r) => setTimeout(r, 800)); // TODO: hook up real review API
+      await createReview(bookingId, { rating, comment, tags });
       toast.success('Review submitted!');
       navigate('/home');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not submit review');
     } finally {
       setLoading(false);
     }

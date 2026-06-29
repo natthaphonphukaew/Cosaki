@@ -1,6 +1,7 @@
 const db = require('../../config/db');
 const s3 = require('../../services/storage/s3.service');
 const { success, error } = require('../../utils/response');
+const { notify, shopOwnerId } = require('../../services/notification/notification.service');
 
 // POST /evidence — upload pre_ship or unboxing photos/videos
 const uploadEvidence = async (req, res, next) => {
@@ -79,13 +80,19 @@ const createDispute = async (req, res, next) => {
       [booking.renter_id]
     );
 
+    // Notify the other party that a dispute was opened.
+    const counterparty = req.user.id === booking.renter_id ? booking.shop_owner_id : booking.renter_id;
+    await notify(counterparty, 'dispute', 'A dispute was opened',
+      'A dispute was raised on a rental. Open the Resolution Center to respond.', booking_id);
+
     return success(res, { dispute: rows[0] }, 201);
   } catch (err) {
     next(err);
   }
 };
 
-// PATCH /disputes/:id/resolve — admin resolves dispute
+// PATCH /disputes/:id/resolve — admin OR the owning shop resolves the dispute.
+// (Real arbitration would be admin-only; relaxed to the shop for the test build.)
 const resolveDispute = async (req, res, next) => {
   try {
     const { resolution, resolution_note, compensation_amount } = req.body;
@@ -93,12 +100,22 @@ const resolveDispute = async (req, res, next) => {
       return error(res, 'Invalid resolution value', 422);
     }
 
+    // Disputes are created 'open'; accept either open or under_review.
     const { rows: disputes } = await db.query(
-      'SELECT * FROM disputes WHERE id = $1 AND status = $2',
-      [req.params.id, 'under_review']
+      `SELECT d.*, b.shop_id, b.renter_id, s.owner_id AS shop_owner_id
+       FROM disputes d
+       JOIN bookings b ON b.id = d.booking_id
+       JOIN shops s ON s.id = b.shop_id
+       WHERE d.id = $1 AND d.status IN ('open', 'under_review')`,
+      [req.params.id]
     );
-    if (!disputes.length) return error(res, 'Dispute not found or not under review', 404);
+    if (!disputes.length) return error(res, 'Dispute not found or already resolved', 404);
     const dispute = disputes[0];
+
+    // Authorize: platform admin or the shop that owns the booking.
+    if (req.user.role !== 'admin' && dispute.shop_owner_id !== req.user.id) {
+      return error(res, 'Forbidden', 403);
+    }
 
     await db.query(
       `UPDATE disputes
@@ -121,19 +138,18 @@ const resolveDispute = async (req, res, next) => {
       [dispute.booking_id]
     );
 
-    // Unfreeze renter if resolved in their favour
-    if (resolution === 'resolved_renter') {
-      const { rows: bookings } = await db.query(
-        'SELECT renter_id FROM bookings WHERE id = $1',
-        [dispute.booking_id]
-      );
-      if (bookings.length) {
-        await db.query(
-          `UPDATE users SET kyc_status = 'verified', updated_at = NOW() WHERE id = $1`,
-          [bookings[0].renter_id]
-        );
-      }
-    }
+    // Restore the renter's account after resolution either way (test-friendly).
+    await db.query(
+      `UPDATE users SET kyc_status = 'verified', updated_at = NOW() WHERE id = $1`,
+      [dispute.renter_id]
+    );
+
+    // Notify both parties of the outcome.
+    const outcome = resolution === 'resolved_shop'
+      ? 'Resolved in the shop\'s favour.'
+      : 'Resolved in the renter\'s favour (deposit refunded).';
+    await notify(dispute.renter_id, 'dispute', 'Dispute resolved', outcome, dispute.booking_id);
+    await notify(dispute.shop_owner_id, 'dispute', 'Dispute resolved', outcome, dispute.booking_id);
 
     return success(res, { message: 'Dispute resolved' });
   } catch (err) {
@@ -162,4 +178,36 @@ const listDisputes = async (req, res, next) => {
   }
 };
 
-module.exports = { uploadEvidence, createDispute, resolveDispute, listDisputes };
+// GET /disputes/by-booking/:bookingId — latest dispute + evidence for a booking.
+const getDisputeByBooking = async (req, res, next) => {
+  try {
+    const { rows: bookings } = await db.query(
+      `SELECT b.*, s.owner_id AS shop_owner_id FROM bookings b
+       JOIN shops s ON s.id = b.shop_id WHERE b.id = $1`,
+      [req.params.bookingId]
+    );
+    if (!bookings.length) return error(res, 'Booking not found', 404);
+    const booking = bookings[0];
+
+    const isParty = booking.renter_id === req.user.id
+      || booking.shop_owner_id === req.user.id
+      || req.user.role === 'admin';
+    if (!isParty) return error(res, 'Forbidden', 403);
+
+    const { rows: disputes } = await db.query(
+      `SELECT * FROM disputes WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [req.params.bookingId]
+    );
+    const { rows: evidence } = await db.query(
+      `SELECT id, stage, s3_keys, uploaded_by, uploaded_at FROM evidence_uploads
+       WHERE booking_id = $1 ORDER BY uploaded_at DESC`,
+      [req.params.bookingId]
+    );
+
+    return success(res, { dispute: disputes[0] || null, evidence });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { uploadEvidence, createDispute, resolveDispute, listDisputes, getDisputeByBooking };

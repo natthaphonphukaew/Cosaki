@@ -87,6 +87,7 @@ export default function KYCPage() {
                 </>
           )}
           <input
+            id="kyc-file-input"
             type="file" accept="image/*" capture={step === 'selfie' ? 'user' : 'environment'} className="hidden"
             onChange={(e) => { if (!e.target.files[0]) return; step === 'id' ? setIdFile(e.target.files[0]) : setSelfie(e.target.files[0]); }}
           />
@@ -98,7 +99,7 @@ export default function KYCPage() {
           {step === 'id' ? 'SCANNING FRONT SIDE' : 'LIVENESS CHECK'}
         </div>
 
-        <button onClick={() => {}} className="mt-4 flex items-center gap-2 text-sm font-medium text-brand-purple mx-auto">
+        <button onClick={() => document.getElementById('kyc-file-input')?.click()} className="mt-4 flex items-center gap-2 text-sm font-medium text-brand-purple mx-auto">
           <Upload size={16} />
           UPLOAD FROM GALLERY
         </button>

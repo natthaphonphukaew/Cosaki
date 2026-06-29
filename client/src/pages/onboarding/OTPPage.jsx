@@ -44,10 +44,19 @@ export default function OTPPage() {
     if (code.length === 6) handleVerify(code);
   }, [code, handleVerify]);
 
+  const [secondsLeft, setSecondsLeft] = useState(59);
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [secondsLeft]);
+
   const handleResend = async () => {
+    if (secondsLeft > 0) return;
     try {
       await sendOTP(phone);
       toast.success('OTP resent');
+      setSecondsLeft(59);
     } catch {
       toast.error('Could not resend OTP');
     }
@@ -85,8 +94,8 @@ export default function OTPPage() {
           ))}
         </div>
 
-        <button onClick={handleResend} className="mt-4 text-sm font-semibold text-brand-pink">
-          Resend code in 0:59
+        <button onClick={handleResend} disabled={secondsLeft > 0} className={`mt-4 text-sm font-semibold ${secondsLeft > 0 ? 'text-gray-400' : 'text-brand-pink'}`}>
+          {secondsLeft > 0 ? `Resend code in 0:${String(secondsLeft).padStart(2, '0')}` : 'Resend code'}
         </button>
 
         {/* Decoration */}

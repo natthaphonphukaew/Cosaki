@@ -44,7 +44,7 @@ const listMyItems = async (req, res, next) => {
 const getItem = async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT i.*, s.shop_name, s.rating AS shop_rating
+      `SELECT i.*, s.shop_name, s.rating AS shop_rating, s.review_count AS shop_review_count
        FROM items i JOIN shops s ON s.id = i.shop_id
        WHERE i.id = $1`,
       [req.params.id]
@@ -106,7 +106,7 @@ const deleteItem = async (req, res, next) => {
 // GET /items?fandom=&q=&page=&limit=  — public search
 const searchItems = async (req, res, next) => {
   try {
-    const { fandom, q, page = 1, limit = 20 } = req.query;
+    const { fandom, q, size, page = 1, limit = 20 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
     const conditions = ['i.is_available = TRUE'];
     const params = [];
@@ -119,12 +119,16 @@ const searchItems = async (req, res, next) => {
       params.push(`%${q}%`);
       conditions.push(`(i.name ILIKE $${params.length} OR i.character ILIKE $${params.length})`);
     }
+    if (size) {
+      params.push(size);
+      conditions.push(`$${params.length} = ANY(i.sizes)`);
+    }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     params.push(Number(limit), offset);
 
     const { rows } = await db.query(
-      `SELECT i.*, s.shop_name, s.rating AS shop_rating
+      `SELECT i.*, s.shop_name, s.rating AS shop_rating, s.review_count AS shop_review_count
        FROM items i JOIN shops s ON s.id = i.shop_id
        ${where}
        ORDER BY i.created_at DESC

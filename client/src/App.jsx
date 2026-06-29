@@ -27,6 +27,14 @@ import ReviewRating      from '@/pages/post-rental/ReviewRating';
 
 // Profile
 import ProfilePage   from '@/pages/profile/ProfilePage';
+import EditProfile   from '@/pages/profile/EditProfile';
+import SettingsPage  from '@/pages/profile/SettingsPage';
+import PaymentMethods from '@/pages/profile/PaymentMethods';
+import HelpSupport   from '@/pages/profile/HelpSupport';
+import SavedOutfits  from '@/pages/profile/SavedOutfits';
+
+// Notifications
+import NotificationsPage from '@/pages/notifications/NotificationsPage';
 
 // Seller
 import SellerDashboard  from '@/pages/seller/SellerDashboard';
@@ -79,7 +87,13 @@ export default function App() {
             <Route path="/home"     element={<HomePage />} />
             <Route path="/search"   element={<SearchPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/profile"  element={<ProfilePage />} />
+            <Route path="/profile"      element={<ProfilePage />} />
+            <Route path="/profile/edit" element={<EditProfile />} />
+            <Route path="/settings"     element={<SettingsPage />} />
+            <Route path="/payments"     element={<PaymentMethods />} />
+            <Route path="/support"      element={<HelpSupport />} />
+            <Route path="/saved"        element={<SavedOutfits />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/rentals"  element={<MyRentals />} />
 
             {/* Renter journey */}

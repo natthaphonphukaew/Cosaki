@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ChevronRight, TrendingUp, Plus } from 'lucide-react';
+import { ChevronRight, TrendingUp, Plus } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
+import NotificationBell from '@/components/ui/NotificationBell';
 import { listMyItems } from '@/api/items';
 import { listBookings } from '@/api/bookings';
 import useAuthStore from '@/store/authStore';
@@ -40,9 +41,7 @@ export default function SellerDashboard() {
             </div>
             <span className="text-base font-bold text-gray-800 truncate max-w-[180px]">{shopName}</span>
           </div>
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
-            <Bell size={18} className="text-gray-600" />
-          </button>
+          <NotificationBell />
         </div>
 
         {/* Earnings card */}
@@ -102,7 +101,7 @@ export default function SellerDashboard() {
         <div className="mt-4 rounded-2xl bg-brand-purple p-5 overflow-hidden">
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white font-medium">PRO SELLER STATUS</span>
           <h3 className="mt-2 text-lg font-bold text-white">Level Up Your Store</h3>
-          <button className="mt-3 rounded-full border border-white px-4 py-1.5 text-sm font-semibold text-white">
+          <button onClick={() => navigate('/seller/items')} className="mt-3 rounded-full border border-white px-4 py-1.5 text-sm font-semibold text-white">
             View Roadmap
           </button>
         </div>

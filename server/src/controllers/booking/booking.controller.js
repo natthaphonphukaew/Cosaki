@@ -1,6 +1,7 @@
 const { randomBytes } = require('crypto');
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
+const { notify, shopOwnerId } = require('../../services/notification/notification.service');
 
 const generateToken = () => randomBytes(32).toString('hex');
 
@@ -67,6 +68,12 @@ const createBooking = async (req, res, next) => {
         token, rental_fee, item.deposit_amount, notes || null,
       ]
     );
+
+    // Notify the shop owner of the new booking request.
+    const ownerId = await shopOwnerId(item.shop_id);
+    await notify(ownerId, 'booking_new', 'New booking request',
+      `Someone wants to rent "${item.name}".`, rows[0].id);
+
     return success(res, { booking: rows[0] }, 201);
   } catch (err) {
     next(err);
@@ -160,6 +167,28 @@ const updateStatus = async (req, res, next) => {
       `UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
       [newStatus, booking.id]
     );
+
+    // On completion, release the escrowed funds to the shop (real earnings).
+    if (newStatus === 'completed') {
+      await db.query(
+        `UPDATE payments SET escrow_status = 'released_to_shop', released_at = NOW()
+         WHERE booking_id = $1 AND escrow_status = 'held'`,
+        [booking.id]
+      );
+    }
+
+    // Notify the relevant party about the status change.
+    const ownerId = await shopOwnerId(booking.shop_id);
+    const NOTICE = {
+      shipped:   [booking.renter_id, 'shipped',   'Your rental shipped', 'The shop has shipped your costume.'],
+      returned:  [ownerId,           'returned',  'Item returned',       'The renter marked the item as returned.'],
+      completed: [booking.renter_id, 'completed', 'Rental completed',    'Your rental is complete — leave a review!'],
+    };
+    if (NOTICE[newStatus]) {
+      const [uid, type, title, body] = NOTICE[newStatus];
+      await notify(uid, type, title, body, booking.id);
+    }
+
     return success(res, { booking: updated[0] });
   } catch (err) {
     next(err);
@@ -188,12 +217,10 @@ const getByToken = async (req, res, next) => {
 // ── Private helper ────────────────────────────────────────────────────────────
 const isBookingOwner = async (user, booking) => {
   if (user.role === 'admin') return true;
-  if (user.role === 'renter') return booking.renter_id === user.id;
-  if (user.role === 'shop_admin') {
-    const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1 AND id = $2', [user.id, booking.shop_id]);
-    return rows.length > 0;
-  }
-  return false;
+  // A dual-mode user (shop owner who also rents) may be either party.
+  if (booking.renter_id === user.id) return true;
+  const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1 AND id = $2', [user.id, booking.shop_id]);
+  return rows.length > 0;
 };
 
 module.exports = { createBooking, listBookings, getBooking, updateStatus, getByToken };

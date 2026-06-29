@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, Heart } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import { searchItems } from '@/api/items';
+import { getFavorites, toggleFavorite } from '@/utils/favorites';
 
 const FANDOM_OPTIONS = ['Genshin Impact','Arcane','Valorant','Demon Slayer','Spy x Family','Chainsaw Man','Cyberpunk Edgerunners'];
 
@@ -13,24 +14,45 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [fandom, setFandom] = useState(null);
+  const [size, setSize]     = useState(null);
+  const [favs, setFavs]     = useState([]);
   const navigate            = useNavigate();
 
-  const run = async (params) => {
-    if (!params.q?.trim() && !params.fandom) { setItems([]); return; }
+  useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
+
+  // Run a search from the given query string + current filters.
+  const run = async (query, f = fandom, s = size) => {
+    if (!query?.trim() && !f && !s) { setItems([]); return; }
     try {
       setLoading(true);
-      const { data } = await searchItems(params);
+      const { data } = await searchItems({
+        ...(query?.trim() ? { q: query } : {}),
+        ...(f ? { fandom: f } : {}),
+        ...(s ? { size: s } : {}),
+      });
       setItems(data.data.items);
     } catch { } finally { setLoading(false); }
   };
 
-  const doSearch = (val) => { setQ(val); run({ q: val, ...(fandom ? { fandom } : {}) }); };
+  const doSearch = (val) => { setQ(val); run(val); };
 
   const applyFandom = (f) => {
     const next = fandom === f ? null : f;
     setFandom(next);
     setShowFilter(false);
-    run({ ...(q.trim() ? { q } : {}), ...(next ? { fandom: next } : {}) });
+    run(q, next, size);
+  };
+
+  const applySize = (s) => {
+    const next = size === s ? null : s;
+    setSize(next);
+    run(q, fandom, next);
+  };
+
+  const onFav = (e, item) => {
+    e.stopPropagation();
+    toggleFavorite(item);
+    setFavs((list) => list.includes(item.id) ? list.filter((x) => x !== item.id) : [...list, item.id]);
   };
 
   return (
@@ -49,10 +71,10 @@ export default function SearchPage() {
           </div>
           <button
             onClick={() => setShowFilter(true)}
-            className={`relative flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ${fandom ? 'bg-brand-purple text-white' : 'bg-white text-gray-700'}`}
+            className={`relative flex h-12 w-12 items-center justify-center rounded-2xl shadow-sm ${fandom || size ? 'bg-brand-purple text-white' : 'bg-white text-gray-700'}`}
           >
             <SlidersHorizontal size={18} />
-            {fandom && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-brand-pink border-2 border-surface-base" />}
+            {(fandom || size) && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-brand-pink border-2 border-surface-base" />}
           </button>
         </div>
 
@@ -89,8 +111,8 @@ export default function SearchPage() {
               >
                 <div className="relative h-40">
                   <ProductImage item={item} emojiClassName="text-5xl" />
-                  <button className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/80">
-                    <Heart size={14} className="text-gray-500" />
+                  <button onClick={(e) => onFav(e, item)} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/80">
+                    <Heart size={14} className={favs.includes(item.id) ? 'text-brand-pink' : 'text-gray-500'} fill={favs.includes(item.id) ? '#EC4899' : 'none'} />
                   </button>
                 </div>
                 <div className="p-3">
@@ -114,8 +136,14 @@ export default function SearchPage() {
             </div>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Size</p>
             <div className="flex gap-2">
-              {['S','M','L','XL'].map((s) => (
-                <button key={s} className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-sm font-medium text-gray-700 first:bg-brand-purple first:text-white first:border-brand-purple">
+              {['XS','S','M','L','XL','XXL'].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => applySize(s)}
+                  className={`flex h-10 min-w-10 items-center justify-center rounded-full px-2 text-sm font-medium transition-colors ${
+                    size === s ? 'bg-brand-purple text-white border border-brand-purple' : 'border border-gray-200 text-gray-700'
+                  }`}
+                >
                   {s}
                 </button>
               ))}
