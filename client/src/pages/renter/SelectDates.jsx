@@ -3,7 +3,9 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
+import { useEffect } from 'react';
 import { createBooking } from '@/api/bookings';
+import { getAvailability } from '@/api/items';
 import toast from 'react-hot-toast';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth,
          eachDayOfInterval, isSameMonth, isSameDay, isAfter, isBefore, startOfToday } from 'date-fns';
@@ -19,12 +21,25 @@ export default function SelectDates() {
   const [startDate, setStart]   = useState(null);
   const [endDate, setEnd]       = useState(null);
   const [loading, setLoading]   = useState(false);
+  const [booked, setBooked]     = useState([]);   // [{rental_start, rental_end}]
+
+  useEffect(() => {
+    getAvailability(id).then(({ data }) => setBooked(data.data.booked)).catch(() => {});
+  }, [id]);
+
+  // A day is unavailable if it falls inside any active booking range.
+  const isBooked = (day) => booked.some((b) => {
+    const s = new Date(b.rental_start); s.setHours(0,0,0,0);
+    const e = new Date(b.rental_end);   e.setHours(0,0,0,0);
+    const d = new Date(day);            d.setHours(0,0,0,0);
+    return d >= s && d <= e;
+  });
 
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
   const startPad = startOfMonth(month).getDay(); // 0=Sun
 
   const handleDay = (day) => {
-    if (isBefore(day, today)) return;
+    if (isBefore(day, today) || isBooked(day)) return;
     if (!startDate || (startDate && endDate)) {
       setStart(day); setEnd(null);
     } else {
@@ -99,20 +114,23 @@ export default function SelectDates() {
             const end     = isEnd(day);
             const past    = isPast(day);
             const active  = start || end;
+            const bookedDay = !past && isBooked(day);
             return (
               <button
                 key={day.toISOString()}
                 onClick={() => handleDay(day)}
-                disabled={past}
+                disabled={past || bookedDay}
                 className={`relative flex h-10 items-center justify-center text-sm font-medium transition-all
                   ${past        ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
+                  ${bookedDay   ? 'text-gray-300 line-through cursor-not-allowed' : ''}
                   ${inRange     ? 'bg-brand-light text-brand-purple' : ''}
                   ${start       ? 'rounded-l-full bg-brand-gradient text-white' : ''}
                   ${end         ? 'rounded-r-full bg-brand-gradient text-white' : ''}
-                  ${!active && !inRange && !past ? 'hover:bg-brand-light rounded-full' : ''}
+                  ${!active && !inRange && !past && !bookedDay ? 'hover:bg-brand-light rounded-full' : ''}
                 `}
               >
                 {format(day, 'd')}
+                {bookedDay && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-amber-400" />}
               </button>
             );
           })}

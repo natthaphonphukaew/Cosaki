@@ -60,6 +60,7 @@ const listShopReviews = async (req, res, next) => {
     const { rows } = await db.query(
       `SELECT r.id, r.rating, r.comment, r.tags, r.created_at,
               u.display_name AS reviewer_name, u.avatar_url AS reviewer_avatar,
+              u.bust, u.waist, u.hip, u.height,
               i.name AS item_name
        FROM reviews r
        JOIN users u ON u.id = r.reviewer_id

@@ -21,6 +21,8 @@ export default function EditProduct() {
   const [form, setForm] = useState({
     name: '', character: '', fandom: '', description: '',
     test_rate: '', private_rate: '', shipping_fee: '', min_age: 0, sizes: [], is_available: true,
+    bust: '', waist: '', hip: '', height_recommended: '',
+    ship_lead_days: 2, return_days: 2, allow_event: false, express_delivery: false, return_couriers: [],
   });
 
   useEffect(() => {
@@ -35,6 +37,11 @@ export default function EditProduct() {
         shipping_fee: String(i.shipping_fee ?? ''),
         min_age: Number(i.min_age ?? 0),
         sizes: i.sizes || [], is_available: i.is_available !== false,
+        bust: String(i.bust ?? ''), waist: String(i.waist ?? ''), hip: String(i.hip ?? ''),
+        height_recommended: i.height_recommended || '',
+        ship_lead_days: Number(i.ship_lead_days ?? 2), return_days: Number(i.return_days ?? 2),
+        allow_event: !!i.allow_event, express_delivery: !!i.express_delivery,
+        return_couriers: i.return_couriers || [],
       });
     }).catch(() => toast.error('Could not load item'))
       .finally(() => setLoading(false));
@@ -43,12 +50,14 @@ export default function EditProduct() {
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const toggleSize = (s) =>
     set('sizes', form.sizes.includes(s) ? form.sizes.filter((x) => x !== s) : [...form.sizes, s]);
+  const toggleCourier = (c) =>
+    set('return_couriers', form.return_couriers.includes(c) ? form.return_couriers.filter((x) => x !== c) : [...form.return_couriers, c]);
 
   const addPhotos = async (e) => {
-    const files = Array.from(e.target.files).slice(0, 6 - photos.length);
+    const files = Array.from(e.target.files).slice(0, 9 - photos.length);
     try {
       const urls = await Promise.all(files.map((f) => fileToDataUrl(f)));
-      setPhotos((p) => [...p, ...urls].slice(0, 6));
+      setPhotos((p) => [...p, ...urls].slice(0, 9));
     } catch { toast.error('Could not read image'); }
   };
 
@@ -64,6 +73,14 @@ export default function EditProduct() {
         shipping_fee: parseFloat(form.shipping_fee || 0),
         min_age: Number(form.min_age) || 0,
         sizes: form.sizes, is_available: form.is_available, image_urls: photos,
+        bust: form.bust ? Number(form.bust) : null,
+        waist: form.waist ? Number(form.waist) : null,
+        hip: form.hip ? Number(form.hip) : null,
+        height_recommended: form.height_recommended || null,
+        ship_lead_days: Number(form.ship_lead_days) || 2,
+        return_days: Number(form.return_days) || 2,
+        allow_event: form.allow_event, express_delivery: form.express_delivery,
+        return_couriers: form.return_couriers,
       });
       toast.success('Listing updated');
       navigate('/seller/items');
@@ -104,7 +121,7 @@ export default function EditProduct() {
                 <button onClick={() => setPhotos((p) => p.filter((_, j) => j !== i))} className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"><X size={10} /></button>
               </div>
             ))}
-            {photos.length < 6 && (
+            {photos.length < 9 && (
               <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-brand-purple/30 bg-brand-light/30 text-brand-purple">
                 <Camera size={22} /><span className="text-[10px] font-semibold">Add</span>
                 <input type="file" accept="image/*" multiple className="hidden" onChange={addPhotos} />
@@ -161,6 +178,44 @@ export default function EditProduct() {
                 className={`rounded-full px-4 py-1.5 text-sm font-medium ${Number(form.min_age) === o.v ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
                 {o.l}
               </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">สัดส่วนชุด (ซม.)</label>
+          <div className="grid grid-cols-3 gap-2">
+            <Input label="อก" type="number" value={form.bust} onChange={(e) => set('bust', e.target.value)} />
+            <Input label="เอว" type="number" value={form.waist} onChange={(e) => set('waist', e.target.value)} />
+            <Input label="สะโพก" type="number" value={form.hip} onChange={(e) => set('hip', e.target.value)} />
+          </div>
+          <div className="mt-2"><Input label="ส่วนสูงที่แนะนำ" value={form.height_recommended} onChange={(e) => set('height_recommended', e.target.value)} placeholder="เช่น 155-170 ซม." /></div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">กรอบเวลา (SLA)</label>
+          <div className="grid grid-cols-2 gap-2">
+            <Input label="ส่งถึงก่อนใช้ (วัน)" type="number" value={form.ship_lead_days} onChange={(e) => set('ship_lead_days', e.target.value)} />
+            <Input label="ส่งคืนภายใน (วัน)" type="number" value={form.return_days} onChange={(e) => set('return_days', e.target.value)} />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ตัวเลือกด่วน</label>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => set('allow_event', !form.allow_event)}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${form.allow_event ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>🎭 อนุญาตออกงาน/เต้น</button>
+            <button onClick={() => set('express_delivery', !form.express_delivery)}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${form.express_delivery ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>⚡ ส่งด่วนในจังหวัด</button>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ขนส่งขากลับที่รับ</label>
+          <div className="flex flex-wrap gap-2">
+            {['Flash','EMS','Kerry','J&T','ไปรษณีย์'].map((c) => (
+              <button key={c} onClick={() => toggleCourier(c)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium ${form.return_couriers.includes(c) ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{c}</button>
             ))}
           </div>
         </div>
