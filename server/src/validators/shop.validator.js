@@ -24,8 +24,9 @@ const updateShopRules = [
 
 const createItemRules = [
   body('name').trim().notEmpty().isLength({ max: 200 }).withMessage('name required'),
-  body('daily_rate').isFloat({ min: 0 }).withMessage('daily_rate must be a positive number'),
-  body('deposit_amount').optional().isFloat({ min: 0 }),
+  body('test_rate').isFloat({ min: 0 }).withMessage('test_rate must be a positive number'),
+  body('private_rate').optional().isFloat({ min: 0 }),
+  body('shipping_fee').optional().isFloat({ min: 0 }),
   body('sizes').optional().isArray(),
   body('fandom').optional().trim().isLength({ max: 100 }),
   body('character').optional().trim().isLength({ max: 100 }),
@@ -34,8 +35,9 @@ const createItemRules = [
 
 const updateItemRules = [
   body('name').optional().trim().isLength({ max: 200 }),
-  body('daily_rate').optional().isFloat({ min: 0 }),
-  body('deposit_amount').optional().isFloat({ min: 0 }),
+  body('test_rate').optional().isFloat({ min: 0 }),
+  body('private_rate').optional().isFloat({ min: 0 }),
+  body('shipping_fee').optional().isFloat({ min: 0 }),
   body('sizes').optional().isArray(),
   body('is_available').optional().isBoolean(),
   body('image_urls').optional().isArray(),

@@ -16,6 +16,7 @@ export default function ProductDetail() {
   const [slide, setSlide] = useState(0);
   const [reviews, setReviews] = useState([]);
   const [faved, setFaved] = useState(false);
+  const [rateType, setRateType] = useState('test');
 
   useEffect(() => {
     setFaved(isFavorite(id));
@@ -62,6 +63,12 @@ export default function ProductDetail() {
     </div>
   );
   if (!item) return <div className="flex h-screen items-center justify-center text-gray-400">Item not found</div>;
+
+  // Two rates (fall back to legacy daily_rate); renter also pays a 10% protection fee.
+  const testRate     = Number(item.test_rate ?? item.daily_rate ?? 0);
+  const privateRate  = Number(item.private_rate ?? item.test_rate ?? item.daily_rate ?? 0);
+  const selectedRate = rateType === 'private' ? privateRate : testRate;
+  const protectionFee = Math.round(selectedRate * 0.10);
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-white">
@@ -129,32 +136,36 @@ export default function ProductDetail() {
           </button>
         </div>
 
-        {/* Rental options */}
+        {/* Rental options — pick a rate */}
         <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between rounded-xl border-2 border-brand-purple bg-brand-light/30 p-3">
+          <button
+            onClick={() => setRateType('test')}
+            className={`flex w-full items-center justify-between rounded-xl p-3 text-left ${rateType === 'test' ? 'border-2 border-brand-purple bg-brand-light/30' : 'border border-gray-200'}`}
+          >
             <div className="flex items-center gap-2">
-              <Truck size={16} className="text-brand-purple" />
-              <span className="text-sm font-medium text-gray-700">Sent at Home</span>
-              <span className="text-xs text-gray-400">5-day return including</span>
+              <Truck size={16} className={rateType === 'test' ? 'text-brand-purple' : 'text-gray-400'} />
+              <span className="text-sm font-medium text-gray-700">เทสที่บ้าน (Test at Home)</span>
             </div>
-            <span className="font-bold text-brand-purple">${item.daily_rate}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-gray-200 p-3">
+            <span className={`font-bold ${rateType === 'test' ? 'text-brand-purple' : 'text-gray-700'}`}>฿{testRate}</span>
+          </button>
+          <button
+            onClick={() => setRateType('private')}
+            className={`flex w-full items-center justify-between rounded-xl p-3 text-left ${rateType === 'private' ? 'border-2 border-brand-purple bg-brand-light/30' : 'border border-gray-200'}`}
+          >
             <div className="flex items-center gap-2">
-              <Zap size={16} className="text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">Event Use</span>
-              <span className="text-xs text-gray-400">1-day return</span>
+              <Zap size={16} className={rateType === 'private' ? 'text-brand-purple' : 'text-gray-400'} />
+              <span className="text-sm font-medium text-gray-700">ไพรเวท / ออกงาน (Event)</span>
             </div>
-            <span className="font-bold text-gray-700">${(item.daily_rate * 1.2).toFixed(0)}</span>
-          </div>
+            <span className={`font-bold ${rateType === 'private' ? 'text-brand-purple' : 'text-gray-700'}`}>฿{privateRate}</span>
+          </button>
         </div>
 
-        {/* Escrow trust banner */}
+        {/* Cosaki protection fee banner (replaces deposit) */}
         <div className="mt-4 flex items-center gap-3 rounded-xl bg-purple-50 p-3">
           <Shield size={20} className="text-brand-purple flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-brand-purple">SECURE ESCROW DEPOSIT</p>
-            <p className="text-xs text-gray-500 mt-0.5">A refundable security deposit of ${item.deposit_amount} is collected and securely held in Escrow.</p>
+            <p className="text-xs font-semibold text-brand-purple">ค่าธรรมเนียมคุ้มครองความเสียหาย 10%</p>
+            <p className="text-xs text-gray-500 mt-0.5">เก็บเพิ่ม ฿{protectionFee} (10% ของค่าเช่า) เข้ากองทุนประกันกลาง Cosaki — ไม่มีเงินมัดจำ</p>
           </div>
         </div>
 
@@ -214,10 +225,10 @@ export default function ProductDetail() {
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-xs text-gray-400">From</span>
-            <p className="text-lg font-bold text-brand-purple">${item.daily_rate}<span className="text-sm font-normal text-gray-400"> / day</span></p>
+            <span className="text-xs text-gray-400">{rateType === 'private' ? 'ไพรเวท' : 'เทสที่บ้าน'}</span>
+            <p className="text-lg font-bold text-brand-purple">฿{selectedRate}<span className="text-sm font-normal text-gray-400"> / day</span></p>
           </div>
-          <Button className="w-40" onClick={() => navigate(`/items/${item.id}/dates`)}>
+          <Button className="w-40" onClick={() => navigate(`/items/${item.id}/dates`, { state: { rateType } })}>
             Book Now
           </Button>
         </div>

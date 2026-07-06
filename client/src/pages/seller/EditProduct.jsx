@@ -20,7 +20,7 @@ export default function EditProduct() {
   const [photos, setPhotos]   = useState([]);
   const [form, setForm] = useState({
     name: '', character: '', fandom: '', description: '',
-    daily_rate: '', deposit_amount: '', sizes: [], is_available: true,
+    test_rate: '', private_rate: '', shipping_fee: '', sizes: [], is_available: true,
   });
 
   useEffect(() => {
@@ -30,7 +30,9 @@ export default function EditProduct() {
       setForm({
         name: i.name || '', character: i.character || '', fandom: i.fandom || '',
         description: i.description || '',
-        daily_rate: String(i.daily_rate ?? ''), deposit_amount: String(i.deposit_amount ?? ''),
+        test_rate: String(i.test_rate ?? i.daily_rate ?? ''),
+        private_rate: String(i.private_rate ?? ''),
+        shipping_fee: String(i.shipping_fee ?? ''),
         sizes: i.sizes || [], is_available: i.is_available !== false,
       });
     }).catch(() => toast.error('Could not load item'))
@@ -50,13 +52,15 @@ export default function EditProduct() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.daily_rate) return toast.error('Name and daily rate are required');
+    if (!form.name.trim() || !form.test_rate) return toast.error('Name and test-at-home rate are required');
     try {
       setSaving(true);
       await updateItem(id, {
         name: form.name.trim(), character: form.character, fandom: form.fandom,
         description: form.description,
-        daily_rate: parseFloat(form.daily_rate), deposit_amount: parseFloat(form.deposit_amount || 0),
+        test_rate: parseFloat(form.test_rate),
+        private_rate: form.private_rate ? parseFloat(form.private_rate) : parseFloat(form.test_rate),
+        shipping_fee: parseFloat(form.shipping_fee || 0),
         sizes: form.sizes, is_available: form.is_available, image_urls: photos,
       });
       toast.success('Listing updated');
@@ -138,10 +142,14 @@ export default function EditProduct() {
             className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Daily Rate (฿) *" type="number" value={form.daily_rate} onChange={(e) => set('daily_rate', e.target.value)} />
-          <Input label="Deposit (฿)" type="number" value={form.deposit_amount} onChange={(e) => set('deposit_amount', e.target.value)} />
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">Rental Rates (per day)</label>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="เทสที่บ้าน (฿) *" type="number" value={form.test_rate} onChange={(e) => set('test_rate', e.target.value)} />
+            <Input label="ไพรเวท/ออกงาน (฿)" type="number" value={form.private_rate} onChange={(e) => set('private_rate', e.target.value)} />
+          </div>
         </div>
+        <Input label="Shipping fee — ค่าส่งขาไป (฿)" type="number" value={form.shipping_fee} onChange={(e) => set('shipping_fee', e.target.value)} />
 
         {/* Availability toggle */}
         <button

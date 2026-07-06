@@ -85,24 +85,24 @@ export default function CheckoutPage() {
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Payment Summary</p>
           <div className="rounded-2xl bg-white p-4 shadow-sm space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Rental Fee</span>
-              <span className="font-medium">${booking.rental_fee}</span>
+              <span className="text-gray-600">ค่าเช่า ({booking.rate_type === 'private' ? 'ไพรเวท' : 'เทสที่บ้าน'})</span>
+              <span className="font-medium">฿{booking.rental_fee}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Shipping & Handling</span>
-              <span className="font-medium">${booking.shipping_fee || '0.00'}</span>
-            </div>
-            {/* Escrow row */}
+            {/* Cosaki protection fee (10% → insurance fund) */}
             <div className="flex items-center justify-between rounded-xl bg-purple-50 px-3 py-2">
               <div className="flex items-center gap-2">
                 <Shield size={14} className="text-brand-purple" />
-                <span className="text-sm text-brand-purple font-medium">Refundable Escrow Deposit</span>
+                <span className="text-sm text-brand-purple font-medium">ค่าคุ้มครองความเสียหาย (10%)</span>
               </div>
-              <span className="text-sm font-semibold text-brand-purple">${booking.deposit_amount}</span>
+              <span className="text-sm font-semibold text-brand-purple">฿{booking.cosaki_fee}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">ค่าส่ง (Shipping)</span>
+              <span className="font-medium">฿{booking.shipping_fee || '0.00'}</span>
             </div>
             <div className="border-t border-gray-100 pt-3 flex justify-between">
-              <span className="font-semibold text-gray-800">Total Amount</span>
-              <span className="text-lg font-bold text-brand-purple">${booking.total_amount}</span>
+              <span className="font-semibold text-gray-800">รวมทั้งสิ้น (Total)</span>
+              <span className="text-lg font-bold text-brand-purple">฿{booking.total_amount}</span>
             </div>
           </div>
         </div>

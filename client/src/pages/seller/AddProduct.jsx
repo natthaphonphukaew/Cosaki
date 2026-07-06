@@ -18,7 +18,7 @@ export default function AddProduct() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '', character: '', fandom: '', description: '',
-    daily_rate: '', deposit_amount: '', sizes: [],
+    test_rate: '', private_rate: '', shipping_fee: '', sizes: [],
   });
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -36,18 +36,19 @@ export default function AddProduct() {
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim() || !form.daily_rate) return toast.error('Name and daily rate are required');
+    if (!form.name.trim() || !form.test_rate) return toast.error('Name and test-at-home rate are required');
     try {
       setLoading(true);
       await createItem({
-        name:           form.name.trim(),
-        character:      form.character,
-        fandom:         form.fandom,
-        description:    form.description,
-        daily_rate:     parseFloat(form.daily_rate),
-        deposit_amount: parseFloat(form.deposit_amount || 0),
-        sizes:          form.sizes,
-        image_urls:     photos,
+        name:         form.name.trim(),
+        character:    form.character,
+        fandom:       form.fandom,
+        description:  form.description,
+        test_rate:    parseFloat(form.test_rate),
+        private_rate: form.private_rate ? parseFloat(form.private_rate) : undefined,
+        shipping_fee: parseFloat(form.shipping_fee || 0),
+        sizes:        form.sizes,
+        image_urls:   photos,
       });
       setStep(3);
     } catch (err) {
@@ -70,12 +71,12 @@ export default function AddProduct() {
       </div>
       <h2 className="text-2xl font-bold text-gray-900">Listing published!</h2>
       <p className="mt-1 text-sm font-semibold text-brand-purple">{form.name}</p>
-      <p className="mt-1 text-sm text-gray-500">${form.daily_rate}/day · now visible to renters</p>
+      <p className="mt-1 text-sm text-gray-500">฿{form.test_rate}/day (test) · now visible to renters</p>
       <Button className="mt-8 w-full" onClick={() => navigate('/seller/items')}>View My Listings</Button>
       <Button
         variant="secondary"
         className="mt-3 w-full"
-        onClick={() => { setStep(1); setPhotos([]); setForm({ name:'', character:'', fandom:'', description:'', daily_rate:'', deposit_amount:'', sizes:[] }); }}
+        onClick={() => { setStep(1); setPhotos([]); setForm({ name:'', character:'', fandom:'', description:'', test_rate:'', private_rate:'', shipping_fee:'', sizes:[] }); }}
       >
         Add Another
       </Button>
@@ -192,10 +193,15 @@ export default function AddProduct() {
               className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none resize-none focus:border-brand-purple" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Daily Rate (฿) *" type="number" placeholder="29" value={form.daily_rate} onChange={(e) => set('daily_rate', e.target.value)} />
-            <Input label="Deposit (฿)" type="number" placeholder="50" value={form.deposit_amount} onChange={(e) => set('deposit_amount', e.target.value)} />
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">Rental Rates (per day)</label>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="เทสที่บ้าน (฿) *" type="number" placeholder="500" value={form.test_rate} onChange={(e) => set('test_rate', e.target.value)} />
+              <Input label="ไพรเวท/ออกงาน (฿)" type="number" placeholder="700" value={form.private_rate} onChange={(e) => set('private_rate', e.target.value)} />
+            </div>
+            <p className="mt-1 text-xs text-gray-400">Leave private blank to use the same rate. Renter also pays a 10% Cosaki protection fee.</p>
           </div>
+          <Input label="Shipping fee — ค่าส่งขาไป (฿)" type="number" placeholder="40" value={form.shipping_fee} onChange={(e) => set('shipping_fee', e.target.value)} />
 
           <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 space-y-1">
             <p className="text-sm font-semibold text-amber-800">Rental Rules</p>

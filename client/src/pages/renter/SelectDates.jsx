@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
@@ -11,6 +11,8 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth,
 export default function SelectDates() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const rateType = state?.rateType || 'test';
   const today = startOfToday();
 
   const [month, setMonth]       = useState(new Date());
@@ -46,6 +48,7 @@ export default function SelectDates() {
       setLoading(true);
       const { data } = await createBooking({
         item_id: id,
+        rate_type: rateType,
         rental_start: format(startDate, 'yyyy-MM-dd'),
         rental_end:   format(endDate,   'yyyy-MM-dd'),
       });

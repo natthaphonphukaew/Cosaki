@@ -23,10 +23,10 @@ export default function SellerDashboard() {
 
   const pendingActions = bookings.filter((b) => ['escrowed','returned'].includes(b.status));
 
-  // Earnings = sum of completed rentals' fees (real data, $0 for new shops).
+  // Earnings = seller payout (rental − 10% commission) of completed rentals.
   const earnings = bookings
     .filter((b) => b.status === 'completed')
-    .reduce((s, b) => s + Number(b.rental_fee || 0), 0);
+    .reduce((s, b) => s + Number(b.seller_payout ?? b.rental_fee ?? 0), 0);
 
   return (
     <AppShell>
@@ -56,7 +56,7 @@ export default function SellerDashboard() {
             )}
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            {bookings.filter((b) => b.status === 'completed').length} rentals completed
+            {bookings.filter((b) => b.status === 'completed').length} rentals completed · หลังหักค่าบริการ 10%
           </p>
         </div>
 

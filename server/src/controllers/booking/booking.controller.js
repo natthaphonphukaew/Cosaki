@@ -26,7 +26,7 @@ const canTransition = (from, to) => VALID_TRANSITIONS[from]?.includes(to) ?? fal
 // POST /bookings — renter initiates booking
 const createBooking = async (req, res, next) => {
   try {
-    const { item_id, rental_start, rental_end, notes } = req.body;
+    const { item_id, rental_start, rental_end, notes, rate_type = 'test' } = req.body;
 
     // Fetch item + shop info
     const { rows: items } = await db.query(
@@ -49,7 +49,17 @@ const createBooking = async (req, res, next) => {
     const days = Math.ceil(
       (new Date(rental_end) - new Date(rental_start)) / (1000 * 60 * 60 * 24)
     );
-    const rental_fee = parseFloat((item.daily_rate * days).toFixed(2));
+
+    // Money model (PRD §4.1): renter pays rental + 10% protection fee + shipping;
+    // seller receives rental − 10% commission. No deposit.
+    const rate = rate_type === 'private'
+      ? (item.private_rate ?? item.test_rate ?? item.daily_rate)
+      : (item.test_rate ?? item.daily_rate);
+    const rental_fee    = parseFloat((rate * days).toFixed(2));
+    const cosaki_fee    = parseFloat((rental_fee * 0.10).toFixed(2));   // → insurance fund
+    const commission    = parseFloat((rental_fee * 0.10).toFixed(2));   // → platform revenue
+    const seller_payout = parseFloat((rental_fee - commission).toFixed(2));
+    const shipping_fee  = parseFloat(Number(item.shipping_fee || 0).toFixed(2));
     const token = generateToken();
 
     // Determine initial status based on renter's KYC
@@ -59,13 +69,15 @@ const createBooking = async (req, res, next) => {
     const { rows } = await db.query(
       `INSERT INTO bookings
          (shop_id, renter_id, item_id, rental_start, rental_end, status,
-          payment_link_token, rental_fee, deposit_amount, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+          payment_link_token, rate_type, rental_fee, cosaki_fee, commission,
+          seller_payout, shipping_fee, deposit_amount, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,$14)
        RETURNING *`,
       [
         item.shop_id, req.user.id, item_id,
         rental_start, rental_end, initialStatus,
-        token, rental_fee, item.deposit_amount, notes || null,
+        token, rate_type, rental_fee, cosaki_fee, commission,
+        seller_payout, shipping_fee, notes || null,
       ]
     );
 
@@ -168,12 +180,18 @@ const updateStatus = async (req, res, next) => {
       [newStatus, booking.id]
     );
 
-    // On completion, release the escrowed funds to the shop (real earnings).
+    // On completion, release the escrowed funds to the shop (real earnings)
+    // and record the platform's cut: commission → revenue, protection fee → insurance.
     if (newStatus === 'completed') {
       await db.query(
         `UPDATE payments SET escrow_status = 'released_to_shop', released_at = NOW()
          WHERE booking_id = $1 AND escrow_status = 'held'`,
         [booking.id]
+      );
+      await db.query(
+        `INSERT INTO platform_ledger (booking_id, revenue_amount, insurance_amount)
+         VALUES ($1, $2, $3)`,
+        [booking.id, booking.commission || 0, booking.cosaki_fee || 0]
       );
     }
 
