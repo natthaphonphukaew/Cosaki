@@ -36,15 +36,18 @@ const requestConsent = async (req, res, next) => {
   }
 };
 
-// GET /consent/:token — parent opens the link (public)
+// GET /consent/:token — parent opens the link (public). Works for both
+// account-level consent (booking_id NULL) and legacy per-booking consent.
 const getConsentPage = async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT pc.*, b.rental_start, b.rental_end, i.name AS item_name, u.display_name AS minor_name
+      `SELECT pc.id, pc.booking_id, pc.parent_phone, pc.status, pc.expires_at,
+              u.display_name AS minor_name, u.real_name AS minor_real_name,
+              b.rental_start, b.rental_end, i.name AS item_name
        FROM parent_consents pc
-       JOIN bookings b ON b.id = pc.booking_id
-       JOIN items i ON i.id = b.item_id
        JOIN users u ON u.id = pc.minor_user_id
+       LEFT JOIN bookings b ON b.id = pc.booking_id
+       LEFT JOIN items i ON i.id = b.item_id
        WHERE pc.consent_token = $1 AND pc.expires_at > NOW() AND pc.status = 'pending'`,
       [req.params.token]
     );
@@ -55,7 +58,7 @@ const getConsentPage = async (req, res, next) => {
   }
 };
 
-// POST /consent/:token/approve — parent approves
+// POST /consent/:token/approve — parent approves or rejects
 const approveConsent = async (req, res, next) => {
   try {
     const { action } = req.body; // 'approved' | 'rejected'
@@ -68,18 +71,28 @@ const approveConsent = async (req, res, next) => {
       [action, req.params.token]
     );
     if (!rows.length) return error(res, 'Consent link expired or already used', 410);
+    const consent = rows[0];
 
-    // If approved, advance booking to pending_payment
-    if (action === 'approved') {
+    if (consent.booking_id) {
+      // Legacy per-booking consent → advance or cancel that booking.
+      await db.query(
+        action === 'approved'
+          ? `UPDATE bookings SET status = 'pending_payment', updated_at = NOW() WHERE id = $1 AND status = 'pending_kyc'`
+          : `UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
+        [consent.booking_id]
+      );
+    } else if (action === 'approved') {
+      // Account-level → "Verified (Parental Approved)": unlock the account.
+      await db.query(
+        `UPDATE users SET account_status = 'normal', parent_approved = TRUE, updated_at = NOW()
+         WHERE id = $1`,
+        [consent.minor_user_id]
+      );
+      // Advance any of the minor's KYC-verified bookings that were waiting.
       await db.query(
         `UPDATE bookings SET status = 'pending_payment', updated_at = NOW()
-         WHERE id = $1 AND status = 'pending_kyc'`,
-        [rows[0].booking_id]
-      );
-    } else {
-      await db.query(
-        `UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
-        [rows[0].booking_id]
+         WHERE renter_id = $1 AND status = 'pending_kyc'`,
+        [consent.minor_user_id]
       );
     }
     return success(res, { message: `Consent ${action}` });

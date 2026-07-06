@@ -12,16 +12,16 @@ const createItem = async (req, res, next) => {
     const shopId = await getShopId(req.user.id);
     if (!shopId) return error(res, 'Create a shop first', 404);
 
-    const { name, description, character, fandom, sizes, test_rate, private_rate, shipping_fee, image_urls } = req.body;
+    const { name, description, character, fandom, sizes, test_rate, private_rate, shipping_fee, min_age, image_urls } = req.body;
     // daily_rate mirrors test_rate for backward-compat with legacy reads.
     const testRate = test_rate;
     const privateRate = private_rate ?? test_rate;
     const { rows } = await db.query(
       `INSERT INTO items (shop_id, name, description, character, fandom, sizes,
-                          daily_rate, test_rate, private_rate, shipping_fee, deposit_amount, image_urls)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,0,$11) RETURNING *`,
+                          daily_rate, test_rate, private_rate, shipping_fee, min_age, deposit_amount, image_urls)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,0,$12) RETURNING *`,
       [shopId, name, description || null, character || null, fandom || null, sizes || [],
-       testRate, testRate, privateRate, shipping_fee || 0, image_urls || []]
+       testRate, testRate, privateRate, shipping_fee || 0, min_age || 0, image_urls || []]
     );
     return success(res, { item: rows[0] }, 201);
   } catch (err) {
@@ -67,7 +67,7 @@ const updateItem = async (req, res, next) => {
     const shopId = await getShopId(req.user.id);
     if (!shopId) return error(res, 'Shop not found', 404);
 
-    const { name, description, character, fandom, sizes, test_rate, private_rate, shipping_fee, is_available, image_urls } = req.body;
+    const { name, description, character, fandom, sizes, test_rate, private_rate, shipping_fee, min_age, is_available, image_urls } = req.body;
     const { rows } = await db.query(
       `UPDATE items SET
          name           = COALESCE($1, name),
@@ -79,12 +79,13 @@ const updateItem = async (req, res, next) => {
          daily_rate     = COALESCE($6, daily_rate),
          private_rate   = COALESCE($7, private_rate),
          shipping_fee   = COALESCE($8, shipping_fee),
-         is_available   = COALESCE($9, is_available),
-         image_urls     = COALESCE($10, image_urls),
+         min_age        = COALESCE($9, min_age),
+         is_available   = COALESCE($10, is_available),
+         image_urls     = COALESCE($11, image_urls),
          updated_at     = NOW()
-       WHERE id = $11 AND shop_id = $12
+       WHERE id = $12 AND shop_id = $13
        RETURNING *`,
-      [name, description, character, fandom, sizes, test_rate, private_rate, shipping_fee, is_available, image_urls || null, req.params.id, shopId]
+      [name, description, character, fandom, sizes, test_rate, private_rate, shipping_fee, min_age, is_available, image_urls || null, req.params.id, shopId]
     );
     if (!rows.length) return error(res, 'Item not found', 404);
     return success(res, { item: rows[0] });

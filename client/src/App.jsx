@@ -7,6 +7,7 @@ import SplashScreen  from '@/pages/onboarding/SplashScreen';
 import LoginPage     from '@/pages/onboarding/LoginPage';
 import OTPPage       from '@/pages/onboarding/OTPPage';
 import KYCPage       from '@/pages/onboarding/KYCPage';
+import ConsentPage   from '@/pages/onboarding/ConsentPage';
 
 // Discovery
 import HomePage      from '@/pages/discovery/HomePage';
@@ -70,6 +71,7 @@ export default function App() {
           {/* Public */}
           <Route path="/"              element={<SplashScreen />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
+          <Route path="/consent/:token" element={<ConsentPage />} />
 
           {/* Guest only */}
           <Route element={<GuestGuard />}>

@@ -1,6 +1,8 @@
+const crypto = require('crypto');
 const db = require('../../config/db');
 const s3 = require('../../services/storage/s3.service');
 const { success, error } = require('../../utils/response');
+const { ageFromDob } = require('../../utils/age');
 
 // POST /kyc/upload  — upload ID card + selfie, create KYC record
 const uploadKYC = async (req, res, next) => {
@@ -8,6 +10,14 @@ const uploadKYC = async (req, res, next) => {
     if (!req.files?.id_image || !req.files?.selfie) {
       return error(res, 'Both id_image and selfie are required', 400);
     }
+
+    // DOB + real name come from the OCR step (§1.1). Age gates the account.
+    const { date_of_birth, real_name } = req.body;
+    const age = ageFromDob(date_of_birth);
+    if (age !== null && age < 15) {
+      return error(res, 'ผู้ใช้ต้องมีอายุ 15 ปีขึ้นไปจึงจะใช้งานได้', 422);
+    }
+    const isMinor = age !== null && age < 18;
 
     // Demo mode: no S3 bucket configured, or non-production. Skip the real
     // upload and auto-approve so testers can complete a booking without an
@@ -32,13 +42,24 @@ const uploadKYC = async (req, res, next) => {
       [req.user.id, idKey, selfieKey, kycStatus]
     );
 
+    // Minors must get parental approval before the account is fully active.
+    const accountStatus = isMinor ? 'pending_parent' : 'normal';
+
     await db.query(
-      `UPDATE users SET kyc_status = $1, updated_at = NOW() WHERE id = $2`,
-      [userStatus, req.user.id]
+      `UPDATE users SET
+         kyc_status     = $1,
+         date_of_birth  = COALESCE($2, date_of_birth),
+         real_name      = COALESCE($3, real_name),
+         is_minor       = $4,
+         account_status = $5,
+         updated_at     = NOW()
+       WHERE id = $6`,
+      [userStatus, date_of_birth || null, real_name || null, isMinor, accountStatus, req.user.id]
     );
 
-    // Auto-advance any bookings waiting on KYC once verified.
-    if (demoMode) {
+    // Auto-advance bookings waiting on KYC once verified — but not for minors
+    // still pending parental approval.
+    if (demoMode && !isMinor) {
       await db.query(
         `UPDATE bookings SET status = 'pending_payment', updated_at = NOW()
          WHERE renter_id = $1 AND status = 'pending_kyc'`,
@@ -46,17 +67,21 @@ const uploadKYC = async (req, res, next) => {
       );
     }
 
-    return success(res, { kyc: rows[0], kyc_status: userStatus }, 201);
+    return success(res, {
+      kyc: rows[0], kyc_status: userStatus,
+      is_minor: isMinor, account_status: accountStatus, age,
+    }, 201);
   } catch (err) {
     next(err);
   }
 };
 
-// GET /kyc/status — renter checks own KYC status
+// GET /kyc/status — renter checks own KYC + account status
 const getKYCStatus = async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT k.status, k.created_at, u.kyc_status
+      `SELECT k.status, k.created_at,
+              u.kyc_status, u.account_status, u.is_minor, u.parent_approved, u.date_of_birth
        FROM users u
        LEFT JOIN kyc_verifications k ON k.user_id = u.id
        WHERE u.id = $1
@@ -64,6 +89,35 @@ const getKYCStatus = async (req, res, next) => {
       [req.user.id]
     );
     return success(res, { kyc: rows[0] || { kyc_status: 'none' } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /kyc/parent-consent — a minor requests account-level parental approval.
+const requestParentConsent = async (req, res, next) => {
+  try {
+    const { parent_phone } = req.body;
+    const { rows: [user] } = await db.query(
+      'SELECT is_minor, account_status FROM users WHERE id = $1', [req.user.id]
+    );
+    if (!user?.is_minor) return error(res, 'บัญชีนี้ไม่ต้องขอความยินยอมจากผู้ปกครอง', 422);
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48h
+
+    // Account-level consent → booking_id is NULL.
+    const { rows } = await db.query(
+      `INSERT INTO parent_consents (booking_id, minor_user_id, parent_phone, consent_token, expires_at)
+       VALUES (NULL, $1, $2, $3, $4) RETURNING *`,
+      [req.user.id, parent_phone, token, expiresAt]
+    );
+
+    // Mock SMS (real provider deferred). Surface the link so the demo works.
+    const link = `/consent/${token}`;
+    if (process.env.NODE_ENV !== 'production') console.log(`[DEV] Parent consent link: ${link}`);
+
+    return success(res, { consent: rows[0], link }, 201);
   } catch (err) {
     next(err);
   }
@@ -106,4 +160,4 @@ const reviewKYC = async (req, res, next) => {
   }
 };
 
-module.exports = { uploadKYC, getKYCStatus, reviewKYC };
+module.exports = { uploadKYC, getKYCStatus, reviewKYC, requestParentConsent };

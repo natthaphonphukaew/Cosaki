@@ -18,7 +18,7 @@ export default function AddProduct() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '', character: '', fandom: '', description: '',
-    test_rate: '', private_rate: '', shipping_fee: '', sizes: [],
+    test_rate: '', private_rate: '', shipping_fee: '', min_age: 0, sizes: [],
   });
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -47,6 +47,7 @@ export default function AddProduct() {
         test_rate:    parseFloat(form.test_rate),
         private_rate: form.private_rate ? parseFloat(form.private_rate) : undefined,
         shipping_fee: parseFloat(form.shipping_fee || 0),
+        min_age:      Number(form.min_age) || 0,
         sizes:        form.sizes,
         image_urls:   photos,
       });
@@ -76,7 +77,7 @@ export default function AddProduct() {
       <Button
         variant="secondary"
         className="mt-3 w-full"
-        onClick={() => { setStep(1); setPhotos([]); setForm({ name:'', character:'', fandom:'', description:'', test_rate:'', private_rate:'', shipping_fee:'', sizes:[] }); }}
+        onClick={() => { setStep(1); setPhotos([]); setForm({ name:'', character:'', fandom:'', description:'', test_rate:'', private_rate:'', shipping_fee:'', min_age:0, sizes:[] }); }}
       >
         Add Another
       </Button>
@@ -202,6 +203,18 @@ export default function AddProduct() {
             <p className="mt-1 text-xs text-gray-400">Leave private blank to use the same rate. Renter also pays a 10% Cosaki protection fee.</p>
           </div>
           <Input label="Shipping fee — ค่าส่งขาไป (฿)" type="number" placeholder="40" value={form.shipping_fee} onChange={(e) => set('shipping_fee', e.target.value)} />
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">เกณฑ์อายุผู้เช่า (Min age)</label>
+            <div className="flex flex-wrap gap-2">
+              {[{v:0,l:'ไม่จำกัด'},{v:15,l:'15+'},{v:18,l:'18+'},{v:20,l:'20+'}].map((o) => (
+                <button key={o.v} onClick={() => set('min_age', o.v)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${Number(form.min_age) === o.v ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 space-y-1">
             <p className="text-sm font-semibold text-amber-800">Rental Rules</p>

@@ -23,6 +23,7 @@ router.post(
   kycCtrl.uploadKYC
 );
 router.get('/status', kycCtrl.getKYCStatus);
+router.post('/parent-consent', kycCtrl.requestParentConsent);
 
 // Admin only
 router.patch('/:kycId/review', requireRole('admin'), kycCtrl.reviewKYC);

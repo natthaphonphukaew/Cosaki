@@ -2,6 +2,7 @@ const { randomBytes } = require('crypto');
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { notify, shopOwnerId } = require('../../services/notification/notification.service');
+const { ageFromDob, canRentAge } = require('../../utils/age');
 
 const generateToken = () => randomBytes(32).toString('hex');
 
@@ -35,6 +36,24 @@ const createBooking = async (req, res, next) => {
     );
     if (!items.length) return error(res, 'Item not found or unavailable', 404);
     const item = items[0];
+
+    // ── Age & account-status gating (PRD §1.2, §5.1) ──────────────────────────
+    const { rows: [renter] } = await db.query(
+      `SELECT date_of_birth, is_minor, parent_approved, account_status
+       FROM users WHERE id = $1`,
+      [req.user.id]
+    );
+    if (renter?.account_status === 'banned') {
+      return error(res, 'บัญชีถูกระงับการใช้งาน', 403);
+    }
+    if (renter?.account_status === 'watchlist') {
+      return error(res, 'บัญชีอยู่ระหว่างเฝ้าระวัง — ต้องชดใช้ค่าเสียหายก่อนจึงจะเช่าได้', 403);
+    }
+    const gate = canRentAge(
+      { age: ageFromDob(renter?.date_of_birth), isMinor: !!renter?.is_minor, parentApproved: !!renter?.parent_approved },
+      item.min_age
+    );
+    if (!gate.ok) return error(res, gate.reason, 403);
 
     // Check calendar conflicts
     const { rows: conflicts } = await db.query(

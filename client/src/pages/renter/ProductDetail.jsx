@@ -119,7 +119,12 @@ export default function ProductDetail() {
 
       {/* Content */}
       <div className="rounded-t-3xl -mt-4 bg-white px-4 pt-5 pb-28">
-        <p className="text-xs text-gray-400 uppercase tracking-wider">{item.character || item.fandom}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-gray-400 uppercase tracking-wider">{item.character || item.fandom}</p>
+          {item.min_age > 0 && (
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">{item.min_age}+</span>
+          )}
+        </div>
         <h1 className="mt-1 text-xl font-bold text-gray-900">{item.name}</h1>
 
         <div className="mt-2 flex items-center gap-3">

@@ -11,18 +11,23 @@ const getMe = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// PATCH /users/me
+// PATCH /users/me — profile incl. default address + body measurements (§2.6)
 const updateMe = async (req, res, next) => {
   try {
-    const { display_name, avatar_url, is_minor } = req.body;
+    const { display_name, avatar_url, address, bust, waist, hip, height } = req.body;
     const { rows } = await db.query(
       `UPDATE users SET
          display_name = COALESCE($1, display_name),
          avatar_url   = COALESCE($2, avatar_url),
-         is_minor     = COALESCE($3, is_minor),
+         address      = COALESCE($3, address),
+         bust         = COALESCE($4, bust),
+         waist        = COALESCE($5, waist),
+         hip          = COALESCE($6, hip),
+         height       = COALESCE($7, height),
          updated_at   = NOW()
-       WHERE id = $4 RETURNING *`,
-      [display_name || null, avatar_url || null, is_minor ?? null, req.user.id]
+       WHERE id = $8 RETURNING *`,
+      [display_name || null, avatar_url || null, address ?? null,
+       bust ?? null, waist ?? null, hip ?? null, height ?? null, req.user.id]
     );
     const { google_id, facebook_id, ...safe } = rows[0];
     return success(res, { user: safe });

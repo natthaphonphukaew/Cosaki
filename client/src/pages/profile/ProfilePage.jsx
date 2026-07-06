@@ -2,10 +2,18 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Settings, HelpCircle, Heart, ShoppingBag,
          CreditCard, Store, ArrowLeftRight, Repeat } from 'lucide-react';
+import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
 import NotificationBell from '@/components/ui/NotificationBell';
 import useAuthStore from '@/store/authStore';
 import { getMyShop } from '@/api/shops';
+import { getKYCStatus } from '@/api/kyc';
+
+const ACCOUNT_STATUS = {
+  pending_parent: { label: 'รอผู้ปกครองยืนยัน', cls: 'bg-amber-100 text-amber-700' },
+  watchlist:      { label: 'บัญชีเฝ้าระวัง', cls: 'bg-red-100 text-red-700' },
+  banned:         { label: 'บัญชีถูกระงับ', cls: 'bg-red-100 text-red-700' },
+};
 
 const menuItems = [
   { icon: ShoppingBag, label: 'My Rentals',      to: '/rentals'  },
@@ -22,6 +30,7 @@ export default function ProfilePage() {
 
   const trustScore = user?.trust_score || 5.0;
   const isSeller   = hasShop();
+  const [acct, setAcct] = useState({ account_status: user?.account_status, kyc_status: user?.kyc_status });
 
   // Hydrate the cached shop record for sellers (persists "My Shop" across sessions).
   useEffect(() => {
@@ -29,6 +38,12 @@ export default function ProfilePage() {
       getMyShop().then(({ data }) => setShop(data.data.shop)).catch(() => {});
     }
   }, [isSeller, shop, setShop]);
+
+  // Fetch fresh account/KYC status (changes after KYC, dispute, parent consent).
+  useEffect(() => {
+    getKYCStatus().then(({ data }) => setAcct(data.data.kyc || {})).catch(() => {});
+  }, []);
+  const statusMeta = ACCOUNT_STATUS[acct?.account_status];
   const myShop     = shop || (user?.role === 'shop_admin'
     ? { shop_name: user?.display_name, logo_url: user?.avatar_url }
     : null);
@@ -61,9 +76,14 @@ export default function ProfilePage() {
             )}
           </button>
           <button onClick={() => navigate('/profile/edit')} className="text-lg font-bold text-gray-900">{user?.display_name || 'Cosplayer'}</button>
-          <span className={`mt-1 text-[11px] font-semibold ${user?.kyc_status === 'verified' ? 'text-green-600' : 'text-amber-600'}`}>
-            {user?.kyc_status === 'verified' ? '✓ Identity Verified' : 'Identity not verified'}
+          <span className={`mt-1 text-[11px] font-semibold ${(acct?.kyc_status || user?.kyc_status) === 'verified' ? 'text-green-600' : 'text-amber-600'}`}>
+            {(acct?.kyc_status || user?.kyc_status) === 'verified' ? '✓ Identity Verified' : 'Identity not verified'}
           </span>
+          {statusMeta && (
+            <span className={`mt-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${statusMeta.cls}`}>
+              {statusMeta.label}
+            </span>
+          )}
           <p className="text-sm text-gray-400 mt-0.5">
             {isSeller ? 'Cosplayer & Shop Owner' : 'Cosplayer & Pro Stylist'} • Bangkok
           </p>

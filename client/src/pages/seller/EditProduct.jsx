@@ -20,7 +20,7 @@ export default function EditProduct() {
   const [photos, setPhotos]   = useState([]);
   const [form, setForm] = useState({
     name: '', character: '', fandom: '', description: '',
-    test_rate: '', private_rate: '', shipping_fee: '', sizes: [], is_available: true,
+    test_rate: '', private_rate: '', shipping_fee: '', min_age: 0, sizes: [], is_available: true,
   });
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export default function EditProduct() {
         test_rate: String(i.test_rate ?? i.daily_rate ?? ''),
         private_rate: String(i.private_rate ?? ''),
         shipping_fee: String(i.shipping_fee ?? ''),
+        min_age: Number(i.min_age ?? 0),
         sizes: i.sizes || [], is_available: i.is_available !== false,
       });
     }).catch(() => toast.error('Could not load item'))
@@ -61,6 +62,7 @@ export default function EditProduct() {
         test_rate: parseFloat(form.test_rate),
         private_rate: form.private_rate ? parseFloat(form.private_rate) : parseFloat(form.test_rate),
         shipping_fee: parseFloat(form.shipping_fee || 0),
+        min_age: Number(form.min_age) || 0,
         sizes: form.sizes, is_available: form.is_available, image_urls: photos,
       });
       toast.success('Listing updated');
@@ -150,6 +152,18 @@ export default function EditProduct() {
           </div>
         </div>
         <Input label="Shipping fee — ค่าส่งขาไป (฿)" type="number" value={form.shipping_fee} onChange={(e) => set('shipping_fee', e.target.value)} />
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">เกณฑ์อายุผู้เช่า (Min age)</label>
+          <div className="flex flex-wrap gap-2">
+            {[{v:0,l:'ไม่จำกัด'},{v:15,l:'15+'},{v:18,l:'18+'},{v:20,l:'20+'}].map((o) => (
+              <button key={o.v} onClick={() => set('min_age', o.v)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium ${Number(form.min_age) === o.v ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Availability toggle */}
         <button

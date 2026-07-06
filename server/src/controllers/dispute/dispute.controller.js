@@ -74,9 +74,9 @@ const createDispute = async (req, res, next) => {
       [booking_id]
     );
 
-    // Freeze renter's KYC account
+    // Flag the renter's account as watchlist (must settle before renting again).
     await db.query(
-      `UPDATE users SET kyc_status = 'frozen', updated_at = NOW() WHERE id = $1`,
+      `UPDATE users SET kyc_status = 'frozen', account_status = 'watchlist', updated_at = NOW() WHERE id = $1`,
       [booking.renter_id]
     );
 
@@ -140,7 +140,7 @@ const resolveDispute = async (req, res, next) => {
 
     // Restore the renter's account after resolution either way (test-friendly).
     await db.query(
-      `UPDATE users SET kyc_status = 'verified', updated_at = NOW() WHERE id = $1`,
+      `UPDATE users SET kyc_status = 'verified', account_status = 'normal', updated_at = NOW() WHERE id = $1`,
       [dispute.renter_id]
     );
 

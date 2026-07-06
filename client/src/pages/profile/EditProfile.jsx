@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { updateMe } from '@/api/users';
+import { getMe, updateMe } from '@/api/users';
 import useAuthStore from '@/store/authStore';
 import { fileToDataUrl } from '@/utils/image';
 import toast from 'react-hot-toast';
@@ -14,7 +14,18 @@ export default function EditProfile() {
   const navigate = useNavigate();
   const [name, setName]     = useState(user?.display_name || '');
   const [avatar, setAvatar] = useState(user?.avatar_url || '');
+  const [address, setAddress] = useState('');
+  const [m, setM]           = useState({ bust: '', waist: '', hip: '', height: '' });
   const [busy, setBusy]     = useState(false);
+
+  // Load latest profile (address + measurements aren't always in the auth store).
+  useEffect(() => {
+    getMe().then(({ data }) => {
+      const u = data.data.user;
+      setAddress(u.address || '');
+      setM({ bust: u.bust ?? '', waist: u.waist ?? '', hip: u.hip ?? '', height: u.height ?? '' });
+    }).catch(() => {});
+  }, []);
 
   const pickAvatar = async (e) => {
     const file = e.target.files?.[0];
@@ -23,11 +34,17 @@ export default function EditProfile() {
     catch { toast.error('Could not read image'); }
   };
 
+  const num = (v) => (v === '' || v === null ? null : Number(v));
+
   const handleSave = async () => {
     if (!name.trim()) return toast.error('Name is required');
     try {
       setBusy(true);
-      const { data } = await updateMe({ display_name: name.trim(), avatar_url: avatar || null });
+      const { data } = await updateMe({
+        display_name: name.trim(), avatar_url: avatar || null,
+        address: address || null,
+        bust: num(m.bust), waist: num(m.waist), hip: num(m.hip), height: num(m.height),
+      });
       updateUser({ display_name: data.data.user.display_name, avatar_url: data.data.user.avatar_url });
       toast.success('Profile updated');
       navigate('/profile');
@@ -39,7 +56,7 @@ export default function EditProfile() {
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
       <PageHeader title="Edit Profile" />
-      <div className="px-4 pt-4 space-y-5">
+      <div className="px-4 pt-4 pb-10 space-y-5">
         <div className="flex flex-col items-center">
           <label className="relative cursor-pointer">
             <div className="h-24 w-24 overflow-hidden rounded-full bg-brand-light flex items-center justify-center text-4xl font-bold text-brand-purple border-4 border-white shadow-md">
@@ -54,6 +71,23 @@ export default function EditProfile() {
 
         <Input label="Display Name" value={name} onChange={(e) => setName(e.target.value)} />
         <Input label="Phone" value={user?.phone || ''} disabled />
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ที่อยู่จัดส่ง (Default address)</label>
+          <textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)}
+            placeholder="บ้านเลขที่ ถนน แขวง เขต จังหวัด รหัสไปรษณีย์"
+            className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple" />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">สัดส่วนร่างกาย (ซม.)</label>
+          <div className="grid grid-cols-4 gap-2">
+            {[['bust','อก'],['waist','เอว'],['hip','สะโพก'],['height','สูง']].map(([k, l]) => (
+              <Input key={k} label={l} type="number" value={m[k]} onChange={(e) => setM({ ...m, [k]: e.target.value })} />
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-gray-400">ใช้จับคู่ไซส์ชุดอัตโนมัติ และแสดงใต้รีวิวของคุณ</p>
+        </div>
 
         <Button className="w-full" loading={busy} onClick={handleSave}>Save Changes</Button>
       </div>
