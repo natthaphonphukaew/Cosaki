@@ -3,6 +3,7 @@ const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { notify, shopOwnerId } = require('../../services/notification/notification.service');
 const { ageFromDob, canRentAge } = require('../../utils/age');
+const { ensureShopActive } = require('../../services/strike/strike.service');
 
 const generateToken = () => randomBytes(32).toString('hex');
 
@@ -36,6 +37,10 @@ const createBooking = async (req, res, next) => {
     );
     if (!items.length) return error(res, 'Item not found or unavailable', 404);
     const item = items[0];
+
+    // Shop must not be frozen (§4.2.3).
+    const shop = await ensureShopActive(item.shop_id);
+    if (shop?.is_frozen) return error(res, 'ร้านนี้ถูกระงับชั่วคราว ไม่สามารถเช่าได้', 403);
 
     // ── Age & account-status gating (PRD §1.2, §5.1) ──────────────────────────
     const { rows: [renter] } = await db.query(
@@ -138,7 +143,7 @@ const listBookings = async (req, res, next) => {
 
     const { rows } = await db.query(
       `SELECT b.*, i.name AS item_name, i.image_urls, s.shop_name,
-              u.display_name AS renter_name
+              u.display_name AS renter_name, u.trust_score AS renter_trust_score
        FROM bookings b
        JOIN shops s ON s.id = b.shop_id
        JOIN items i ON i.id = b.item_id
@@ -159,7 +164,8 @@ const getBooking = async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT b.*, i.name AS item_name, i.image_urls, i.daily_rate,
-              s.shop_name, u.display_name AS renter_name, u.phone AS renter_phone
+              s.shop_name, u.display_name AS renter_name, u.phone AS renter_phone,
+              u.trust_score AS renter_trust_score
        FROM bookings b
        JOIN items i ON i.id = b.item_id
        JOIN shops s ON s.id = b.shop_id
@@ -193,6 +199,10 @@ const updateStatus = async (req, res, next) => {
 
     if (!canTransition(booking.status, newStatus)) {
       return error(res, `Cannot transition from '${booking.status}' to '${newStatus}'`, 422);
+    }
+    // Shop must accept the queue before it can ship (§3.3 / §2.4 webhook).
+    if (newStatus === 'shipped' && !booking.accepted_at) {
+      return error(res, 'ต้องกด "รับคิว" ก่อนจัดส่ง', 422);
     }
 
     const { rows: updated } = await db.query(
@@ -247,6 +257,55 @@ const getByToken = async (req, res, next) => {
     );
     if (!rows.length) return error(res, 'Invalid payment link', 404);
     return success(res, { booking: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /bookings/:id/accept — shop confirms the queue (§3.3). Escrowed only.
+const acceptBooking = async (req, res, next) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const booking = rows[0];
+    if (!(await isShopOwner(req.user, booking))) return error(res, 'Forbidden', 403);
+    if (booking.status !== 'escrowed') return error(res, 'รับคิวได้เฉพาะออเดอร์ที่ชำระเงินแล้ว', 422);
+    if (booking.accepted_at) return error(res, 'รับคิวไปแล้ว', 422);
+
+    const { rows: updated } = await db.query(
+      `UPDATE bookings SET accepted_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [booking.id]
+    );
+    await notify(booking.renter_id, 'accepted', 'ร้านค้ายืนยันรับคิวแล้ว',
+      'ร้านกำลังเตรียมจัดส่งชุดของคุณ', booking.id);
+    return success(res, { booking: updated[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /bookings/:id/reject — shop declines; refund the renter, cancel the order.
+const rejectBooking = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const booking = rows[0];
+    if (!(await isShopOwner(req.user, booking))) return error(res, 'Forbidden', 403);
+    if (booking.status !== 'escrowed' || booking.accepted_at) {
+      return error(res, 'ปฏิเสธได้เฉพาะออเดอร์ใหม่ที่ยังไม่รับคิว', 422);
+    }
+
+    // Shop declined → full refund (renter not at fault).
+    await db.query(
+      `UPDATE payments SET escrow_status = 'refunded', released_at = NOW()
+       WHERE booking_id = $1 AND escrow_status = 'held'`,
+      [booking.id]
+    );
+    await db.query(`UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1`, [booking.id]);
+    await notify(booking.renter_id, 'cancelled', 'ร้านค้าปฏิเสธคำสั่งเช่า',
+      `${reason || 'ร้านไม่สะดวกรับคิวนี้'} — คืนเงินเต็มจำนวนแล้ว`, booking.id);
+    return success(res, { message: 'ปฏิเสธและคืนเงินแล้ว' });
   } catch (err) {
     next(err);
   }
@@ -318,7 +377,13 @@ const rescheduleBooking = async (req, res, next) => {
   }
 };
 
-// ── Private helper ────────────────────────────────────────────────────────────
+// ── Private helpers ───────────────────────────────────────────────────────────
+const isShopOwner = async (user, booking) => {
+  if (user.role === 'admin') return true;
+  const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1 AND id = $2', [user.id, booking.shop_id]);
+  return rows.length > 0;
+};
+
 const isBookingOwner = async (user, booking) => {
   if (user.role === 'admin') return true;
   // A dual-mode user (shop owner who also rents) may be either party.
@@ -327,4 +392,4 @@ const isBookingOwner = async (user, booking) => {
   return rows.length > 0;
 };
 
-module.exports = { createBooking, listBookings, getBooking, updateStatus, getByToken, cancelBooking, rescheduleBooking };
+module.exports = { createBooking, listBookings, getBooking, updateStatus, getByToken, cancelBooking, rescheduleBooking, acceptBooking, rejectBooking };

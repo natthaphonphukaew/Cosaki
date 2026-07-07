@@ -7,3 +7,5 @@ export const getByToken     = (token)          => api.get(`/bookings/by-token/${
 export const applyCoupon    = (id, code)       => api.post(`/bookings/${id}/coupon`, { code });
 export const cancelBooking  = (id)             => api.post(`/bookings/${id}/cancel`, {});
 export const rescheduleBooking = (id, rental_start, rental_end) => api.patch(`/bookings/${id}/reschedule`, { rental_start, rental_end });
+export const acceptBooking  = (id)             => api.post(`/bookings/${id}/accept`, {});
+export const rejectBooking  = (id, reason)     => api.post(`/bookings/${id}/reject`, { reason });

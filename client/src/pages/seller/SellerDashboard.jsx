@@ -6,20 +6,26 @@ import ProductImage from '@/components/ui/ProductImage';
 import NotificationBell from '@/components/ui/NotificationBell';
 import { listMyItems } from '@/api/items';
 import { listBookings } from '@/api/bookings';
+import { getMyShop } from '@/api/shops';
 import useAuthStore from '@/store/authStore';
+import { AlertTriangle } from 'lucide-react';
 
 export default function SellerDashboard() {
   const { user, shop } = useAuthStore();
   const navigate = useNavigate();
   const [items, setItems]     = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [shopStatus, setShopStatus] = useState(null);
 
   const shopName = shop?.shop_name || user?.display_name || 'My Shop';
 
   useEffect(() => {
     listMyItems().then(({ data }) => setItems(data.data.items)).catch(() => {});
     listBookings({ as: 'shop', limit: 20 }).then(({ data }) => setBookings(data.data.bookings)).catch(() => {});
+    getMyShop().then(({ data }) => setShopStatus(data.data.shop)).catch(() => {});
   }, []);
+
+  const newOrders = bookings.filter((b) => b.status === 'escrowed' && !b.accepted_at).length;
 
   const pendingActions = bookings.filter((b) => ['escrowed','returned'].includes(b.status));
 
@@ -43,6 +49,38 @@ export default function SellerDashboard() {
           </div>
           <NotificationBell />
         </div>
+
+        {/* Shop discipline banner (§4.2) */}
+        {shopStatus?.is_frozen ? (
+          <div className="mb-4 flex items-start gap-2 rounded-2xl bg-red-50 border border-red-100 p-4">
+            <AlertTriangle size={18} className="mt-0.5 flex-shrink-0 text-red-500" />
+            <div>
+              <p className="text-sm font-semibold text-red-700">ร้านถูกระงับชั่วคราว</p>
+              <p className="text-xs text-red-500 mt-0.5">
+                ปลดล็อก{shopStatus.frozen_until ? ` ${new Date(shopStatus.frozen_until).toLocaleDateString('th-TH')}` : ''} — ระหว่างนี้ลงสินค้า/รับออเดอร์ใหม่ไม่ได้
+              </p>
+            </div>
+          </div>
+        ) : shopStatus?.strikes_30d > 0 ? (
+          <div className="mb-4 flex items-start gap-2 rounded-2xl bg-amber-50 border border-amber-100 p-4">
+            <AlertTriangle size={18} className="mt-0.5 flex-shrink-0 text-amber-500" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">มีใบเตือน {shopStatus.strikes_30d} ครั้งในเดือนนี้</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                {shopStatus.is_recommended === false ? 'ถูกปลดจากร้านแนะนำแล้ว · ' : ''}ครบ 5 ครั้งจะถูกระงับร้าน 2 สัปดาห์
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        {/* New-order nudge */}
+        {newOrders > 0 && (
+          <button onClick={() => navigate('/seller/orders')}
+            className="mb-4 flex w-full items-center justify-between rounded-2xl bg-brand-gradient p-4 text-white">
+            <span className="text-sm font-semibold">📥 มีออเดอร์ใหม่รอรับคิว {newOrders} รายการ</span>
+            <ChevronRight size={18} />
+          </button>
+        )}
 
         {/* Earnings card */}
         <div className="rounded-2xl bg-white p-5 shadow-sm">

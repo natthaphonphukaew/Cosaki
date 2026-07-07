@@ -1,5 +1,6 @@
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
+const { ensureShopActive } = require('../../services/strike/strike.service');
 
 const getShopId = async (userId) => {
   const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1', [userId]);
@@ -11,6 +12,8 @@ const createItem = async (req, res, next) => {
   try {
     const shopId = await getShopId(req.user.id);
     if (!shopId) return error(res, 'Create a shop first', 404);
+    const shop = await ensureShopActive(shopId);
+    if (shop?.is_frozen) return error(res, 'ร้านถูกระงับชั่วคราว — ลงสินค้าใหม่ไม่ได้', 403);
 
     const {
       name, description, character, fandom, sizes, test_rate, private_rate, shipping_fee, min_age, image_urls,

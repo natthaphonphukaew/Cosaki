@@ -1,6 +1,7 @@
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { signAccessToken } = require('../../utils/jwt');
+const { ensureShopActive } = require('../../services/strike/strike.service');
 
 // POST /shops — any authenticated user can open a shop (renter becomes seller).
 const createShop = async (req, res, next) => {
@@ -38,9 +39,15 @@ const createShop = async (req, res, next) => {
 // GET /shops/me — get own shop
 const getMyShop = async (req, res, next) => {
   try {
-    const { rows } = await db.query('SELECT * FROM shops WHERE owner_id = $1', [req.user.id]);
+    const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1', [req.user.id]);
     if (!rows.length) return error(res, 'Shop not found', 404);
-    return success(res, { shop: rows[0] });
+    const shop = await ensureShopActive(rows[0].id);   // lazily lift expired freeze
+    const { rows: [s] } = await db.query(
+      `SELECT COUNT(*)::int AS n FROM shop_strikes
+       WHERE shop_id = $1 AND created_at > NOW() - INTERVAL '30 days'`,
+      [shop.id]
+    );
+    return success(res, { shop: { ...shop, strikes_30d: s.n } });
   } catch (err) {
     next(err);
   }

@@ -7,15 +7,15 @@ import Badge from '@/components/ui/Badge';
 import ProductImage from '@/components/ui/ProductImage';
 import Spinner from '@/components/ui/Spinner';
 import ErrorState from '@/components/ui/ErrorState';
-import { getBooking, updateStatus } from '@/api/bookings';
+import { getBooking, updateStatus, acceptBooking, rejectBooking } from '@/api/bookings';
 import { format, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
-// Next action the shop can take, per booking status.
+// Next action the shop can take once the queue is accepted.
 const NEXT_ACTION = {
   escrowed: { to: 'shipped',   label: 'Mark as Shipped',   icon: Truck },
   shipped:  { to: 'returned',  label: 'Mark as Returned',  icon: Package },
-  returned: { to: 'completed', label: 'Complete & Release Escrow', icon: CheckCircle },
+  returned: { to: 'completed', label: 'ตรวจผ่าน (No Damage) & ปล่อยเงิน', icon: CheckCircle },
 };
 
 export default function OrderDetail() {
@@ -47,6 +47,31 @@ export default function OrderDetail() {
       setActing(false);
     }
   };
+
+  const handleAccept = async () => {
+    try {
+      setActing(true);
+      await acceptBooking(id);
+      setBooking((b) => ({ ...b, accepted_at: new Date().toISOString() }));
+      toast.success('รับคิวแล้ว — พร้อมจัดส่ง');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not accept');
+    } finally { setActing(false); }
+  };
+
+  const handleReject = async () => {
+    if (!window.confirm('ปฏิเสธคิวนี้? ระบบจะคืนเงินให้ลูกค้าเต็มจำนวน')) return;
+    try {
+      setActing(true);
+      await rejectBooking(id, 'ร้านไม่สะดวกรับคิวนี้');
+      setBooking((b) => ({ ...b, status: 'cancelled' }));
+      toast.success('ปฏิเสธและคืนเงินแล้ว');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not reject');
+    } finally { setActing(false); }
+  };
+
+  const needsAcceptance = booking?.status === 'escrowed' && !booking?.accepted_at;
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-surface-base"><Spinner /></div>
@@ -86,10 +111,15 @@ export default function OrderDetail() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-light">
               <User size={16} className="text-brand-purple" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-xs text-gray-400">Renter</p>
               <p className="text-sm font-semibold text-gray-800">{booking.renter_name || '—'}</p>
             </div>
+            {booking.renter_trust_score != null && (
+              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                🛡️ {Number(booking.renter_trust_score).toFixed(1)}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-light">
@@ -108,15 +138,17 @@ export default function OrderDetail() {
         {/* Payment breakdown */}
         <div className="rounded-2xl bg-white p-4 shadow-sm space-y-2">
           <p className="text-sm font-semibold text-gray-800">Payment</p>
-          <Row label="Rental fee"   value={`$${booking.rental_fee}`} />
-          <Row label="Deposit (escrow)" value={`$${booking.deposit_amount}`} />
-          {booking.shipping_fee != null && <Row label="Shipping" value={`$${booking.shipping_fee}`} />}
+          <Row label="ค่าเช่า" value={`฿${booking.rental_fee}`} />
+          <Row label="ค่าคุ้มครอง (10%)" value={`฿${booking.cosaki_fee}`} />
+          {booking.shipping_fee != null && <Row label="ค่าส่ง" value={`฿${booking.shipping_fee}`} />}
+          <Row label="ค่าจองคิว" value={`฿${booking.booking_fee}`} />
           <div className="my-1 border-t border-gray-100" />
-          <Row label="Total" value={`$${booking.total_amount}`} bold />
+          <Row label="ยอดที่ลูกค้าจ่าย" value={`฿${booking.total_amount}`} bold />
+          <Row label="ร้านได้รับ (หัก 10%)" value={`฿${booking.seller_payout}`} />
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-purple-50 p-3">
             <ShieldCheck size={16} className="text-brand-purple" />
             <p className="text-xs text-purple-700">
-              Deposit is held in escrow and released when the rental completes.
+              เงินถูกกักใน Escrow และปล่อยให้ร้านเมื่อกด "ตรวจผ่าน (No Damage)"
             </p>
           </div>
         </div>
@@ -131,14 +163,22 @@ export default function OrderDetail() {
 
       {/* Footer action */}
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4 space-y-2">
-        {action ? (
+        {needsAcceptance ? (
+          <>
+            <p className="text-center text-xs text-gray-400">ออเดอร์ใหม่ — ตรวจสอบลูกค้าแล้วเลือกรับหรือปฏิเสธคิว</p>
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1" loading={acting} onClick={handleReject}>ปฏิเสธคิว</Button>
+              <Button className="flex-1" loading={acting} onClick={handleAccept}>รับคิว</Button>
+            </div>
+          </>
+        ) : action ? (
           <Button className="w-full" loading={acting} icon={<action.icon size={18} />} onClick={() => advance(action.to)}>
             {action.label}
           </Button>
         ) : (
           <p className="py-2 text-center text-sm text-gray-400">No actions available for this order</p>
         )}
-        {['escrowed','shipped'].includes(booking.status) && (
+        {['escrowed','shipped'].includes(booking.status) && !needsAcceptance && (
           <Button variant="secondary" className="w-full" onClick={() => navigate(`/seller/disputes/${booking.id}`)}>
             Report an Issue
           </Button>

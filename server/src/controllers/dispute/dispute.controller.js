@@ -2,6 +2,7 @@ const db = require('../../config/db');
 const s3 = require('../../services/storage/s3.service');
 const { success, error } = require('../../utils/response');
 const { notify, shopOwnerId } = require('../../services/notification/notification.service');
+const { addStrike } = require('../../services/strike/strike.service');
 
 // POST /evidence — upload pre_ship or unboxing photos/videos
 const uploadEvidence = async (req, res, next) => {
@@ -74,14 +75,38 @@ const createDispute = async (req, res, next) => {
       [booking_id]
     );
 
-    // Flag the renter's account as watchlist (must settle before renting again).
+    // Auto-refund (§4.2.2): if the shop uploaded NO pre-ship evidence, the renter
+    // wins automatically — full refund + a strike to the shop, no manual review.
+    const raisedByRenter = req.user.id === booking.renter_id;
+    const { rows: preShip } = await db.query(
+      `SELECT 1 FROM evidence_uploads WHERE booking_id = $1 AND stage = 'pre_ship' LIMIT 1`,
+      [booking_id]
+    );
+
+    if (raisedByRenter && !preShip.length) {
+      await db.query(
+        `UPDATE disputes SET status = 'resolved_renter', resolution_note = 'Auto-refund: ร้านไม่มีหลักฐานก่อนส่ง',
+                            compensated_at = NOW(), updated_at = NOW() WHERE id = $1`,
+        [rows[0].id]
+      );
+      await db.query(
+        `UPDATE payments SET escrow_status = 'refunded', released_at = NOW()
+         WHERE booking_id = $1 AND escrow_status = 'held'`,
+        [booking_id]
+      );
+      await db.query(`UPDATE bookings SET status = 'completed', updated_at = NOW() WHERE id = $1`, [booking_id]);
+      await addStrike(booking.shop_id, 'ไม่มีหลักฐานก่อนส่ง — คืนเงินลูกค้าอัตโนมัติ', booking_id);
+      await notify(booking.renter_id, 'dispute', 'คืนเงินอัตโนมัติ 100%',
+        'ร้านไม่มีหลักฐานก่อนส่ง — ระบบคืนเงินให้เต็มจำนวน', booking_id);
+      return success(res, { dispute: rows[0], auto_refunded: true }, 201);
+    }
+
+    // Otherwise manual review: watchlist the renter + notify the counterparty.
     await db.query(
       `UPDATE users SET kyc_status = 'frozen', account_status = 'watchlist', updated_at = NOW() WHERE id = $1`,
       [booking.renter_id]
     );
-
-    // Notify the other party that a dispute was opened.
-    const counterparty = req.user.id === booking.renter_id ? booking.shop_owner_id : booking.renter_id;
+    const counterparty = raisedByRenter ? booking.shop_owner_id : booking.renter_id;
     await notify(counterparty, 'dispute', 'A dispute was opened',
       'A dispute was raised on a rental. Open the Resolution Center to respond.', booking_id);
 
@@ -143,6 +168,11 @@ const resolveDispute = async (req, res, next) => {
       `UPDATE users SET kyc_status = 'verified', account_status = 'normal', updated_at = NOW() WHERE id = $1`,
       [dispute.renter_id]
     );
+
+    // Resolving in the renter's favour issues a strike to the shop (§4.2).
+    if (resolution === 'resolved_renter') {
+      await addStrike(dispute.shop_id, `ข้อพิพาทตัดสินให้ลูกค้า: ${resolution_note || 'สินค้าไม่ตรงปก/เสียหาย'}`, dispute.booking_id);
+    }
 
     // Notify both parties of the outcome.
     const outcome = resolution === 'resolved_shop'

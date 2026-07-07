@@ -20,5 +20,7 @@ router.post('/:id/reviews',                                      reviewCtrl.crea
 router.post('/:id/coupon',                                       couponCtrl.applyCoupon);
 router.post('/:id/cancel',                                       bookingCtrl.cancelBooking);
 router.patch('/:id/reschedule',                                  bookingCtrl.rescheduleBooking);
+router.post('/:id/accept',                                       bookingCtrl.acceptBooking);
+router.post('/:id/reject',                                       bookingCtrl.rejectBooking);
 
 module.exports = router;
