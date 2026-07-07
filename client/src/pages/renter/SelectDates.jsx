@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import { useEffect } from 'react';
-import { createBooking } from '@/api/bookings';
+import { createBooking, rescheduleBooking } from '@/api/bookings';
 import { getAvailability } from '@/api/items';
 import toast from 'react-hot-toast';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth,
@@ -15,6 +15,7 @@ export default function SelectDates() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const rateType = state?.rateType || 'test';
+  const rescheduleId = state?.rescheduleBookingId;
   const today = startOfToday();
 
   const [month, setMonth]       = useState(new Date());
@@ -61,12 +62,18 @@ export default function SelectDates() {
     if (!startDate || !endDate) return toast.error('Please select dates');
     try {
       setLoading(true);
-      const { data } = await createBooking({
-        item_id: id,
-        rate_type: rateType,
-        rental_start: format(startDate, 'yyyy-MM-dd'),
-        rental_end:   format(endDate,   'yyyy-MM-dd'),
-      });
+      const s = format(startDate, 'yyyy-MM-dd');
+      const e = format(endDate,   'yyyy-MM-dd');
+
+      // Reschedule an existing booking (free once) instead of creating a new one.
+      if (rescheduleId) {
+        await rescheduleBooking(rescheduleId, s, e);
+        toast.success('เลื่อนคิวเรียบร้อย');
+        navigate(`/bookings/${rescheduleId}/tracking`);
+        return;
+      }
+
+      const { data } = await createBooking({ item_id: id, rate_type: rateType, rental_start: s, rental_end: e });
       const b = data.data.booking;
       const checkoutUrl = `/bookings/${b.id}/checkout`;
       // Identity check is required before payment — do it now, then continue.

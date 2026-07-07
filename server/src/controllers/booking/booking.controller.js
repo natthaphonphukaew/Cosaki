@@ -85,18 +85,19 @@ const createBooking = async (req, res, next) => {
     const { rows: [user] } = await db.query('SELECT kyc_status FROM users WHERE id = $1', [req.user.id]);
     const initialStatus = user.kyc_status === 'verified' ? 'pending_payment' : 'pending_kyc';
 
+    const booking_fee = 100;  // ค่าจองคิว (§5.2) — non-refundable, part of total.
     const { rows } = await db.query(
       `INSERT INTO bookings
          (shop_id, renter_id, item_id, rental_start, rental_end, status,
           payment_link_token, rate_type, rental_fee, cosaki_fee, commission,
-          seller_payout, shipping_fee, deposit_amount, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,$14)
+          seller_payout, shipping_fee, booking_fee, deposit_amount, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,0,$15)
        RETURNING *`,
       [
         item.shop_id, req.user.id, item_id,
         rental_start, rental_end, initialStatus,
         token, rate_type, rental_fee, cosaki_fee, commission,
-        seller_payout, shipping_fee, notes || null,
+        seller_payout, shipping_fee, booking_fee, notes || null,
       ]
     );
 
@@ -251,6 +252,72 @@ const getByToken = async (req, res, next) => {
   }
 };
 
+// POST /bookings/:id/cancel — cancel; booking fee is non-refundable (§5.2).
+const cancelBooking = async (req, res, next) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const booking = rows[0];
+    if (!(await isBookingOwner(req.user, booking))) return error(res, 'Forbidden', 403);
+    if (['shipped', 'returned', 'completed', 'cancelled', 'disputed'].includes(booking.status)) {
+      return error(res, 'ยกเลิกไม่ได้ในสถานะนี้', 422);
+    }
+
+    // Refund what was paid MINUS the non-refundable booking fee.
+    const refundable = Math.max(0, Number(booking.amount_paid) - Number(booking.booking_fee));
+    if (Number(booking.amount_paid) > 0) {
+      await db.query(
+        `UPDATE payments SET escrow_status = 'refunded', released_at = NOW()
+         WHERE booking_id = $1 AND escrow_status = 'held'`,
+        [booking.id]
+      );
+    }
+    await db.query(`UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1`, [booking.id]);
+
+    const ownerId = await shopOwnerId(booking.shop_id);
+    await notify(ownerId, 'cancelled', 'ออเดอร์ถูกยกเลิก', `การเช่าถูกยกเลิก`, booking.id);
+    await notify(booking.renter_id, 'cancelled', 'ยกเลิกการจองแล้ว',
+      `คืนเงิน ฿${refundable.toFixed(2)} (หักค่าจองคิว ฿${Number(booking.booking_fee).toFixed(2)} ไม่คืน)`, booking.id);
+
+    return success(res, { message: 'ยกเลิกแล้ว', refunded: refundable, booking_fee_kept: Number(booking.booking_fee) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /bookings/:id/reschedule — one free date change (§5.2).
+const rescheduleBooking = async (req, res, next) => {
+  try {
+    const { rental_start, rental_end } = req.body;
+    const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const booking = rows[0];
+    if (booking.renter_id !== req.user.id) return error(res, 'Forbidden', 403);
+    if (booking.reschedule_used) return error(res, 'เลื่อนคิวฟรีได้เพียง 1 ครั้ง (ใช้สิทธิ์ไปแล้ว)', 422);
+    if (['shipped', 'returned', 'completed', 'cancelled', 'disputed'].includes(booking.status)) {
+      return error(res, 'เลื่อนคิวไม่ได้ในสถานะนี้', 422);
+    }
+
+    // New dates must be free.
+    const { rows: conflicts } = await db.query(
+      `SELECT id FROM bookings
+       WHERE item_id = $1 AND id <> $2 AND status NOT IN ('cancelled','completed')
+         AND rental_start < $4 AND rental_end > $3`,
+      [booking.item_id, booking.id, rental_start, rental_end]
+    );
+    if (conflicts.length) return error(res, 'ช่วงวันที่เลือกไม่ว่าง', 409);
+
+    const { rows: updated } = await db.query(
+      `UPDATE bookings SET rental_start = $1, rental_end = $2, reschedule_used = TRUE, updated_at = NOW()
+       WHERE id = $3 RETURNING *`,
+      [rental_start, rental_end, booking.id]
+    );
+    return success(res, { booking: updated[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── Private helper ────────────────────────────────────────────────────────────
 const isBookingOwner = async (user, booking) => {
   if (user.role === 'admin') return true;
@@ -260,4 +327,4 @@ const isBookingOwner = async (user, booking) => {
   return rows.length > 0;
 };
 
-module.exports = { createBooking, listBookings, getBooking, updateStatus, getByToken };
+module.exports = { createBooking, listBookings, getBooking, updateStatus, getByToken, cancelBooking, rescheduleBooking };

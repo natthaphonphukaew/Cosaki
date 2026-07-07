@@ -8,6 +8,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), paymentCtrl.h
 
 router.use(authenticate);
 router.post('/charge', paymentCtrl.createCharge);
+router.post('/:bookingId/balance', paymentCtrl.payBalance);
 router.patch('/:paymentId/release', requireRole('admin'), paymentCtrl.releaseEscrow);
 
 module.exports = router;

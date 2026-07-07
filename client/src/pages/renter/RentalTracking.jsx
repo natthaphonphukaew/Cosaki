@@ -4,7 +4,8 @@ import { Package, Truck, CheckCircle, AlertCircle, ChevronRight } from 'lucide-r
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { getBooking, updateStatus } from '@/api/bookings';
+import { getBooking, updateStatus, cancelBooking } from '@/api/bookings';
+import { payBalance } from '@/api/payments';
 import { createDispute } from '@/api/disputes';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -39,6 +40,29 @@ export default function RentalTracking() {
       setBooking((b) => ({ ...b, status: 'disputed' }));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not open dispute');
+    }
+  };
+
+  const handlePayBalance = async () => {
+    try {
+      setLoading(true);
+      await payBalance(bookingId);
+      const { data } = await getBooking(bookingId);
+      setBooking(data.data.booking);
+      toast.success('ชำระยอดคงเหลือสำเร็จ');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'ชำระไม่สำเร็จ');
+    } finally { setLoading(false); }
+  };
+
+  const handleCancel = async () => {
+    if (!window.confirm('ยกเลิกการจอง? ค่าจองคิว ฿100 ไม่คืน')) return;
+    try {
+      const { data } = await cancelBooking(bookingId);
+      toast.success(`ยกเลิกแล้ว — คืนเงิน ฿${Number(data.data.refunded).toFixed(2)}`);
+      setBooking((b) => ({ ...b, status: 'cancelled' }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'ยกเลิกไม่สำเร็จ');
     }
   };
 
@@ -137,10 +161,34 @@ export default function RentalTracking() {
           </div>
         )}
 
+        {/* Reserved — balance due */}
+        {booking.status === 'pending_payment' && Number(booking.balance_due) > 0 && (
+          <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+            <p className="text-sm font-semibold text-amber-800">จองคิวแล้ว — ค้างชำระ ฿{Number(booking.balance_due).toFixed(2)}</p>
+            <p className="text-xs text-amber-600 mt-0.5">ต้องชำระให้ครบก่อนวันจัดส่ง</p>
+            <Button className="mt-3 w-full" loading={loading} onClick={handlePayBalance}>จ่ายส่วนที่เหลือ</Button>
+          </div>
+        )}
+
         {booking.status === 'completed' && (
           <Button className="w-full" onClick={() => navigate(`/bookings/${bookingId}/review`)}>
             Leave a Review
           </Button>
+        )}
+
+        {/* Cancel / reschedule (before shipping) */}
+        {['pending_payment', 'escrowed'].includes(booking.status) && (
+          <div className="flex gap-2">
+            {!booking.reschedule_used && (
+              <button onClick={() => navigate(`/items/${booking.item_id}/dates`, { state: { rescheduleBookingId: bookingId } })}
+                className="flex-1 rounded-2xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700">
+                เลื่อนคิว (ฟรี 1 ครั้ง)
+              </button>
+            )}
+            <button onClick={handleCancel} className="flex-1 rounded-2xl border border-red-200 bg-white py-3 text-sm font-medium text-red-500">
+              ยกเลิกการจอง
+            </button>
+          </div>
         )}
 
         {['escrowed','shipped','returned'].includes(booking.status) && (

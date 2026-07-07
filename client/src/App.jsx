@@ -17,6 +17,7 @@ import SearchPage    from '@/pages/discovery/SearchPage';
 import ProductDetail     from '@/pages/renter/ProductDetail';
 import SelectDates       from '@/pages/renter/SelectDates';
 import CheckoutPage      from '@/pages/renter/CheckoutPage';
+import PaymentQR         from '@/pages/renter/PaymentQR';
 import PaymentSuccess    from '@/pages/renter/PaymentSuccess';
 import RentalTracking    from '@/pages/renter/RentalTracking';
 import MyRentals         from '@/pages/renter/MyRentals';
@@ -102,6 +103,7 @@ export default function App() {
             <Route path="/items/:id"                         element={<ProductDetail />} />
             <Route path="/items/:id/dates"                   element={<SelectDates />} />
             <Route path="/bookings/:bookingId/checkout"      element={<CheckoutPage />} />
+            <Route path="/bookings/:bookingId/pay"           element={<PaymentQR />} />
             <Route path="/bookings/:bookingId/success"       element={<PaymentSuccess />} />
             <Route path="/bookings/:bookingId/tracking"      element={<RentalTracking />} />
             <Route path="/bookings/:bookingId/return-upload" element={<ReturnPhotoUpload />} />
