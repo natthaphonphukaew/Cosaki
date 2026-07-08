@@ -3,6 +3,7 @@ const router = express.Router();
 const bookingCtrl = require('../../controllers/booking/booking.controller');
 const reviewCtrl = require('../../controllers/review/review.controller');
 const couponCtrl = require('../../controllers/coupon/coupon.controller');
+const billCtrl = require('../../controllers/bill/bill.controller');
 const { authenticate } = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const { createBookingRules, updateStatusRules } = require('../../validators/booking.validator');
@@ -22,5 +23,6 @@ router.post('/:id/cancel',                                       bookingCtrl.can
 router.patch('/:id/reschedule',                                  bookingCtrl.rescheduleBooking);
 router.post('/:id/accept',                                       bookingCtrl.acceptBooking);
 router.post('/:id/reject',                                       bookingCtrl.rejectBooking);
+router.post('/:id/bill',                                         billCtrl.createBill);
 
 module.exports = router;

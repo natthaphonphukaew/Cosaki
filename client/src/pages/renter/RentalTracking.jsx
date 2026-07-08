@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge';
 import { getBooking, updateStatus, cancelBooking } from '@/api/bookings';
 import { payBalance } from '@/api/payments';
 import { createDispute } from '@/api/disputes';
+import { listBills, payBill } from '@/api/bills';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -23,11 +24,25 @@ export default function RentalTracking() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
+  const [bills, setBills]     = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getBooking(bookingId).then(({ data }) => setBooking(data.data.booking));
+    listBills().then(({ data }) =>
+      setBills(data.data.bills.filter((b) => b.booking_id === bookingId && b.status === 'pending'))
+    ).catch(() => {});
   }, [bookingId]);
+
+  const handlePayBill = async (billId) => {
+    try {
+      await payBill(billId);
+      setBills((list) => list.filter((b) => b.id !== billId));
+      toast.success('ชำระบิลค่าปรับแล้ว');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'ชำระไม่สำเร็จ');
+    }
+  };
 
   const currentIdx = booking ? ORDER.indexOf(booking.status) : -1;
 
@@ -160,6 +175,15 @@ export default function RentalTracking() {
             </div>
           </div>
         )}
+
+        {/* Pending penalty bills (§3.4) */}
+        {bills.map((bill) => (
+          <div key={bill.id} className="rounded-2xl bg-red-50 border border-red-100 p-4">
+            <p className="text-sm font-semibold text-red-700">🧾 บิลค่าปรับ ฿{Number(bill.amount).toFixed(2)}</p>
+            <p className="text-xs text-red-500 mt-0.5">{bill.reason}</p>
+            <Button className="mt-3 w-full" onClick={() => handlePayBill(bill.id)}>ชำระค่าปรับ</Button>
+          </div>
+        ))}
 
         {/* Reserved — balance due */}
         {booking.status === 'pending_payment' && Number(booking.balance_due) > 0 && (

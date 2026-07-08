@@ -8,19 +8,37 @@ const getShop = async (userId) => {
 
 // Earnings = sum of rental_fee from completed bookings; balance = earnings − payouts.
 const computeBalance = async (shopId) => {
-  // Earnings = seller payout (rental − 10% commission) of completed bookings.
+  // Earnings = seller payout (rental − 10% commission) of completed bookings
+  // + penalty bills the renters have paid (§3.4).
   const { rows: [earn] } = await db.query(
     `SELECT COALESCE(SUM(seller_payout), 0)::numeric AS total
      FROM bookings WHERE shop_id = $1 AND status = 'completed'`,
+    [shopId]
+  );
+  const { rows: [bills] } = await db.query(
+    `SELECT COALESCE(SUM(amount), 0)::numeric AS total
+     FROM penalty_bills WHERE shop_id = $1 AND status = 'paid'`,
     [shopId]
   );
   const { rows: [paid] } = await db.query(
     `SELECT COALESCE(SUM(amount), 0)::numeric AS total FROM payouts WHERE shop_id = $1`,
     [shopId]
   );
-  const totalEarned = Number(earn.total);
+  const totalEarned = Number(earn.total) + Number(bills.total);
   const totalPaidOut = Number(paid.total);
-  return { totalEarned, totalPaidOut, balance: Number((totalEarned - totalPaidOut).toFixed(2)) };
+  return {
+    totalEarned,
+    billEarnings: Number(bills.total),
+    totalPaidOut,
+    balance: Number((totalEarned - totalPaidOut).toFixed(2)),
+  };
+};
+
+// Next payout cycle: every Monday (§3.4 "ทุกๆ วันจันทร์").
+const nextMonday = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+  return d.toISOString().slice(0, 10);
 };
 
 // GET /wallet
@@ -35,7 +53,7 @@ const getWallet = async (req, res, next) => {
       [shop.id]
     );
 
-    return success(res, { ...totals, bank_account: shop.bank_account, payouts });
+    return success(res, { ...totals, bank_account: shop.bank_account, payouts, next_payout_date: nextMonday() });
   } catch (err) {
     next(err);
   }

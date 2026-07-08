@@ -174,6 +174,14 @@ const resolveDispute = async (req, res, next) => {
       await addStrike(dispute.shop_id, `ข้อพิพาทตัดสินให้ลูกค้า: ${resolution_note || 'สินค้าไม่ตรงปก/เสียหาย'}`, dispute.booking_id);
     }
 
+    // Resolving in the shop's favour deducts the renter's Trust Score (§3.4).
+    if (resolution === 'resolved_shop') {
+      await db.query(
+        `UPDATE users SET trust_score = GREATEST(0, trust_score - 0.5), updated_at = NOW() WHERE id = $1`,
+        [dispute.renter_id]
+      );
+    }
+
     // Notify both parties of the outcome.
     const outcome = resolution === 'resolved_shop'
       ? 'Resolved in the shop\'s favour.'

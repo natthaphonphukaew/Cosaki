@@ -66,8 +66,14 @@ export default function MyWallet() {
         {/* Balance card */}
         <div className="rounded-2xl bg-brand-gradient p-5 text-white">
           <p className="text-xs font-semibold uppercase tracking-wider opacity-80">Available Balance</p>
-          <p className="mt-1 text-4xl font-bold">${balance.toFixed(2)}</p>
-          <p className="mt-1 text-xs opacity-70">${totalEarned.toFixed(2)} earned all-time</p>
+          <p className="mt-1 text-4xl font-bold">฿{balance.toFixed(2)}</p>
+          <p className="mt-1 text-xs opacity-70">
+            ฿{totalEarned.toFixed(2)} earned all-time (หลังหักค่าบริการ 10%
+            {wallet?.billEarnings > 0 ? ` + บิลค่าปรับ ฿${Number(wallet.billEarnings).toFixed(2)}` : ''})
+          </p>
+          {wallet?.next_payout_date && (
+            <p className="mt-1 text-xs opacity-80">💸 รอบโอนเข้าธนาคารถัดไป: วันจันทร์ที่ {wallet.next_payout_date}</p>
+          )}
           <div className="mt-4 flex gap-3">
             <button onClick={() => setModal('withdraw')} className="flex-1 rounded-full bg-white py-2 text-sm font-semibold text-brand-purple">
               Withdraw

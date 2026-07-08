@@ -57,4 +57,69 @@ const applyCoupon = async (req, res, next) => {
   }
 };
 
-module.exports = { applyCoupon };
+// ── Shop Campaign Builder (§3.4) ──────────────────────────────────────────────
+
+const getShopId = async (userId) => {
+  const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1', [userId]);
+  return rows[0]?.id || null;
+};
+
+// POST /shops/me/coupons — shop creates its own campaign coupon.
+const createShopCoupon = async (req, res, next) => {
+  try {
+    const shopId = await getShopId(req.user.id);
+    if (!shopId) return error(res, 'Shop not found', 404);
+
+    const { code, discount_type = 'percent', discount_value, min_spend = 0, expires_at } = req.body;
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{3,20}$/.test(cleanCode)) return error(res, 'โค้ดต้องเป็น A-Z/0-9 ยาว 3-20 ตัว', 422);
+    const val = Number(discount_value);
+    if (!val || val <= 0) return error(res, 'ระบุมูลค่าส่วนลด', 422);
+    if (discount_type === 'percent' && val > 90) return error(res, 'ส่วนลดสูงสุด 90%', 422);
+
+    const { rows } = await db.query(
+      `INSERT INTO coupons (code, scope, shop_id, discount_type, discount_value, min_spend, expires_at)
+       VALUES ($1, 'shop', $2, $3, $4, $5, $6) RETURNING *`,
+      [cleanCode, shopId, discount_type, val, Number(min_spend) || 0, expires_at || null]
+    );
+    return success(res, { coupon: rows[0] }, 201);
+  } catch (err) {
+    if (err.code === '23505') return error(res, 'โค้ดนี้ถูกใช้แล้ว เลือกโค้ดอื่น', 409);
+    next(err);
+  }
+};
+
+// GET /shops/me/coupons — list the shop's campaigns.
+const listShopCoupons = async (req, res, next) => {
+  try {
+    const shopId = await getShopId(req.user.id);
+    if (!shopId) return error(res, 'Shop not found', 404);
+    const { rows } = await db.query(
+      `SELECT c.*,
+              (SELECT COUNT(*)::int FROM bookings b WHERE b.coupon_code = c.code) AS used_count
+       FROM coupons c WHERE c.shop_id = $1 ORDER BY c.created_at DESC`,
+      [shopId]
+    );
+    return success(res, { coupons: rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /shops/me/coupons/:id — toggle active on/off.
+const toggleShopCoupon = async (req, res, next) => {
+  try {
+    const shopId = await getShopId(req.user.id);
+    if (!shopId) return error(res, 'Shop not found', 404);
+    const { rows } = await db.query(
+      `UPDATE coupons SET active = NOT active WHERE id = $1 AND shop_id = $2 RETURNING *`,
+      [req.params.id, shopId]
+    );
+    if (!rows.length) return error(res, 'Coupon not found', 404);
+    return success(res, { coupon: rows[0] });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { applyCoupon, createShopCoupon, listShopCoupons, toggleShopCoupon };

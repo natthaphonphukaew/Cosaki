@@ -11,6 +11,7 @@ router.use('/kyc',      require('./kyc.routes'));
 router.use('/disputes', require('./dispute.routes'));
 router.use('/notifications', require('./notification.routes'));
 router.use('/wallet',   require('./payout.routes'));
+router.use('/bills',    require('./bill.routes'));
 router.use('/',         require('./consent.routes'));
 
 module.exports = router;

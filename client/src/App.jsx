@@ -49,6 +49,7 @@ import ShopOnboarding   from '@/pages/seller/ShopOnboarding';
 import OrderDetail      from '@/pages/seller/OrderDetail';
 import MyListings       from '@/pages/seller/MyListings';
 import EditProduct      from '@/pages/seller/EditProduct';
+import Campaigns        from '@/pages/seller/Campaigns';
 
 function OAuthCallback() {
   const params = new URLSearchParams(window.location.search);
@@ -118,6 +119,7 @@ export default function App() {
             <Route path="/seller/items"             element={<MyListings />} />
             <Route path="/seller/items/new"         element={<AddProduct />} />
             <Route path="/seller/items/:id/edit"    element={<EditProduct />} />
+            <Route path="/seller/campaigns"         element={<Campaigns />} />
             <Route path="/seller/disputes/:bookingId" element={<ResolutionCenter />} />
           </Route>
 

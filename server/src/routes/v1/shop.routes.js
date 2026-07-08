@@ -3,6 +3,7 @@ const router = express.Router();
 const shopCtrl = require('../../controllers/shop/shop.controller');
 const itemCtrl = require('../../controllers/shop/item.controller');
 const reviewCtrl = require('../../controllers/review/review.controller');
+const couponCtrl = require('../../controllers/coupon/coupon.controller');
 const { authenticate, requireRole } = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const {
@@ -20,6 +21,11 @@ router.get('/:id/reviews', reviewCtrl.listShopReviews);   // public
 router.get('/:id',    shopCtrl.getShop);   // public
 
 // ── Items (scoped to own shop) ────────────────────────────────────────────────
+// ── Campaign coupons (§3.4) ───────────────────────────────────────────────────
+router.post('/me/coupons',      ...isShopAdmin, couponCtrl.createShopCoupon);
+router.get('/me/coupons',       ...isShopAdmin, couponCtrl.listShopCoupons);
+router.patch('/me/coupons/:id', ...isShopAdmin, couponCtrl.toggleShopCoupon);
+
 router.post('/me/items',       ...isShopAdmin, createItemRules, validate, itemCtrl.createItem);
 router.get('/me/items',        ...isShopAdmin,                           itemCtrl.listMyItems);
 router.patch('/me/items/:id',  ...isShopAdmin, updateItemRules, validate, itemCtrl.updateItem);

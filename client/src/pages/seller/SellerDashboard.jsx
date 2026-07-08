@@ -135,12 +135,12 @@ export default function SellerDashboard() {
           </div>
         </div>
 
-        {/* Pro Seller banner */}
+        {/* Campaign Builder banner */}
         <div className="mt-4 rounded-2xl bg-brand-purple p-5 overflow-hidden">
-          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white font-medium">PRO SELLER STATUS</span>
-          <h3 className="mt-2 text-lg font-bold text-white">Level Up Your Store</h3>
-          <button onClick={() => navigate('/seller/items')} className="mt-3 rounded-full border border-white px-4 py-1.5 text-sm font-semibold text-white">
-            View Roadmap
+          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white font-medium">MARKETING TOOL</span>
+          <h3 className="mt-2 text-lg font-bold text-white">สร้างโปรโมชันร้านคุณ</h3>
+          <button onClick={() => navigate('/seller/campaigns')} className="mt-3 rounded-full border border-white px-4 py-1.5 text-sm font-semibold text-white">
+            🎯 Campaign Builder
           </button>
         </div>
 
