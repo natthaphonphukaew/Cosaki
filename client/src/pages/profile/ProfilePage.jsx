@@ -5,6 +5,7 @@ import { ChevronRight, Settings, HelpCircle, Heart, ShoppingBag,
 import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
 import NotificationBell from '@/components/ui/NotificationBell';
+import ChatButton from '@/components/ui/ChatButton';
 import useAuthStore from '@/store/authStore';
 import { getMyShop } from '@/api/shops';
 import { getKYCStatus } from '@/api/kyc';
@@ -57,7 +58,10 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <span className="text-xl font-bold text-brand-purple">Cosaki</span>
-          <NotificationBell />
+          <div className="flex items-center gap-2">
+            <ChatButton />
+            <NotificationBell />
+          </div>
         </div>
 
         {/* Avatar + info */}

@@ -4,6 +4,7 @@ import { ChevronRight, TrendingUp, Plus } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import NotificationBell from '@/components/ui/NotificationBell';
+import ChatButton from '@/components/ui/ChatButton';
 import { listMyItems } from '@/api/items';
 import { listBookings } from '@/api/bookings';
 import { getMyShop } from '@/api/shops';
@@ -47,7 +48,10 @@ export default function SellerDashboard() {
             </div>
             <span className="text-base font-bold text-gray-800 truncate max-w-[180px]">{shopName}</span>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-2">
+            <ChatButton />
+            <NotificationBell />
+          </div>
         </div>
 
         {/* Shop discipline banner (§4.2) */}

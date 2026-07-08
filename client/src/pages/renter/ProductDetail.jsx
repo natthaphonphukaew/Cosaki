@@ -5,8 +5,10 @@ import Button from '@/components/ui/Button';
 import ProductImage from '@/components/ui/ProductImage';
 import { getItem, getAvailability } from '@/api/items';
 import { getShopReviews } from '@/api/reviews';
+import { openChat } from '@/api/chats';
 import { isFavorite, toggleFavorite } from '@/utils/favorites';
 import toast from 'react-hot-toast';
+import { MessageCircle } from 'lucide-react';
 
 export default function ProductDetail() {
   const { id }      = useParams();
@@ -140,9 +142,24 @@ export default function ProductDetail() {
             )}
           </div>
           <span className="text-sm text-gray-400">{item.shop_name}</span>
-          <button onClick={toggleFollow} className={`ml-auto text-xs font-semibold ${following ? 'text-gray-400' : 'text-brand-purple'}`}>
-            {following ? 'FOLLOWING' : 'FOLLOW'}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  const { data } = await openChat(item.shop_id);
+                  navigate(`/chats/${data.data.conversation.id}`);
+                } catch (err) {
+                  toast.error(err.response?.data?.message || 'เปิดแชทไม่สำเร็จ');
+                }
+              }}
+              className="flex items-center gap-1 rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand-purple"
+            >
+              <MessageCircle size={13} /> แชท
+            </button>
+            <button onClick={toggleFollow} className={`text-xs font-semibold ${following ? 'text-gray-400' : 'text-brand-purple'}`}>
+              {following ? 'FOLLOWING' : 'FOLLOW'}
+            </button>
+          </div>
         </div>
 
         {/* Rental options — pick a rate */}

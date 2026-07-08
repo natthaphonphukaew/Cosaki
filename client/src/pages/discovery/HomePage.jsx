@@ -4,6 +4,7 @@ import { Heart } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import NotificationBell from '@/components/ui/NotificationBell';
+import ChatButton from '@/components/ui/ChatButton';
 import { searchItems } from '@/api/items';
 import { getFavorites, toggleFavorite } from '@/utils/favorites';
 import useAuthStore from '@/store/authStore';
@@ -44,7 +45,10 @@ export default function HomePage() {
             <p className="text-sm font-semibold text-gray-800">{user?.display_name || 'Cosplayer'}</p>
           </div>
         </div>
-        <NotificationBell size={20} className="h-10 w-10 bg-white shadow-sm" />
+        <div className="flex items-center gap-2">
+          <ChatButton size={20} className="h-10 w-10 bg-white shadow-sm" />
+          <NotificationBell size={20} className="h-10 w-10 bg-white shadow-sm" />
+        </div>
       </div>
 
       {/* Hero banner */}

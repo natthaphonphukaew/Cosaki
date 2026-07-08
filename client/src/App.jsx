@@ -38,6 +38,10 @@ import SavedOutfits  from '@/pages/profile/SavedOutfits';
 // Notifications
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
 
+// Chat
+import ChatList from '@/pages/chat/ChatList';
+import ChatRoom from '@/pages/chat/ChatRoom';
+
 // Seller
 import SellerDashboard  from '@/pages/seller/SellerDashboard';
 import OrderManagement  from '@/pages/seller/OrderManagement';
@@ -98,6 +102,8 @@ export default function App() {
             <Route path="/support"      element={<HelpSupport />} />
             <Route path="/saved"        element={<SavedOutfits />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/chats"         element={<ChatList />} />
+            <Route path="/chats/:id"     element={<ChatRoom />} />
             <Route path="/rentals"  element={<MyRentals />} />
 
             {/* Renter journey */}
