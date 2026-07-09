@@ -14,7 +14,7 @@ const getMe = async (req, res, next) => {
 // PATCH /users/me — profile incl. default address + body measurements (§2.6)
 const updateMe = async (req, res, next) => {
   try {
-    const { display_name, avatar_url, address, bust, waist, hip, height } = req.body;
+    const { display_name, avatar_url, address, bust, waist, hip, height, fandoms } = req.body;
     const { rows } = await db.query(
       `UPDATE users SET
          display_name = COALESCE($1, display_name),
@@ -24,10 +24,12 @@ const updateMe = async (req, res, next) => {
          waist        = COALESCE($5, waist),
          hip          = COALESCE($6, hip),
          height       = COALESCE($7, height),
+         fandoms      = COALESCE($8, fandoms),
          updated_at   = NOW()
-       WHERE id = $8 RETURNING *`,
+       WHERE id = $9 RETURNING *`,
       [display_name || null, avatar_url || null, address ?? null,
-       bust ?? null, waist ?? null, hip ?? null, height ?? null, req.user.id]
+       bust ?? null, waist ?? null, hip ?? null, height ?? null,
+       Array.isArray(fandoms) ? fandoms : null, req.user.id]
     );
     const { google_id, facebook_id, ...safe } = rows[0];
     return success(res, { user: safe });

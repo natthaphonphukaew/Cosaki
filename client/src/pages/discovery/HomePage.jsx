@@ -21,10 +21,14 @@ export default function HomePage() {
   useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
 
   useEffect(() => {
-    searchItems(fandom !== 'All' ? { fandom } : {})
+    // "All" boosts the user's own fandoms to the top of the feed (§1.3).
+    const params = fandom !== 'All'
+      ? { fandom }
+      : (user?.fandoms?.length ? { fandoms: user.fandoms.join(',') } : {});
+    searchItems(params)
       .then(({ data }) => setItems(data.data.items))
       .catch(() => {});
-  }, [fandom]);
+  }, [fandom, user?.fandoms]);
 
   const onFav = (e, item) => {
     e.stopPropagation();
@@ -67,7 +71,7 @@ export default function HomePage() {
           <button onClick={() => navigate('/search')} className="text-sm font-medium text-brand-purple">View All</button>
         </div>
         <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-          {FANDOMS.map((f) => (
+          {['All', ...new Set([...(user?.fandoms || []), ...FANDOMS.slice(1)])].map((f) => (
             <button
               key={f}
               onClick={() => setFandom(f)}

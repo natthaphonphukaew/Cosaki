@@ -12,23 +12,28 @@ const {
 
 const isShopAdmin = [authenticate, requireRole('shop_admin', 'admin')];
 
-// ── Shop ──────────────────────────────────────────────────────────────────────
+// ── Own shop (/me/* MUST be registered before /:id/* to avoid capture) ────────
 // Any authenticated user may open a shop; createShop promotes them to shop_admin.
 router.post('/',      authenticate,   createShopRules,  validate, shopCtrl.createShop);
 router.get('/me',     ...isShopAdmin,                             shopCtrl.getMyShop);
 router.patch('/me',   ...isShopAdmin, updateShopRules,  validate, shopCtrl.updateShop);
-router.get('/:id/reviews', reviewCtrl.listShopReviews);   // public
-router.get('/:id',    shopCtrl.getShop);   // public
 
-// ── Items (scoped to own shop) ────────────────────────────────────────────────
-// ── Campaign coupons (§3.4) ───────────────────────────────────────────────────
+// Campaign coupons (§3.4)
 router.post('/me/coupons',      ...isShopAdmin, couponCtrl.createShopCoupon);
 router.get('/me/coupons',       ...isShopAdmin, couponCtrl.listShopCoupons);
 router.patch('/me/coupons/:id', ...isShopAdmin, couponCtrl.toggleShopCoupon);
 
+// Items (scoped to own shop)
 router.post('/me/items',       ...isShopAdmin, createItemRules, validate, itemCtrl.createItem);
 router.get('/me/items',        ...isShopAdmin,                           itemCtrl.listMyItems);
 router.patch('/me/items/:id',  ...isShopAdmin, updateItemRules, validate, itemCtrl.updateItem);
 router.delete('/me/items/:id', ...isShopAdmin,                           itemCtrl.deleteItem);
+
+// ── Public shop profile (§2.3) ────────────────────────────────────────────────
+router.get('/:id/reviews', reviewCtrl.listShopReviews);
+router.get('/:id/items',   shopCtrl.getShopItems);        // search-in-shop
+router.post('/:id/follow', authenticate, shopCtrl.toggleFollow);
+router.get('/:id/follow',  authenticate, shopCtrl.getFollowState);
+router.get('/:id',    shopCtrl.getShop);
 
 module.exports = router;

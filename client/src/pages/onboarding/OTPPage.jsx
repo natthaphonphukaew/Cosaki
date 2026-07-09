@@ -29,7 +29,10 @@ export default function OTPPage() {
       setAuth(data.data.user, data.data.accessToken, data.data.refreshToken);
       const u = data.data.user;
       // Don't gate login on KYC — let users browse. KYC is requested at booking.
-      navigate(u.role === 'shop_admin' ? '/seller/dashboard' : '/home');
+      if (u.role === 'shop_admin') navigate('/seller/dashboard');
+      // Mandatory fandom pick on first login (§1.3) — feeds the Home ordering.
+      else if (!u.fandoms || u.fandoms.length === 0) navigate('/onboarding/fandoms');
+      else navigate('/home');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid OTP');
       setCode('');

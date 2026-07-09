@@ -10,7 +10,9 @@ export function GuestGuard() {
   const { accessToken, user, mode } = useAuthStore();
   if (!accessToken) return <Outlet />;
   // Send already-authenticated users to the right home for their active mode.
-  const dest = (mode === 'seller' || user?.role === 'shop_admin') ? '/seller/dashboard' : '/home';
+  let dest = (mode === 'seller' || user?.role === 'shop_admin') ? '/seller/dashboard' : '/home';
+  // First login: renters must pick their fandoms before the feed (§1.3).
+  if (dest === '/home' && (!user?.fandoms || user.fandoms.length === 0)) dest = '/onboarding/fandoms';
   return <Navigate to={dest} replace />;
 }
 

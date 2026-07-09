@@ -141,32 +141,54 @@ const deleteItem = async (req, res, next) => {
 // GET /items?fandom=&q=&page=&limit=  — public search
 const searchItems = async (req, res, next) => {
   try {
-    const { fandom, q, size, page = 1, limit = 20 } = req.query;
+    const {
+      fandom, q, size, page = 1, limit = 20,
+      price_min, price_max, bust, waist, hip,
+      date_from, date_to, allow_event, fandoms,
+    } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
-    const conditions = ['i.is_available = TRUE'];
+    const conditions = ['i.is_available = TRUE', 's.is_frozen = FALSE'];
     const params = [];
+    const P = (v) => { params.push(v); return `$${params.length}`; };
 
-    if (fandom) {
-      params.push(`%${fandom}%`);   // partial match: "Genshin" finds "Genshin Impact"
-      conditions.push(`i.fandom ILIKE $${params.length}`);
-    }
+    if (fandom) conditions.push(`i.fandom ILIKE ${P(`%${fandom}%`)}`);   // partial match
     if (q) {
-      params.push(`%${q}%`);
-      conditions.push(`(i.name ILIKE $${params.length} OR i.character ILIKE $${params.length})`);
+      const p = P(`%${q}%`);
+      conditions.push(`(i.name ILIKE ${p} OR i.character ILIKE ${p} OR i.fandom ILIKE ${p})`);
     }
-    if (size) {
-      params.push(size);
-      conditions.push(`$${params.length} = ANY(i.sizes)`);
+    if (size) conditions.push(`${P(size)} = ANY(i.sizes)`);
+    if (price_min) conditions.push(`i.test_rate >= ${P(Number(price_min))}`);
+    if (price_max) conditions.push(`i.test_rate <= ${P(Number(price_max))}`);
+    // Body-measurement matching (§2.1.2): item fits if within ±6cm or unspecified.
+    if (bust)  conditions.push(`(i.bust  IS NULL OR ABS(i.bust  - ${P(Number(bust))})  <= 6)`);
+    if (waist) conditions.push(`(i.waist IS NULL OR ABS(i.waist - ${P(Number(waist))}) <= 6)`);
+    if (hip)   conditions.push(`(i.hip   IS NULL OR ABS(i.hip   - ${P(Number(hip))})   <= 6)`);
+    if (allow_event === 'true') conditions.push(`i.allow_event = TRUE`);
+    // Availability window (§2.1.4): hide items with an overlapping active booking.
+    if (date_from && date_to) {
+      const f = P(date_from), t = P(date_to);
+      conditions.push(`NOT EXISTS (
+        SELECT 1 FROM bookings b WHERE b.item_id = i.id
+          AND b.status NOT IN ('cancelled','completed','draft')
+          AND b.rental_start < ${t} AND b.rental_end > ${f})`);
     }
 
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    // Home-feed boost (§1.3): items in the user's fandoms rank first.
+    let orderBy = 'i.created_at DESC';
+    if (fandoms) {
+      const list = String(fandoms).split(',').map((s) => s.trim()).filter(Boolean);
+      // COALESCE: NULL fandom must sort as "no match", not NULLS-FIRST.
+      if (list.length) orderBy = `COALESCE(i.fandom = ANY(${P(list)}), FALSE) DESC, i.created_at DESC`;
+    }
+
+    const where = `WHERE ${conditions.join(' AND ')}`;
     params.push(Number(limit), offset);
 
     const { rows } = await db.query(
       `SELECT i.*, s.shop_name, s.rating AS shop_rating, s.review_count AS shop_review_count
        FROM items i JOIN shops s ON s.id = i.shop_id
        ${where}
-       ORDER BY i.created_at DESC
+       ORDER BY ${orderBy}
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );

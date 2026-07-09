@@ -8,6 +8,7 @@ import LoginPage     from '@/pages/onboarding/LoginPage';
 import OTPPage       from '@/pages/onboarding/OTPPage';
 import KYCPage       from '@/pages/onboarding/KYCPage';
 import ConsentPage   from '@/pages/onboarding/ConsentPage';
+import FandomOnboarding from '@/pages/onboarding/FandomOnboarding';
 
 // Discovery
 import HomePage      from '@/pages/discovery/HomePage';
@@ -15,6 +16,7 @@ import SearchPage    from '@/pages/discovery/SearchPage';
 
 // Renter journey
 import ProductDetail     from '@/pages/renter/ProductDetail';
+import ShopProfile       from '@/pages/renter/ShopProfile';
 import SelectDates       from '@/pages/renter/SelectDates';
 import CheckoutPage      from '@/pages/renter/CheckoutPage';
 import PaymentQR         from '@/pages/renter/PaymentQR';
@@ -89,6 +91,7 @@ export default function App() {
           <Route element={<AuthGuard />}>
             {/* Onboarding */}
             <Route path="/kyc"              element={<KYCPage />} />
+            <Route path="/onboarding/fandoms" element={<FandomOnboarding />} />
             <Route path="/seller/onboarding" element={<ShopOnboarding />} />
 
             {/* Renter main */}
@@ -108,6 +111,7 @@ export default function App() {
 
             {/* Renter journey */}
             <Route path="/items/:id"                         element={<ProductDetail />} />
+            <Route path="/shops/:id"                         element={<ShopProfile />} />
             <Route path="/items/:id/dates"                   element={<SelectDates />} />
             <Route path="/bookings/:bookingId/checkout"      element={<CheckoutPage />} />
             <Route path="/bookings/:bookingId/pay"           element={<PaymentQR />} />

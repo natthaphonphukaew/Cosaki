@@ -6,6 +6,7 @@ import ProductImage from '@/components/ui/ProductImage';
 import { getItem, getAvailability } from '@/api/items';
 import { getShopReviews } from '@/api/reviews';
 import { openChat } from '@/api/chats';
+import { toggleFollowShop, getFollowState } from '@/api/shops';
 import { isFavorite, toggleFavorite } from '@/utils/favorites';
 import toast from 'react-hot-toast';
 import { MessageCircle } from 'lucide-react';
@@ -43,19 +44,21 @@ export default function ProductDetail() {
     } catch { /* user cancelled share */ }
   };
 
+  // Real follow via API (shop_follows table).
   const [following, setFollowing] = useState(false);
   useEffect(() => {
     if (item?.shop_id) {
-      const f = JSON.parse(localStorage.getItem('cosaki-follows') || '[]');
-      setFollowing(f.includes(item.shop_id));
+      getFollowState(item.shop_id).then(({ data }) => setFollowing(data.data.following)).catch(() => {});
     }
   }, [item?.shop_id]);
-  const toggleFollow = () => {
-    const f = JSON.parse(localStorage.getItem('cosaki-follows') || '[]');
-    const next = f.includes(item.shop_id) ? f.filter((x) => x !== item.shop_id) : [...f, item.shop_id];
-    localStorage.setItem('cosaki-follows', JSON.stringify(next));
-    setFollowing(next.includes(item.shop_id));
-    toast.success(next.includes(item.shop_id) ? `Following ${item.shop_name}` : 'Unfollowed');
+  const toggleFollow = async () => {
+    try {
+      const { data } = await toggleFollowShop(item.shop_id);
+      setFollowing(data.data.following);
+      toast.success(data.data.following ? `Following ${item.shop_name}` : 'Unfollowed');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'ทำรายการไม่สำเร็จ');
+    }
   };
 
   const onScroll = (e) => {
@@ -141,7 +144,9 @@ export default function ProductDetail() {
               <span className="text-xs text-gray-400">({item.shop_review_count})</span>
             )}
           </div>
-          <span className="text-sm text-gray-400">{item.shop_name}</span>
+          <button onClick={() => navigate(`/shops/${item.shop_id}`)} className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-2">
+            {item.shop_name}
+          </button>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={async () => {

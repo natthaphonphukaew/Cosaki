@@ -83,11 +83,13 @@ const updateShop = async (req, res, next) => {
   }
 };
 
-// GET /shops/:id — public shop profile
+// GET /shops/:id — public shop profile (+follower count)
 const getShop = async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT s.*, u.display_name AS owner_name
+      `SELECT s.*, u.display_name AS owner_name,
+              (SELECT COUNT(*)::int FROM shop_follows f WHERE f.shop_id = s.id) AS follower_count,
+              (SELECT COUNT(*)::int FROM items i WHERE i.shop_id = s.id AND i.is_available) AS item_count
        FROM shops s JOIN users u ON u.id = s.owner_id
        WHERE s.id = $1`,
       [req.params.id]
@@ -99,4 +101,63 @@ const getShop = async (req, res, next) => {
   }
 };
 
-module.exports = { createShop, getMyShop, updateShop, getShop };
+// GET /shops/:id/items?q= — public listing of a shop's items (search-in-shop §2.3)
+const getShopItems = async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    const params = [req.params.id];
+    let where = 'i.shop_id = $1 AND i.is_available = TRUE';
+    if (q) {
+      params.push(`%${q}%`);
+      where += ` AND (i.name ILIKE $2 OR i.character ILIKE $2 OR i.fandom ILIKE $2)`;
+    }
+    const { rows } = await db.query(
+      `SELECT i.*, s.shop_name, s.rating AS shop_rating
+       FROM items i JOIN shops s ON s.id = i.shop_id
+       WHERE ${where} ORDER BY i.created_at DESC LIMIT 60`,
+      params
+    );
+    return success(res, { items: rows });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /shops/:id/follow — toggle follow; returns following + follower_count.
+const toggleFollow = async (req, res, next) => {
+  try {
+    const { rowCount } = await db.query(
+      'DELETE FROM shop_follows WHERE user_id = $1 AND shop_id = $2',
+      [req.user.id, req.params.id]
+    );
+    let following = false;
+    if (!rowCount) {
+      await db.query(
+        'INSERT INTO shop_follows (user_id, shop_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [req.user.id, req.params.id]
+      );
+      following = true;
+    }
+    const { rows: [c] } = await db.query(
+      'SELECT COUNT(*)::int AS n FROM shop_follows WHERE shop_id = $1', [req.params.id]
+    );
+    return success(res, { following, follower_count: c.n });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /shops/:id/follow — am I following this shop?
+const getFollowState = async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT 1 FROM shop_follows WHERE user_id = $1 AND shop_id = $2',
+      [req.user.id, req.params.id]
+    );
+    return success(res, { following: rows.length > 0 });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createShop, getMyShop, updateShop, getShop, getShopItems, toggleFollow, getFollowState };
