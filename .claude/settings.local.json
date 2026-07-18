@@ -24,7 +24,13 @@
       "Bash(curl -s http://localhost:5000/)",
       "Bash(curl -s http://localhost:5000/home)",
       "Bash(curl -s http://localhost:5000/api/v1/items)",
-      "Bash(curl -s -X POST http://localhost:5000/api/v1/auth/send-otp -H \"Content-Type: application/json\" -d '{\"phone\":\"+66811112222\"}')"
+      "Bash(curl -s -X POST http://localhost:5000/api/v1/auth/send-otp -H \"Content-Type: application/json\" -d '{\"phone\":\"+66811112222\"}')",
+      "Bash(node db/migrate.js)",
+      "Bash(NODE_ENV=development DEMO_OTP=123456 DISABLE_RATE_LIMIT=true node src/app.js)",
+      "Bash(curl -s http://localhost:5000/api/v1/../../ -o /dev/null -w \"root:%{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:5000/health -w \"\\\\nhealth:%{http_code}\\\\n\")",
+      "Bash(node sim.mjs)",
+      "Bash(node -e ' *)"
     ]
   }
 }

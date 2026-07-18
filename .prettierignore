@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+coverage/
+client/dist/
+*.min.js
+package-lock.json
+"Design figma/"

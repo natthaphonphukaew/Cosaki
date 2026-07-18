@@ -13,6 +13,12 @@
     "seed":        "npm run seed --workspace=server",
     "install:all": "npm install --workspaces",
     "build":       "npm install --workspaces --include=dev && npm run build --workspace=client",
-    "start":       "node server/db/migrate.js && node server/src/app.js"
+    "start":       "node server/db/migrate.js && node server/src/app.js",
+    "format":      "prettier --write \"**/*.{js,jsx,json,css,md}\"",
+    "format:check":"prettier --check \"**/*.{js,jsx,json,css,md}\"",
+    "lint":        "npm run lint --workspace=client"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
   }
 }
