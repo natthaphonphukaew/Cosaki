@@ -5,12 +5,15 @@ import AppShell from '@/components/layout/AppShell';
 import { listBookings } from '@/api/bookings';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth,
          eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export default function CalendarPage() {
   const [month, setMonth]     = useState(new Date());
   const [bookings, setBookings] = useState([]);
   const [selected, setSelected] = useState(null);
   const navigate              = useNavigate();
+  const { t }                 = useTranslation();
 
   useEffect(() => {
     listBookings({ as: 'renter', limit: 50 }).then(({ data }) => setBookings(data.data.bookings)).catch(() => {});
@@ -28,7 +31,10 @@ export default function CalendarPage() {
   return (
     <AppShell>
       <div className="px-4 pt-5">
-        <h2 className="mb-4 text-xl font-bold text-gray-900">My Schedule</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">{t('calendar.title', 'My Schedule')}</h2>
+          <LanguageSwitcher />
+        </div>
 
         {/* Month nav */}
         <div className="mb-3 flex items-center justify-between">
@@ -71,9 +77,9 @@ export default function CalendarPage() {
 
         {/* Upcoming rentals */}
         <div className="mt-5">
-          <p className="mb-3 text-sm font-semibold text-gray-800">Upcoming Rentals</p>
+          <p className="mb-3 text-sm font-semibold text-gray-800">{t('calendar.upcoming', 'Upcoming Rentals')}</p>
           {bookings.filter((b) => ['escrowed','shipped'].includes(b.status)).length === 0
-            ? <p className="text-sm text-gray-400">No upcoming rentals</p>
+            ? <p className="text-sm text-gray-400">{t('calendar.no_upcoming', 'No upcoming rentals')}</p>
             : bookings.filter((b) => ['escrowed','shipped'].includes(b.status)).map((b) => (
               <button key={b.id} onClick={() => navigate(`/bookings/${b.id}/tracking`)}
                 className="mb-2 flex w-full items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
@@ -105,7 +111,7 @@ export default function CalendarPage() {
                 <p className="text-xs text-gray-400 mt-0.5">{b.status}</p>
               </button>
             ))}
-            <button onClick={() => setSelected(null)} className="mt-2 w-full rounded-full bg-gray-100 py-2.5 text-sm font-medium text-gray-600">Close</button>
+            <button onClick={() => setSelected(null)} className="mt-2 w-full rounded-full bg-gray-100 py-2.5 text-sm font-medium text-gray-600">{t('calendar.close', 'Close')}</button>
           </div>
         </div>
       )}

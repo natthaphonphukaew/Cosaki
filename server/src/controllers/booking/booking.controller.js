@@ -28,7 +28,7 @@ const canTransition = (from, to) => VALID_TRANSITIONS[from]?.includes(to) ?? fal
 // POST /bookings — renter initiates booking
 const createBooking = async (req, res, next) => {
   try {
-    const { item_id, rental_start, rental_end, notes, rate_type = 'test' } = req.body;
+    const { item_id, rental_start, rental_end, notes, rate_type = 'test', is_express = false } = req.body;
 
     // Fetch item + shop info
     const { rows: items } = await db.query(
@@ -79,11 +79,11 @@ const createBooking = async (req, res, next) => {
     const rate = rate_type === 'private'
       ? (item.private_rate ?? item.test_rate ?? item.daily_rate)
       : (item.test_rate ?? item.daily_rate);
-    const rental_fee    = parseFloat((rate * days).toFixed(2));
+    const rental_fee    = parseFloat(Number(rate).toFixed(2)); // Fixed to 1 usage rate
     const cosaki_fee    = parseFloat((rental_fee * 0.10).toFixed(2));   // → insurance fund
     const commission    = parseFloat((rental_fee * 0.10).toFixed(2));   // → platform revenue
     const seller_payout = parseFloat((rental_fee - commission).toFixed(2));
-    const shipping_fee  = parseFloat(Number(item.shipping_fee || 0).toFixed(2));
+    const shipping_fee  = is_express ? 0 : parseFloat(Number(item.shipping_fee || 0).toFixed(2));
     const token = generateToken();
 
     // Determine initial status based on renter's KYC
@@ -95,14 +95,15 @@ const createBooking = async (req, res, next) => {
       `INSERT INTO bookings
          (shop_id, renter_id, item_id, rental_start, rental_end, status,
           payment_link_token, rate_type, rental_fee, cosaki_fee, commission,
-          seller_payout, shipping_fee, booking_fee, deposit_amount, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,0,$15)
+          seller_payout, shipping_fee, booking_fee, deposit_amount, notes, is_express)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,0,$15,$16)
        RETURNING *`,
       [
         item.shop_id, req.user.id, item_id,
         rental_start, rental_end, initialStatus,
         token, rate_type, rental_fee, cosaki_fee, commission,
         seller_payout, shipping_fee, booking_fee, notes || null,
+        is_express
       ]
     );
 

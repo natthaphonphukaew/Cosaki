@@ -34,15 +34,23 @@ export default function SavedOutfits() {
                 className="cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm active:scale-[0.97] transition-transform"
               >
                 <div className="relative h-40">
+                  {item.express_delivery && (
+                    <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      🚀 ส่งด่วน
+                    </div>
+                  )}
                   <ProductImage item={item} emojiClassName="text-5xl" />
-                  <button onClick={(e) => remove(e, item)} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/80">
+                  <button onClick={(e) => remove(e, item)} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80">
                     <Heart size={14} className="text-brand-pink" fill="#EC4899" />
                   </button>
                 </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
-                  <p className="mt-1 text-sm font-bold text-brand-purple">${item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                  <div className="mt-1 flex flex-col">
+                    <p className="text-[13px] font-bold text-brand-purple">เทส ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                    <p className="text-[13px] font-bold text-brand-pink">ไพร ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                  </div>
                 </div>
               </div>
             ))}

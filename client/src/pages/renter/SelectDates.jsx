@@ -5,9 +5,9 @@ import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import { useEffect } from 'react';
 import { createBooking, rescheduleBooking } from '@/api/bookings';
-import { getAvailability } from '@/api/items';
+import { getAvailability, getItem } from '@/api/items';
 import toast from 'react-hot-toast';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth,
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getHours,
          eachDayOfInterval, isSameMonth, isSameDay, isAfter, isBefore, startOfToday } from 'date-fns';
 
 export default function SelectDates() {
@@ -23,10 +23,24 @@ export default function SelectDates() {
   const [endDate, setEnd]       = useState(null);
   const [loading, setLoading]   = useState(false);
   const [booked, setBooked]     = useState([]);   // [{rental_start, rental_end}]
+  const [item, setItem]         = useState(state?.item || null);
+  const [isExpress, setIsExpress] = useState(false);
 
   useEffect(() => {
     getAvailability(id).then(({ data }) => setBooked(data.data.booked)).catch(() => {});
+    if (!item) {
+      getItem(id).then(({ data }) => setItem(data.data.item)).catch(() => {});
+    }
   }, [id]);
+
+  // Compute minimum bookable date based on shipping logic
+  const leadDays = item?.ship_lead_days || 7; // Default 7 days
+  const nowHour = getHours(new Date());
+  
+  let minBookableDate = addDays(today, leadDays);
+  if (isExpress) {
+    minBookableDate = nowHour < 12 ? today : addDays(today, 1);
+  }
 
   // A day is unavailable if it falls inside any active booking range.
   const isBooked = (day) => booked.some((b) => {
@@ -40,23 +54,30 @@ export default function SelectDates() {
   const startPad = startOfMonth(month).getDay(); // 0=Sun
 
   const handleDay = (day) => {
-    if (isBefore(day, today) || isBooked(day)) return;
-    if (!startDate || (startDate && endDate)) {
-      setStart(day); setEnd(null);
-    } else {
-      if (isBefore(day, startDate)) { setStart(day); setEnd(null); }
-      else setEnd(day);
+    if (isBefore(day, minBookableDate) || isBooked(day)) return;
+    
+    // Auto-lock end date to 2 days after start date
+    const end = addDays(day, 2);
+    
+    // Check if the 3-day block overlaps with any booked dates
+    for (let i = 0; i <= 2; i++) {
+      if (isBooked(addDays(day, i))) {
+        toast.error('วันที่คืนสินค้าติดคิวจองอื่น กรุณาเลือกวันอื่น');
+        return;
+      }
     }
+
+    setStart(day);
+    setEnd(end);
   };
 
   const isInRange = (day) => startDate && endDate && isAfter(day, startDate) && isBefore(day, endDate);
   const isStart   = (day) => startDate && isSameDay(day, startDate);
   const isEnd     = (day) => endDate && isSameDay(day, endDate);
-  const isPast    = (day) => isBefore(day, today);
+  const isPast    = (day) => isBefore(day, minBookableDate);
 
-  const nights = startDate && endDate
-    ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
-    : 0;
+  // Rental is calculated as 1 usage
+  const nights = startDate && endDate ? 1 : 0;
 
   const handleBook = async () => {
     if (!startDate || !endDate) return toast.error('Please select dates');
@@ -73,7 +94,13 @@ export default function SelectDates() {
         return;
       }
 
-      const { data } = await createBooking({ item_id: id, rate_type: rateType, rental_start: s, rental_end: e });
+      const { data } = await createBooking({ 
+        item_id: id, 
+        rate_type: rateType, 
+        rental_start: s, 
+        rental_end: e,
+        is_express: isExpress 
+      });
       const b = data.data.booking;
       const checkoutUrl = `/bookings/${b.id}/checkout`;
       // Identity check is required before payment — do it now, then continue.
@@ -94,6 +121,26 @@ export default function SelectDates() {
       <PageHeader title="Select Dates" />
 
       <div className="px-4 pb-32">
+        {item?.express_delivery && (
+          <div className="mb-4 mt-2 rounded-xl border border-brand-purple/20 bg-brand-light/30 p-3">
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <p className="text-sm font-semibold text-brand-purple">🚀 รับส่งด่วนในจังหวัด (Express)</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {nowHour < 12 ? 'จองก่อนเที่ยง รับของวันนี้ได้เลย' : 'จองหลังเที่ยง รับของได้เร็วสุดวันพรุ่งนี้'}
+                </p>
+              </div>
+              <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isExpress ? 'bg-brand-purple' : 'bg-gray-200'}`}>
+                <input type="checkbox" className="sr-only" checked={isExpress} onChange={(e) => {
+                  setIsExpress(e.target.checked);
+                  setStart(null); setEnd(null);
+                }} />
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isExpress ? 'translate-x-6' : 'translate-x-1'}`} />
+              </div>
+            </label>
+          </div>
+        )}
+
         {/* Month nav */}
         <div className="mb-4 flex items-center justify-between">
           <button onClick={() => setMonth(subMonths(month, 1))} className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">

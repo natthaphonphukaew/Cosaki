@@ -6,9 +6,11 @@ import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
 import NotificationBell from '@/components/ui/NotificationBell';
 import ChatButton from '@/components/ui/ChatButton';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import useAuthStore from '@/store/authStore';
 import { getMyShop } from '@/api/shops';
 import { getKYCStatus } from '@/api/kyc';
+import { useTranslation } from 'react-i18next';
 
 const ACCOUNT_STATUS = {
   pending_parent: { label: 'รอผู้ปกครองยืนยัน', cls: 'bg-amber-100 text-amber-700' },
@@ -17,17 +19,18 @@ const ACCOUNT_STATUS = {
 };
 
 const menuItems = [
-  { icon: ShoppingBag, label: 'My Rentals',      to: '/rentals'  },
-  { icon: Heart,       label: 'Saved Outfits',   to: '/saved'    },
-  { icon: CreditCard,  label: 'Payment Methods', to: '/payments' },
+  { icon: ShoppingBag, key: 'profile.menu.rentals',  to: '/rentals'  },
+  { icon: Heart,       key: 'profile.menu.saved',    to: '/saved'    },
+  { icon: CreditCard,  key: 'profile.menu.payments', to: '/payments' },
   { divider: true },
-  { icon: Settings,    label: 'Account Settings',to: '/settings' },
-  { icon: HelpCircle,  label: 'Help & Support',  to: '/support'  },
+  { icon: Settings,    key: 'profile.menu.settings', to: '/settings' },
+  { icon: HelpCircle,  key: 'profile.menu.support',  to: '/support'  },
 ];
 
 export default function ProfilePage() {
   const { user, shop, mode, hasShop, setMode, setShop, clear } = useAuthStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const trustScore = user?.trust_score || 5.0;
   const isSeller   = hasShop();
@@ -57,8 +60,9 @@ export default function ProfilePage() {
       <div className="px-4 pt-8 pb-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <span className="text-xl font-bold text-brand-purple">Cosaki</span>
+          <span className="text-xl font-bold text-brand-purple">{t('profile.title', 'Cosaki')}</span>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <ChatButton />
             <NotificationBell />
           </div>
@@ -79,9 +83,9 @@ export default function ProfilePage() {
               </div>
             )}
           </button>
-          <button onClick={() => navigate('/profile/edit')} className="text-lg font-bold text-gray-900">{user?.display_name || 'Cosplayer'}</button>
+          <button onClick={() => navigate('/profile/edit')} className="text-lg font-bold text-gray-900">{user?.display_name || t('home.cosplayer', 'Cosplayer')}</button>
           <span className={`mt-1 text-[11px] font-semibold ${(acct?.kyc_status || user?.kyc_status) === 'verified' ? 'text-green-600' : 'text-amber-600'}`}>
-            {(acct?.kyc_status || user?.kyc_status) === 'verified' ? '✓ Identity Verified' : 'Identity not verified'}
+            {(acct?.kyc_status || user?.kyc_status) === 'verified' ? t('profile.verified', '✓ Identity Verified') : t('profile.unverified', 'Identity not verified')}
           </span>
           {statusMeta && (
             <span className={`mt-1.5 rounded-full px-3 py-0.5 text-[11px] font-semibold ${statusMeta.cls}`}>
@@ -94,7 +98,7 @@ export default function ProfilePage() {
           {/* Trust score */}
           <div className="mt-3 flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5">
             <span className="text-sm">🛡️</span>
-            <span className="text-sm font-semibold text-amber-700">Trust Score: {trustScore}/5</span>
+            <span className="text-sm font-semibold text-amber-700">{t('profile.trust_score', 'Trust Score')}: {trustScore}/5</span>
             <span className="text-amber-500">⭐</span>
           </div>
         </div>
@@ -114,8 +118,8 @@ export default function ProfilePage() {
                 }
               </div>
               <div className="flex-1 min-w-0">
-                <p className="truncate text-base font-bold text-white">{myShop?.shop_name || 'My Shop'}</p>
-                <p className="text-xs text-white/80">Manage listings, orders & earnings</p>
+                <p className="truncate text-base font-bold text-white">{myShop?.shop_name || t('profile.my_shop', 'My Shop')}</p>
+                <p className="text-xs text-white/80">{t('profile.manage_shop', 'Manage listings, orders & earnings')}</p>
               </div>
               <ChevronRight size={18} className="text-white flex-shrink-0" />
             </button>
@@ -127,30 +131,30 @@ export default function ProfilePage() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-800">
-                  Current mode: <span className="font-bold text-brand-purple">{mode === 'seller' ? 'Selling' : 'Buying'}</span>
+                  {t('profile.current_mode', 'Current mode:')} <span className="font-bold text-brand-purple">{mode === 'seller' ? t('profile.selling', 'Selling') : t('profile.buying', 'Buying')}</span>
                 </p>
-                <p className="text-xs text-gray-400">Switch between renting and selling</p>
+                <p className="text-xs text-gray-400">{t('profile.switch_mode', 'Switch between renting and selling')}</p>
               </div>
               <button
                 onClick={mode === 'seller' ? goBuying : goSelling}
                 className="flex items-center gap-1.5 rounded-full bg-brand-light px-3 py-1.5 text-xs font-semibold text-brand-purple"
               >
                 <Repeat size={13} />
-                {mode === 'seller' ? 'Buy' : 'Sell'}
+                {mode === 'seller' ? t('profile.btn_buy', 'Buy') : t('profile.btn_sell', 'Sell')}
               </button>
             </div>
           </div>
         ) : (
           /* Upsell — not yet a seller */
           <div className="mt-6 overflow-hidden rounded-2xl bg-brand-purple p-5">
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white font-medium">EARN EXTRA</span>
-            <h3 className="mt-2 text-lg font-bold text-white">Sell your own costumes</h3>
-            <p className="mt-1 text-xs text-white/70">Open your own shop and start monetizing your wardrobe today.</p>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white font-medium">{t('profile.earn_extra', 'EARN EXTRA')}</span>
+            <h3 className="mt-2 text-lg font-bold text-white">{t('profile.sell_own', 'Sell your own costumes')}</h3>
+            <p className="mt-1 text-xs text-white/70">{t('profile.open_shop', 'Open your own shop and start monetizing your wardrobe today.')}</p>
             <button
               onClick={() => navigate('/seller/onboarding')}
               className="mt-4 rounded-full border border-white px-5 py-2 text-sm font-semibold text-white"
             >
-              Get Started
+              {t('profile.get_started', 'Get Started')}
             </button>
           </div>
         )}
@@ -162,14 +166,14 @@ export default function ProfilePage() {
               <div key={i} className="my-3 border-t border-gray-100" />
             ) : (
               <button
-                key={item.label}
+                key={item.key}
                 onClick={() => navigate(item.to)}
                 className="flex w-full items-center gap-3 rounded-2xl bg-white px-4 py-3.5 shadow-sm active:bg-gray-50"
               >
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-light">
                   <item.icon size={18} className="text-brand-purple" />
                 </div>
-                <span className="flex-1 text-left text-sm font-medium text-gray-800">{item.label}</span>
+                <span className="flex-1 text-left text-sm font-medium text-gray-800">{t(item.key)}</span>
                 <ChevronRight size={16} className="text-gray-300" />
               </button>
             )
@@ -180,7 +184,7 @@ export default function ProfilePage() {
           onClick={() => { clear(); navigate('/login'); }}
           className="mt-6 w-full text-center text-sm font-semibold text-red-500 py-3"
         >
-          Sign Out
+          {t('profile.sign_out', 'Sign Out')}
         </button>
       </div>
     </AppShell>

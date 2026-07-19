@@ -4,6 +4,7 @@ import { Camera } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import ThaiAddressSelector from '@/components/ui/ThaiAddressSelector';
 import { getMe, updateMe } from '@/api/users';
 import useAuthStore from '@/store/authStore';
 import { fileToDataUrl } from '@/utils/image';
@@ -72,11 +73,8 @@ export default function EditProfile() {
         <Input label="Display Name" value={name} onChange={(e) => setName(e.target.value)} />
         <Input label="Phone" value={user?.phone || ''} disabled />
 
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ที่อยู่จัดส่ง (Default address)</label>
-          <textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)}
-            placeholder="บ้านเลขที่ ถนน แขวง เขต จังหวัด รหัสไปรษณีย์"
-            className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple" />
+        <div className="mb-6">
+          <ThaiAddressSelector value={address} onChange={setAddress} />
         </div>
 
         <div>

@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, SlidersHorizontal, Heart, Bookmark, History, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Heart, Bookmark, History, X, Plus } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import Input from '@/components/ui/Input';
 import { searchItems } from '@/api/items';
 import { getFavorites, toggleFavorite } from '@/utils/favorites';
 import toast from 'react-hot-toast';
+import useAuthStore from '@/store/authStore';
 
-const FANDOM_OPTIONS = ['Genshin Impact','Arcane','Valorant','Demon Slayer','Spy x Family','Chainsaw Man','Cyberpunk Edgerunners'];
 const EMPTY_FILTER = { fandom: null, size: null, price_min: '', price_max: '', bust: '', waist: '', hip: '', date_from: '', date_to: '', allow_event: false };
 
 const loadLS = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } };
@@ -22,6 +22,7 @@ export default function SearchPage() {
   const [favs, setFavs]     = useState([]);
   const [history, setHistory] = useState(() => loadLS('cosaki-search-history', []));
   const navigate            = useNavigate();
+  const { user }            = useAuthStore();
 
   useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
 
@@ -152,15 +153,23 @@ export default function SearchPage() {
                 className="cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm active:scale-[0.97] transition-transform"
               >
                 <div className="relative h-40">
+                  {item.express_delivery && (
+                    <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      🚀 ส่งด่วน
+                    </div>
+                  )}
                   <ProductImage item={item} emojiClassName="text-5xl" />
-                  <button onClick={(e) => onFav(e, item)} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/80">
+                  <button onClick={(e) => onFav(e, item)} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80">
                     <Heart size={14} className={favs.includes(item.id) ? 'text-brand-pink' : 'text-gray-500'} fill={favs.includes(item.id) ? '#EC4899' : 'none'} />
                   </button>
                 </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
-                  <p className="mt-1 text-sm font-bold text-brand-purple">฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                  <div className="mt-1 flex flex-col">
+                    <p className="text-[13px] font-bold text-brand-purple">เทส ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                    <p className="text-[13px] font-bold text-brand-pink">ไพร ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -210,12 +219,21 @@ export default function SearchPage() {
 
             <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Fandom</p>
             <div className="flex flex-wrap gap-2">
-              {FANDOM_OPTIONS.map((f) => (
+              {(user?.fandoms || []).map((f) => (
                 <button key={f} onClick={() => set('fandom', filter.fandom === f ? null : f)}
                   className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter.fandom === f ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
                   {f}
                 </button>
               ))}
+              <button 
+                onClick={() => {
+                  setShowFilter(false);
+                  navigate('/profile/fandoms');
+                }}
+                className="flex items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-gray-600 transition-colors hover:bg-gray-50"
+              >
+                <Plus size={16} />
+              </button>
             </div>
 
             <button onClick={() => set('allow_event', !filter.allow_event)}

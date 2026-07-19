@@ -11,6 +11,21 @@ import { isFavorite, toggleFavorite } from '@/utils/favorites';
 import toast from 'react-hot-toast';
 import { MessageCircle } from 'lucide-react';
 
+function convertMeasurement(value, fromUnit, toUnit) {
+  if (!value) return null;
+  if (fromUnit === toUnit) return value;
+  
+  const parts = String(value).split('-');
+  const converted = parts.map(p => {
+    const num = Number(p.trim());
+    if (isNaN(num)) return p;
+    if (fromUnit === 'cm' && toUnit === 'inch') return Math.round(num / 2.54);
+    if (fromUnit === 'inch' && toUnit === 'cm') return Math.round(num * 2.54);
+    return p;
+  });
+  return converted.join('-');
+}
+
 export default function ProductDetail() {
   const { id }      = useParams();
   const navigate    = useNavigate();
@@ -23,12 +38,14 @@ export default function ProductDetail() {
   const [booked, setBooked] = useState([]);
   const [agree1, setAgree1] = useState(false);
   const [agree2, setAgree2] = useState(false);
+  const [displayUnit, setDisplayUnit] = useState('cm');
 
   useEffect(() => {
     setFaved(isFavorite(id));
     getItem(id).then(({ data }) => {
       const it = data.data.item;
       setItem(it);
+      if (it.measurement_unit) setDisplayUnit(it.measurement_unit);
       if (it?.shop_id) getShopReviews(it.shop_id).then(({ data }) => setReviews(data.data.reviews)).catch(() => {});
     }).finally(() => setLoading(false));
     getAvailability(id).then(({ data }) => setBooked(data.data.booked)).catch(() => {});
@@ -211,15 +228,34 @@ export default function ProductDetail() {
 
         {/* Measurements */}
         <div className="mt-5">
-          <h3 className="font-semibold text-gray-900">สัดส่วนชุด</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900">สัดส่วนชุด</h3>
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              <button 
+                onClick={() => setDisplayUnit('cm')} 
+                className={`px-3 py-1 text-xs font-semibold rounded-md ${displayUnit === 'cm' ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500'}`}
+              >
+                ซม.
+              </button>
+              <button 
+                onClick={() => setDisplayUnit('inch')} 
+                className={`px-3 py-1 text-xs font-semibold rounded-md ${displayUnit === 'inch' ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500'}`}
+              >
+                นิ้ว
+              </button>
+            </div>
+          </div>
           {(item.bust || item.waist || item.hip || item.height_recommended) ? (
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {[['อก', item.bust],['เอว', item.waist],['สะโพก', item.hip]].map(([l, v]) => (
-                <div key={l} className="rounded-xl bg-gray-50 p-3 text-center">
-                  <p className="text-sm font-bold text-gray-800">{v ? `${v}"` : '—'}</p>
-                  <p className="text-xs text-gray-400">{l}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-4 gap-2">
+              {[['อก', item.bust],['เอว', item.waist],['สะโพก', item.hip]].map(([l, v]) => {
+                const cv = convertMeasurement(v, item.measurement_unit || 'cm', displayUnit);
+                return (
+                  <div key={l} className="rounded-xl bg-gray-50 p-3 text-center">
+                    <p className="text-sm font-bold text-gray-800">{cv ? `${cv}${displayUnit === 'inch' ? '"' : ''}` : '—'}</p>
+                    <p className="text-xs text-gray-400">{l}</p>
+                  </div>
+                )
+              })}
               <div className="rounded-xl bg-gray-50 p-3 text-center">
                 <p className="text-sm font-bold text-gray-800">{item.height_recommended || '—'}</p>
                 <p className="text-xs text-gray-400">สูงแนะนำ</p>
@@ -300,7 +336,7 @@ export default function ProductDetail() {
             <p className="text-lg font-bold text-brand-purple">฿{selectedRate}<span className="text-sm font-normal text-gray-400"> / day</span></p>
           </div>
           <Button className="w-40" disabled={!agree1 || !agree2}
-            onClick={() => navigate(`/items/${item.id}/dates`, { state: { rateType } })}>
+            onClick={() => navigate(`/items/${item.id}/dates`, { state: { rateType, item } })}>
             {(!agree1 || !agree2) ? 'ยอมรับข้อตกลง' : 'Book Now'}
           </Button>
         </div>
