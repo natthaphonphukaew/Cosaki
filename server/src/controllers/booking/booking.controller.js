@@ -28,7 +28,18 @@ const canTransition = (from, to) => VALID_TRANSITIONS[from]?.includes(to) ?? fal
 // POST /bookings — renter initiates booking
 const createBooking = async (req, res, next) => {
   try {
-    const { item_id, rental_start, rental_end, notes, rate_type = 'test', is_express = false } = req.body;
+    const { item_id, rental_start, notes, rate_type = 'test', is_express = false } = req.body;
+    
+    // Server-side enforcement of the 3-day lock window
+    // rental_end is ALWAYS rental_start + 2 days
+    const start = new Date(rental_start);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(start);
+    end.setDate(start.getDate() + 2);
+    
+    // Format back to YYYY-MM-DD
+    const rental_end = end.toISOString().split('T')[0];
 
     // Fetch item + shop info
     const { rows: items } = await db.query(
@@ -70,9 +81,9 @@ const createBooking = async (req, res, next) => {
     );
     if (conflicts.length) return error(res, 'Item is already booked for those dates', 409);
 
-    const days = Math.ceil(
-      (new Date(rental_end) - new Date(rental_start)) / (1000 * 60 * 60 * 24)
-    );
+    // Force 1 usage rental cost, ignoring any extra days
+    // This locks the renter into the 3-day window concept server-side
+    const days = 1;
 
     // Money model (PRD §4.1): renter pays rental + 10% protection fee + shipping;
     // seller receives rental − 10% commission. No deposit.
@@ -83,7 +94,10 @@ const createBooking = async (req, res, next) => {
     const cosaki_fee    = parseFloat((rental_fee * 0.10).toFixed(2));   // → insurance fund
     const commission    = parseFloat((rental_fee * 0.10).toFixed(2));   // → platform revenue
     const seller_payout = parseFloat((rental_fee - commission).toFixed(2));
-    const shipping_fee  = is_express ? 0 : parseFloat(Number(item.shipping_fee || 0).toFixed(2));
+    
+    // Prevent malicious is_express injects
+    const isExpressValidated = is_express && item.express_delivery;
+    const shipping_fee  = isExpressValidated ? 0 : parseFloat(Number(item.shipping_fee || 0).toFixed(2));
     const token = generateToken();
 
     // Determine initial status based on renter's KYC
@@ -103,7 +117,7 @@ const createBooking = async (req, res, next) => {
         rental_start, rental_end, initialStatus,
         token, rate_type, rental_fee, cosaki_fee, commission,
         seller_payout, shipping_fee, booking_fee, notes || null,
-        is_express
+        isExpressValidated
       ]
     );
 

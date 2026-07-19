@@ -73,7 +73,7 @@ export default function HomePage() {
           <button onClick={() => navigate('/search')} className="text-sm font-medium text-brand-purple">{t('home.view_all', 'View All')}</button>
         </div>
         <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-          {['All', ...(user?.fandoms || [])].map((f) => (
+          {['All', ...(user?.fandoms?.length ? user.fandoms : ['Genshin Impact', 'Honkai Star Rail', 'Valorant'])].map((f) => (
             <button
               key={f}
               onClick={() => setFandom(f)}

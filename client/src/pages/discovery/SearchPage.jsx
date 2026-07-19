@@ -219,7 +219,7 @@ export default function SearchPage() {
 
             <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Fandom</p>
             <div className="flex flex-wrap gap-2">
-              {(user?.fandoms || []).map((f) => (
+              {(user?.fandoms?.length ? user.fandoms : ['Genshin Impact', 'Honkai Star Rail', 'Valorant']).map((f) => (
                 <button key={f} onClick={() => set('fandom', filter.fandom === f ? null : f)}
                   className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter.fandom === f ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
                   {f}
