@@ -129,8 +129,8 @@ export default function HomePage() {
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
                   <div className="mt-1 flex flex-col">
-                    <p className="text-[13px] font-bold text-brand-purple">{t('common.test_rate')} ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day')}</span></p>
-                    <p className="text-[13px] font-bold text-brand-pink">{t('common.private_rate')} ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day')}</span></p>
+                    <p className="text-[13px] font-bold text-brand-purple">{t('common.test_rate', 'Test')} ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day', 'day')}</span></p>
+                    <p className="text-[13px] font-bold text-brand-pink">{t('common.private_rate', 'Private')} ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day', 'day')}</span></p>
                   </div>
                 </div>
               </div>
