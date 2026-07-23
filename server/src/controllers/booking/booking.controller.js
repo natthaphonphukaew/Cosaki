@@ -64,7 +64,7 @@ const createBooking = async (req, res, next) => {
     const { rows: conflicts } = await db.query(
       `SELECT id FROM bookings
        WHERE item_id = $1
-         AND status NOT IN ('cancelled', 'completed')
+         AND status NOT IN ('cancelled', 'completed', 'draft', 'pending_kyc', 'pending_payment')
          AND rental_start < $3 AND rental_end > $2`,
       [item_id, rental_start, rental_end]
     );

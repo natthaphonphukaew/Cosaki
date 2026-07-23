@@ -34,6 +34,9 @@ export default function SmartCalendar() {
 
   const bookingsOnDay = (day) =>
     bookings.filter((b) => {
+      const isConfirmed = ['shipped', 'returned', 'completed', 'disputed'].includes(b.status) || 
+                          (b.status === 'escrowed' && b.accepted_at);
+      if (!isConfirmed) return false;
       if (!b.rental_start || !b.rental_end) return false;
       const s = parseISO(b.rental_start);
       const e = parseISO(b.rental_end);
@@ -41,6 +44,9 @@ export default function SmartCalendar() {
     });
 
   const todayBookings = bookings.filter((b) => {
+    const isConfirmed = ['shipped', 'returned', 'completed', 'disputed'].includes(b.status) || 
+                        (b.status === 'escrowed' && b.accepted_at);
+    if (!isConfirmed) return false;
     if (!b.rental_start || !b.rental_end) return false;
     const now = new Date();
     return now >= parseISO(b.rental_start) && now <= parseISO(b.rental_end);

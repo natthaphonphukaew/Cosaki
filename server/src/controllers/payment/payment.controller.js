@@ -22,6 +22,20 @@ const createCharge = async (req, res, next) => {
       return error(res, 'Booking is not awaiting payment', 422);
     }
 
+    const { rows: conflicts } = await db.query(
+      `SELECT id FROM bookings
+       WHERE item_id = $1
+         AND status NOT IN ('cancelled', 'completed', 'draft', 'pending_kyc', 'pending_payment')
+         AND rental_start < $3 AND rental_end > $2
+         AND id != $4`,
+      [booking.item_id, booking.rental_start, booking.rental_end, booking.id]
+    );
+
+    if (conflicts.length > 0) {
+      await db.query(`UPDATE bookings SET status = 'cancelled' WHERE id = $1`, [booking.id]);
+      return error(res, 'ขออภัย คิวนี้ถูกชำระเงินตัดหน้าไปแล้ว (คิวถูกยกเลิกอัตโนมัติ)', 409);
+    }
+
     const total  = Number(booking.total_amount);
     const charge = pay_mode === 'deposit' ? Number(booking.booking_fee) : total;
     const mockGatewayRef = `ch_mock_${Date.now()}`;

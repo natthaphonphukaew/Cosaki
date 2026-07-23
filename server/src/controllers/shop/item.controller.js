@@ -204,7 +204,7 @@ const getAvailability = async (req, res, next) => {
     const { rows } = await db.query(
       `SELECT rental_start, rental_end FROM bookings
        WHERE item_id = $1
-         AND status NOT IN ('cancelled', 'completed', 'draft')
+         AND status NOT IN ('cancelled', 'completed', 'draft', 'pending_kyc', 'pending_payment')
          AND rental_end >= CURRENT_DATE
        ORDER BY rental_start`,
       [req.params.id]

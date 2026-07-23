@@ -24,6 +24,9 @@ export default function CalendarPage() {
 
   const bookingsOnDay = (day) =>
     bookings.filter((b) => {
+      const isConfirmed = ['shipped', 'returned', 'completed', 'disputed'].includes(b.status) || 
+                          (b.status === 'escrowed' && b.accepted_at);
+      if (!isConfirmed) return false;
       if (!b.rental_start || !b.rental_end) return false;
       return day >= parseISO(b.rental_start) && day <= parseISO(b.rental_end);
     });
