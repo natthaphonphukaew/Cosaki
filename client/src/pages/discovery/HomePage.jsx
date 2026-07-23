@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Plus } from 'lucide-react';
+import { Heart, Plus, LogIn } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import NotificationBell from '@/components/ui/NotificationBell';
@@ -16,11 +16,17 @@ export default function HomePage() {
   const [items, setItems]   = useState([]);
   const [fandom, setFandom] = useState('All');
   const [favs, setFavs]     = useState([]);
-  const { user }            = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const navigate            = useNavigate();
   const { t }               = useTranslation();
 
   useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
+
+  // Pick a random item to feature as the special-offers banner background.
+  const heroItem = useMemo(
+    () => (items.length ? items[Math.floor(Math.random() * items.length)] : null),
+    [items]
+  );
 
   // New users have no fandoms yet — fall back to a curated popular list so the
   // chip row isn't empty (§1.3).
@@ -46,30 +52,52 @@ export default function HomePage() {
     <AppShell>
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-brand-light flex items-center justify-center">
-            <span className="text-sm font-bold text-brand-purple">{user?.display_name?.[0] || 'C'}</span>
+        <button onClick={() => navigate('/profile')} className="flex items-center gap-3 min-w-0 active:opacity-80">
+          <div className="h-9 w-9 overflow-hidden rounded-full bg-brand-light flex items-center justify-center flex-shrink-0">
+            {user?.avatar_url
+              ? <img src={user.avatar_url} alt="me" className="h-full w-full object-cover" />
+              : <span className="text-sm font-bold text-brand-purple">{user?.display_name?.[0] || 'C'}</span>}
           </div>
-          <div>
+          <div className="text-left">
             <p className="text-xs text-gray-400">{t('home.welcome_back', 'Welcome back')}</p>
-            <p className="text-sm font-semibold text-gray-800">{user?.display_name || t('home.cosplayer', 'Cosplayer')}</p>
+            <p className="text-sm font-semibold text-gray-800 truncate max-w-[150px]">{user?.display_name || t('home.cosplayer', 'Cosplayer')}</p>
           </div>
-        </div>
+        </button>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          <ChatButton size={20} className="h-10 w-10 bg-white shadow-sm" />
-          <NotificationBell size={20} className="h-10 w-10 bg-white shadow-sm" />
+          {accessToken ? (
+            <>
+              <ChatButton size={20} className="h-10 w-10 bg-white shadow-sm" />
+              <NotificationBell size={20} className="h-10 w-10 bg-white shadow-sm" />
+            </>
+          ) : (
+            <button onClick={() => navigate('/login')}
+              className="flex items-center gap-1 rounded-full bg-brand-gradient px-3 py-2 text-xs font-semibold text-white">
+              <LogIn size={14} /> {t('home.login', 'เข้าสู่ระบบ')}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Hero banner */}
-      <div className="mx-4 mb-5 overflow-hidden rounded-2xl bg-brand-gradient p-5">
-        <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">{t('home.limited_offer', 'LIMITED OFFER')}</span>
-        <h2 className="mt-2 text-xl font-bold text-white">{t('home.new_season', 'New Season Drops')}</h2>
-        <button onClick={() => navigate('/search')} className="mt-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-brand-purple">
-          {t('home.rent_now', 'Rent Now')}
-        </button>
-      </div>
+      {/* Special-offers banner — random product as the backdrop */}
+      <button
+        onClick={() => navigate(heroItem ? `/items/${heroItem.id}` : '/search')}
+        className="relative mx-4 mb-5 block h-40 w-full max-w-[calc(100%-2rem)] overflow-hidden rounded-2xl bg-brand-gradient text-left"
+      >
+        {heroItem && (
+          <div className="absolute inset-0">
+            <ProductImage item={heroItem} emojiClassName="text-6xl" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+          </div>
+        )}
+        <div className="relative flex h-full flex-col justify-end p-5">
+          <span className="w-fit rounded-full bg-white/25 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">{t('home.limited_offer', 'LIMITED OFFER')}</span>
+          <h2 className="mt-2 text-xl font-bold text-white drop-shadow-sm">{heroItem?.name || t('home.new_season', 'New Season Drops')}</h2>
+          <span className="mt-2 w-fit rounded-full bg-white px-5 py-2 text-sm font-semibold text-brand-purple">
+            {t('home.rent_now', 'เช่าเลย')}
+          </span>
+        </div>
+      </button>
 
       {/* Trending fandoms */}
       <div className="mb-4 px-4">

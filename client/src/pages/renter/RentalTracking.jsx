@@ -4,6 +4,7 @@ import { Package, Truck, CheckCircle, AlertCircle, ChevronRight } from 'lucide-r
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
+import ProductImage from '@/components/ui/ProductImage';
 import { getBooking, updateStatus, cancelBooking } from '@/api/bookings';
 import { payBalance } from '@/api/payments';
 import { createDispute } from '@/api/disputes';
@@ -115,7 +116,9 @@ export default function RentalTracking() {
             <Badge status={booking.status} label={booking.status.replace('_',' ').toUpperCase()} />
           </div>
           <div className="mt-3 flex items-center gap-3">
-            <div className="h-14 w-14 rounded-xl bg-brand-light flex items-center justify-center text-2xl flex-shrink-0">🎭</div>
+            <div className="h-14 w-14 overflow-hidden rounded-xl flex-shrink-0">
+              <ProductImage item={{ image_urls: booking.image_urls, name: booking.item_name }} emojiClassName="text-2xl" />
+            </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">{booking.item_name}</p>
               <p className="text-xs text-gray-400 mt-0.5">

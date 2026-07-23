@@ -18,10 +18,13 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config;
     if (err.response?.status === 401 && !original._retry) {
+      const raw = localStorage.getItem('cosaki-auth');
+      const state = raw ? JSON.parse(raw).state : null;
+      // Guest (anonymous) request — no session to refresh. Don't bounce to login;
+      // guests may browse/search freely, and gated actions prompt sign-up inline.
+      if (!state?.refreshToken) return Promise.reject(err);
       original._retry = true;
       try {
-        const raw = localStorage.getItem('cosaki-auth');
-        const { state } = JSON.parse(raw);
         const { data } = await axios.post('/api/v1/auth/refresh', {
           refreshToken: state.refreshToken,
         });

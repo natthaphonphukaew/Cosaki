@@ -32,6 +32,17 @@ export default function SearchPage() {
   const filterFandoms = user?.fandoms?.length ? user.fandoms : POPULAR_FANDOMS;
 
   useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
+  // Populate the grid on entry (no blank screen before searching).
+  useEffect(() => { run('', EMPTY_FILTER); /* eslint-disable-next-line */ }, []);
+
+  // Lock background scroll while the filter sheet is open (the page behind must
+  // not scroll on wheel/touch).
+  useEffect(() => {
+    if (!showFilter) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [showFilter]);
 
   const activeCount = Object.entries(filter).filter(([k, v]) =>
     k === 'allow_event' ? v : v !== null && v !== '' ).length;
@@ -53,7 +64,11 @@ export default function SearchPage() {
 
   const run = async (query = q, f = filter) => {
     const params = buildParams(query, f);
-    if (!Object.keys(params).length) { setItems([]); return; }
+    // No query/filter → show a default feed (boost the user's fandoms if any)
+    // instead of a blank screen.
+    if (!Object.keys(params).length && user?.fandoms?.length) {
+      params.fandoms = user.fandoms.join(',');
+    }
     try {
       setLoading(true);
       const { data } = await searchItems(params);
@@ -186,13 +201,15 @@ export default function SearchPage() {
 
       {/* Advanced Filter sheet (§2.1) */}
       {showFilter && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setShowFilter(false)}>
-          <div className="max-h-[85vh] w-full max-w-[390px] overflow-y-auto rounded-t-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30" onClick={() => setShowFilter(false)} onWheel={(e) => e.stopPropagation()}>
+          <div className="flex max-h-[85vh] w-full max-w-[390px] flex-col rounded-t-3xl bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pt-6 pb-4">
               <h3 className="text-lg font-bold text-gray-900">ตัวกรองอัจฉริยะ</h3>
               <button onClick={() => setShowFilter(false)} className="text-gray-400 text-lg">✕</button>
             </div>
 
+            {/* Scrollable filter body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">ช่วงราคา (฿/วัน)</p>
             <div className="grid grid-cols-2 gap-3">
               <Input label="ต่ำสุด" type="number" value={filter.price_min} onChange={(e) => set('price_min', e.target.value)} />
@@ -247,18 +264,22 @@ export default function SearchPage() {
               className={`mt-4 w-full rounded-xl p-3 text-left text-sm font-medium ${filter.allow_event ? 'border-2 border-brand-purple bg-brand-light/30 text-brand-purple' : 'border border-gray-200 text-gray-600'}`}>
               🎭 เฉพาะชุดที่อนุญาตออกงาน/กิจกรรม
             </button>
+            </div>
 
-            <div className="mt-5 flex gap-2">
-              <button onClick={saveFilter} className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brand-purple py-3 text-sm font-semibold text-brand-purple">
-                <Bookmark size={15} /> Save Filter
-              </button>
-              <button onClick={loadSaved} className="flex-1 rounded-full border border-gray-200 py-3 text-sm font-semibold text-gray-600">
-                ใช้ที่บันทึกไว้
+            {/* Sticky action footer — always reachable above the home indicator */}
+            <div className="border-t border-gray-100 bg-white px-6 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+              <div className="flex gap-2">
+                <button onClick={saveFilter} className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brand-purple py-3 text-sm font-semibold text-brand-purple">
+                  <Bookmark size={15} /> Save Filter
+                </button>
+                <button onClick={loadSaved} className="flex-1 rounded-full border border-gray-200 py-3 text-sm font-semibold text-gray-600">
+                  ใช้ที่บันทึกไว้
+                </button>
+              </div>
+              <button onClick={applyFilters} className="mt-3 w-full rounded-full bg-brand-gradient py-4 text-base font-semibold text-white">
+                ค้นหา
               </button>
             </div>
-            <button onClick={applyFilters} className="mt-3 w-full rounded-full bg-brand-gradient py-4 text-base font-semibold text-white">
-              ค้นหา
-            </button>
           </div>
         </div>
       )}

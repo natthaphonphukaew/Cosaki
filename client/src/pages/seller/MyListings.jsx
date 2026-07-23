@@ -70,7 +70,7 @@ export default function MyListings() {
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="text-xs text-gray-400 truncate">{item.fandom || 'Cosplay'}</p>
                   <p className="mt-1 text-sm font-bold text-brand-purple">
-                    ${item.daily_rate}<span className="font-normal text-gray-400"> /day</span>
+                    ฿{item.daily_rate}<span className="font-normal text-gray-400"> / ครั้ง</span>
                   </p>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { ensureShopActive } = require('../../services/strike/strike.service');
+const { RETURN_FREEZE_DAYS } = require('../../utils/bookingRules');
 
 const getShopId = async (userId) => {
   const { rows } = await db.query('SELECT id FROM shops WHERE owner_id = $1', [userId]);
@@ -61,6 +62,7 @@ const getItem = async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT i.*, s.shop_name, s.rating AS shop_rating, s.review_count AS shop_review_count,
+              s.rules_text AS shop_rules_text, s.rules_image_url AS shop_rules_image,
               (SELECT COUNT(*) FROM bookings b WHERE b.item_id = i.id AND b.status = 'completed')::int AS rented_count
        FROM items i JOIN shops s ON s.id = i.shop_id
        WHERE i.id = $1`,
@@ -164,13 +166,16 @@ const searchItems = async (req, res, next) => {
     if (waist) conditions.push(`(i.waist IS NULL OR ABS(i.waist - ${P(Number(waist))}) <= 6)`);
     if (hip)   conditions.push(`(i.hip   IS NULL OR ABS(i.hip   - ${P(Number(hip))})   <= 6)`);
     if (allow_event === 'true') conditions.push(`i.allow_event = TRUE`);
-    // Availability window (§2.1.4): hide items with an overlapping active booking.
+    // Availability window (§2.1.4): hide items whose window (incl. the 10-day
+    // post-return freeze) overlaps a PAID booking. Two half-open spans overlap
+    // iff from < rental_end + 10 AND rental_start < to + 10.
     if (date_from && date_to) {
       const f = P(date_from), t = P(date_to);
       conditions.push(`NOT EXISTS (
         SELECT 1 FROM bookings b WHERE b.item_id = i.id
-          AND b.status NOT IN ('cancelled','completed','draft')
-          AND b.rental_start < ${t} AND b.rental_end > ${f})`);
+          AND b.status IN ('escrowed','shipped','returned','completed')
+          AND ${f}::date < (b.rental_end + ${RETURN_FREEZE_DAYS})
+          AND b.rental_start < (${t}::date + ${RETURN_FREEZE_DAYS}))`);
     }
 
     // Home-feed boost (§1.3): items in the user's fandoms rank first.
@@ -198,14 +203,18 @@ const searchItems = async (req, res, next) => {
   }
 };
 
-// GET /items/:id/availability — booked date ranges (for the live calendar)
+// GET /items/:id/availability — occupied date ranges for the live calendar.
+// Only PAID (committed) bookings occupy the calendar, and each occupies
+// [rental_start, rental_end + 10-day wash/iron freeze). `blocked_until` is the
+// first date the item is bookable again (exclusive end of the grey range).
 const getAvailability = async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT rental_start, rental_end FROM bookings
+      `SELECT rental_start, (rental_end + ${RETURN_FREEZE_DAYS}) AS blocked_until
+       FROM bookings
        WHERE item_id = $1
-         AND status NOT IN ('cancelled', 'completed', 'draft')
-         AND rental_end >= CURRENT_DATE
+         AND status IN ('escrowed', 'shipped', 'returned', 'completed')
+         AND (rental_end + ${RETURN_FREEZE_DAYS}) >= CURRENT_DATE
        ORDER BY rental_start`,
       [req.params.id]
     );

@@ -4,6 +4,15 @@ const { success, error } = require('../../utils/response');
 const { notify, shopOwnerId } = require('../../services/notification/notification.service');
 const { ageFromDob, canRentAge } = require('../../utils/age');
 const { ensureShopActive } = require('../../services/strike/strike.service');
+const { SHIP_BUFFER_DAYS, findCommittedConflicts } = require('../../utils/bookingRules');
+
+// yyyy-mm-dd helpers (UTC-safe, no timezone drift for date-only math).
+const addDaysISO = (isoDate, n) => {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const generateToken = () => randomBytes(32).toString('hex');
 
@@ -60,25 +69,34 @@ const createBooking = async (req, res, next) => {
     );
     if (!gate.ok) return error(res, gate.reason, 403);
 
-    // Check calendar conflicts
-    const { rows: conflicts } = await db.query(
-      `SELECT id FROM bookings
-       WHERE item_id = $1
-         AND status NOT IN ('cancelled', 'completed')
-         AND rental_start < $3 AND rental_end > $2`,
-      [item_id, rental_start, rental_end]
-    );
-    if (conflicts.length) return error(res, 'Item is already booked for those dates', 409);
+    // Express is only free/instant if the ITEM actually offers it — never trust
+    // the client flag alone, or any booking could claim free/instant shipping.
+    const express = Boolean(is_express) && item.express_delivery === true;
 
-    // Rental spans 1 usage day + up to 2 return days = a 3-calendar-day block
-    // (§2.4). The price is flat per usage, so we MUST cap the span server-side —
-    // the 3-day lock in SelectDates is UI-only and can be bypassed via the API.
-    const days = Math.ceil(
-      (new Date(rental_end) - new Date(rental_start)) / (1000 * 60 * 60 * 24)
-    );
-    if (days < 1 || days > 3) {
-      return error(res, 'ช่วงวันเช่าต้องอยู่ภายใน 3 วัน (ใช้งาน 1 วัน + ส่งคืน)', 422);
+    // ── Booking window (PRD update) ───────────────────────────────────────────
+    // The renter picks a single start (use) date; the return-by date is derived
+    // from the shop's return_days. A fixed 7-day shipping buffer means non-express
+    // items can only be booked from today + 7 onward.
+    const returnDays = Math.max(1, Number(item.return_days ?? 2));
+    const serverRentalEnd = addDaysISO(rental_start, returnDays);
+    const earliestStart = express ? todayISO() : addDaysISO(todayISO(), SHIP_BUFFER_DAYS);
+    if (rental_start < earliestStart) {
+      return error(
+        res,
+        express
+          ? 'วันเริ่มเช่าต้องไม่เป็นอดีต'
+          : `จองล่วงหน้าอย่างน้อย ${SHIP_BUFFER_DAYS} วัน (เผื่อระยะเวลาขนส่ง) — เริ่มได้ตั้งแต่ ${earliestStart}`,
+        422
+      );
     }
+
+    // Calendar conflicts: only PAID (committed) bookings occupy the calendar, and
+    // each occupies [start, return + 10-day wash/iron freeze). Unpaid selections
+    // do NOT reserve the slot — it is claimed at payment.
+    const conflicts = await findCommittedConflicts({
+      itemId: item_id, start: rental_start, end: serverRentalEnd,
+    });
+    if (conflicts.length) return error(res, 'ช่วงวันที่เลือกไม่ว่าง (ติดคิวเช่า/รอบพักผ้า)', 409);
 
     // Money model (PRD §4.1): renter pays rental + 10% protection fee + shipping;
     // seller receives rental − 10% commission. No deposit. Rate is flat per usage.
@@ -89,9 +107,6 @@ const createBooking = async (req, res, next) => {
     const cosaki_fee    = parseFloat((rental_fee * 0.10).toFixed(2));   // → insurance fund
     const commission    = parseFloat((rental_fee * 0.10).toFixed(2));   // → platform revenue
     const seller_payout = parseFloat((rental_fee - commission).toFixed(2));
-    // Express is only free if the ITEM actually offers it — never trust the
-    // client flag alone, or any booking could claim free shipping.
-    const express       = Boolean(is_express) && item.express_delivery === true;
     const shipping_fee  = express ? 0 : parseFloat(Number(item.shipping_fee || 0).toFixed(2));
     const token = generateToken();
 
@@ -109,7 +124,7 @@ const createBooking = async (req, res, next) => {
        RETURNING *`,
       [
         item.shop_id, req.user.id, item_id,
-        rental_start, rental_end, initialStatus,
+        rental_start, serverRentalEnd, initialStatus,
         token, rate_type, rental_fee, cosaki_fee, commission,
         seller_payout, shipping_fee, booking_fee, notes || null,
         express
@@ -367,19 +382,26 @@ const rescheduleBooking = async (req, res, next) => {
       return error(res, 'เลื่อนคิวไม่ได้ในสถานะนี้', 422);
     }
 
-    // New dates must be free.
-    const { rows: conflicts } = await db.query(
-      `SELECT id FROM bookings
-       WHERE item_id = $1 AND id <> $2 AND status NOT IN ('cancelled','completed')
-         AND rental_start < $4 AND rental_end > $3`,
-      [booking.item_id, booking.id, rental_start, rental_end]
-    );
-    if (conflicts.length) return error(res, 'ช่วงวันที่เลือกไม่ว่าง', 409);
+    // Re-derive the return-by date from the item's return_days and re-apply the
+    // 7-day shipping buffer (unless this booking is express).
+    const { rows: [item] } = await db.query('SELECT return_days FROM items WHERE id = $1', [booking.item_id]);
+    const returnDays = Math.max(1, Number(item?.return_days ?? 2));
+    const newEnd = addDaysISO(rental_start, returnDays);
+    const earliestStart = booking.is_express ? todayISO() : addDaysISO(todayISO(), SHIP_BUFFER_DAYS);
+    if (rental_start < earliestStart) {
+      return error(res, `จองล่วงหน้าอย่างน้อย ${SHIP_BUFFER_DAYS} วัน — เริ่มได้ตั้งแต่ ${earliestStart}`, 422);
+    }
+
+    // New window must be free of other COMMITTED bookings (+10-day freeze).
+    const conflicts = await findCommittedConflicts({
+      itemId: booking.item_id, start: rental_start, end: newEnd, excludeBookingId: booking.id,
+    });
+    if (conflicts.length) return error(res, 'ช่วงวันที่เลือกไม่ว่าง (ติดคิวเช่า/รอบพักผ้า)', 409);
 
     const { rows: updated } = await db.query(
       `UPDATE bookings SET rental_start = $1, rental_end = $2, reschedule_used = TRUE, updated_at = NOW()
        WHERE id = $3 RETURNING *`,
-      [rental_start, rental_end, booking.id]
+      [rental_start, newEnd, booking.id]
     );
     return success(res, { booking: updated[0] });
   } catch (err) {

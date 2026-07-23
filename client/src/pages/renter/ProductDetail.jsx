@@ -8,6 +8,8 @@ import { getShopReviews } from '@/api/reviews';
 import { openChat } from '@/api/chats';
 import { toggleFollowShop, getFollowState } from '@/api/shops';
 import { isFavorite, toggleFavorite } from '@/utils/favorites';
+import useRequireAuth from '@/hooks/useRequireAuth';
+import useAuthStore from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { MessageCircle } from 'lucide-react';
 
@@ -29,6 +31,8 @@ function convertMeasurement(value, fromUnit, toUnit) {
 export default function ProductDetail() {
   const { id }      = useParams();
   const navigate    = useNavigate();
+  const requireAuth = useRequireAuth();
+  const { accessToken } = useAuthStore();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [slide, setSlide] = useState(0);
@@ -61,14 +65,14 @@ export default function ProductDetail() {
     } catch { /* user cancelled share */ }
   };
 
-  // Real follow via API (shop_follows table).
+  // Real follow via API (shop_follows table) — only for signed-in users.
   const [following, setFollowing] = useState(false);
   useEffect(() => {
-    if (item?.shop_id) {
+    if (item?.shop_id && accessToken) {
       getFollowState(item.shop_id).then(({ data }) => setFollowing(data.data.following)).catch(() => {});
     }
-  }, [item?.shop_id]);
-  const toggleFollow = async () => {
+  }, [item?.shop_id, accessToken]);
+  const toggleFollow = () => requireAuth(async () => {
     try {
       const { data } = await toggleFollowShop(item.shop_id);
       setFollowing(data.data.following);
@@ -76,7 +80,7 @@ export default function ProductDetail() {
     } catch (err) {
       toast.error(err.response?.data?.message || 'ทำรายการไม่สำเร็จ');
     }
-  };
+  });
 
   const onScroll = (e) => {
     const w = e.target.clientWidth;
@@ -166,14 +170,14 @@ export default function ProductDetail() {
           </button>
           <div className="ml-auto flex items-center gap-2">
             <button
-              onClick={async () => {
+              onClick={() => requireAuth(async () => {
                 try {
                   const { data } = await openChat(item.shop_id);
                   navigate(`/chats/${data.data.conversation.id}`);
                 } catch (err) {
                   toast.error(err.response?.data?.message || 'เปิดแชทไม่สำเร็จ');
                 }
-              }}
+              })}
               className="flex items-center gap-1 rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand-purple"
             >
               <MessageCircle size={13} /> แชท
@@ -265,9 +269,26 @@ export default function ProductDetail() {
           {item.sizes?.length > 0 && <p className="mt-2 text-sm text-gray-600">ไซส์: {item.sizes.join(', ')}</p>}
         </div>
 
+        {/* Shop rules (กฎของร้าน) — text and/or image set by the shop */}
+        {(item.shop_rules_text || item.shop_rules_image) && (
+          <div className="mt-5 rounded-2xl border border-brand-purple/15 bg-brand-light/30 p-4">
+            <h3 className="mb-2 flex items-center gap-2 font-semibold text-gray-900">📋 กฎของร้าน</h3>
+            {item.shop_rules_text && (
+              <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600">{item.shop_rules_text}</p>
+            )}
+            {item.shop_rules_image && (
+              <img
+                src={item.shop_rules_image}
+                alt="กฎของร้าน"
+                className="mt-3 w-full rounded-xl border border-gray-100 object-cover"
+              />
+            )}
+          </div>
+        )}
+
         {/* SLA + couriers */}
         <div className="mt-4 rounded-xl bg-gray-50 p-3 space-y-1 text-xs text-gray-600">
-          <p>🚚 คาดว่าได้รับก่อนวันใช้ <span className="font-semibold">{item.ship_lead_days ?? 2}</span> วัน · ส่งคืนภายใน <span className="font-semibold">{item.return_days ?? 2}</span> วันหลังใช้งาน</p>
+          <p>🚚 เผื่อระยะเวลาขนส่ง <span className="font-semibold">7</span> วัน · ส่งคืนภายใน <span className="font-semibold">{item.return_days ?? 2}</span> วันหลังใช้งาน</p>
           {item.return_couriers?.length > 0 && <p>📦 ขนส่งขากลับที่รับ: {item.return_couriers.join(', ')}</p>}
         </div>
 
@@ -333,10 +354,10 @@ export default function ProductDetail() {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs text-gray-400">{rateType === 'private' ? 'ไพรเวท' : 'เทสที่บ้าน'}</span>
-            <p className="text-lg font-bold text-brand-purple">฿{selectedRate}<span className="text-sm font-normal text-gray-400"> / day</span></p>
+            <p className="text-lg font-bold text-brand-purple">฿{selectedRate}<span className="text-sm font-normal text-gray-400"> / ครั้ง</span></p>
           </div>
           <Button className="w-40" disabled={!agree1 || !agree2}
-            onClick={() => navigate(`/items/${item.id}/dates`, { state: { rateType, item } })}>
+            onClick={() => requireAuth(() => navigate(`/items/${item.id}/dates`, { state: { rateType, item } }))}>
             {(!agree1 || !agree2) ? 'ยอมรับข้อตกลง' : 'Book Now'}
           </Button>
         </div>

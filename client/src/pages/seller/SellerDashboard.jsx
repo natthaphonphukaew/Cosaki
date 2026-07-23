@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, TrendingUp, Plus } from 'lucide-react';
+import { ChevronRight, TrendingUp, Plus, Store } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import NotificationBell from '@/components/ui/NotificationBell';
@@ -38,21 +38,28 @@ export default function SellerDashboard() {
   return (
     <AppShell>
       <div className="px-4 pt-5">
-        {/* Top bar */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-light flex items-center justify-center font-bold text-brand-purple">
+        {/* Top bar — tap the shop identity to edit the shop profile */}
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => navigate('/seller/shop/edit')} className="flex items-center gap-3 min-w-0 active:opacity-80">
+            <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-light flex items-center justify-center font-bold text-brand-purple flex-shrink-0">
               {shop?.logo_url
                 ? <img src={shop.logo_url} alt="shop" className="h-full w-full object-cover" />
                 : (shopName[0] || 'S')}
             </div>
-            <span className="text-base font-bold text-gray-800 truncate max-w-[180px]">{shopName}</span>
-          </div>
+            <span className="text-base font-bold text-gray-800 truncate max-w-[160px]">{shopName}</span>
+          </button>
           <div className="flex items-center gap-2">
             <ChatButton />
             <NotificationBell />
           </div>
         </div>
+
+        {/* Prominent shop-profile button */}
+        <button onClick={() => navigate('/seller/shop/edit')}
+          className="mb-4 flex w-full items-center justify-between rounded-2xl bg-brand-gradient p-4 text-white active:opacity-90">
+          <span className="flex items-center gap-2 text-sm font-semibold"><Store size={18} /> จัดการโปรไฟล์ร้าน & กฎของร้าน</span>
+          <ChevronRight size={18} />
+        </button>
 
         {/* Shop discipline banner (§4.2) */}
         {shopStatus?.is_frozen ? (
@@ -90,7 +97,7 @@ export default function SellerDashboard() {
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Earnings</p>
           <div className="flex items-end justify-between mt-1">
-            <h2 className="text-3xl font-bold text-gray-900">${earnings.toFixed(2)}</h2>
+            <h2 className="text-3xl font-bold text-gray-900">฿{earnings.toFixed(2)}</h2>
             {earnings > 0 && (
               <div className="flex items-center gap-1 text-green-500 text-sm font-semibold">
                 <TrendingUp size={16} /> Active
@@ -178,7 +185,7 @@ export default function SellerDashboard() {
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
-                  <p className="mt-1 text-sm font-bold text-brand-purple">${item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                  <p className="mt-1 text-sm font-bold text-brand-purple">฿{item.daily_rate}<span className="font-normal text-gray-400"> / ครั้ง</span></p>
                 </div>
               </div>
             ))}

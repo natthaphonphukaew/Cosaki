@@ -22,7 +22,7 @@ export default function EditProduct() {
     name: '', character: '', fandom: '', description: '',
     test_rate: '', private_rate: '', shipping_fee: '', min_age: 0, sizes: [], is_available: true,
     bust: '', waist: '', hip: '', height_recommended: '',
-    ship_lead_days: 2, return_days: 2, allow_event: false, express_delivery: false, return_couriers: [],
+    return_days: 2, allow_event: false, express_delivery: false, return_couriers: [],
   });
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function EditProduct() {
         sizes: i.sizes || [], is_available: i.is_available !== false,
         bust: String(i.bust ?? ''), waist: String(i.waist ?? ''), hip: String(i.hip ?? ''),
         height_recommended: i.height_recommended || '',
-        ship_lead_days: Number(i.ship_lead_days ?? 2), return_days: Number(i.return_days ?? 2),
+        return_days: Number(i.return_days ?? 2),
         allow_event: !!i.allow_event, express_delivery: !!i.express_delivery,
         return_couriers: i.return_couriers || [],
       });
@@ -77,7 +77,6 @@ export default function EditProduct() {
         waist: form.waist ? Number(form.waist) : null,
         hip: form.hip ? Number(form.hip) : null,
         height_recommended: form.height_recommended || null,
-        ship_lead_days: Number(form.ship_lead_days) || 2,
         return_days: Number(form.return_days) || 2,
         allow_event: form.allow_event, express_delivery: form.express_delivery,
         return_couriers: form.return_couriers,
@@ -194,11 +193,8 @@ export default function EditProduct() {
 
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">กรอบเวลา (SLA)</label>
-          <div className="grid grid-cols-2 gap-2">
-            <Input label="เตรียมของก่อนส่ง (วัน)" type="number" value={form.ship_lead_days} onChange={(e) => set('ship_lead_days', e.target.value)} />
-            <Input label="ส่งคืนภายใน (วัน)" type="number" value={form.return_days} onChange={(e) => set('return_days', e.target.value)} />
-          </div>
-          <p className="mt-1 text-xs text-gray-400">ลูกค้าจะจองชุดนี้ได้ตั้งแต่ “วันนี้ + จำนวนวันเตรียมของ”</p>
+          <Input label="ส่งคืนภายใน (วัน)" type="number" value={form.return_days} onChange={(e) => set('return_days', e.target.value)} />
+          <p className="mt-1 text-xs text-gray-400">ระบบเผื่อเวลาขนส่งอัตโนมัติ 7 วัน และพักชุด 10 วันหลังรับคืนก่อนปล่อยเช่ารอบถัดไป</p>
         </div>
 
         <div>

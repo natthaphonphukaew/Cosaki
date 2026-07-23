@@ -8,6 +8,7 @@ import { getShop, getShopItems, toggleFollowShop, getFollowState } from '@/api/s
 import { getShopReviews } from '@/api/reviews';
 import { openChat } from '@/api/chats';
 import useAuthStore from '@/store/authStore';
+import useRequireAuth from '@/hooks/useRequireAuth';
 import toast from 'react-hot-toast';
 
 const TABS = ['สินค้าทั้งหมด', 'รีวิว'];
@@ -16,7 +17,8 @@ const TABS = ['สินค้าทั้งหมด', 'รีวิว'];
 export default function ShopProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
+  const requireAuth = useRequireAuth();
   const [shop, setShop]       = useState(null);
   const [items, setItems]     = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -30,7 +32,9 @@ export default function ShopProfile() {
       getShop(id).then(({ data }) => setShop(data.data.shop)),
       getShopItems(id).then(({ data }) => setItems(data.data.items)),
       getShopReviews(id).then(({ data }) => setReviews(data.data.reviews)).catch(() => {}),
-      getFollowState(id).then(({ data }) => setFollowing(data.data.following)).catch(() => {}),
+      accessToken
+        ? getFollowState(id).then(({ data }) => setFollowing(data.data.following)).catch(() => {})
+        : Promise.resolve(),
     ]).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
 
@@ -42,7 +46,7 @@ export default function ShopProfile() {
     return () => clearTimeout(t);
   }, [q, id]);
 
-  const handleFollow = async () => {
+  const handleFollow = () => requireAuth(async () => {
     try {
       const { data } = await toggleFollowShop(id);
       setFollowing(data.data.following);
@@ -50,16 +54,16 @@ export default function ShopProfile() {
     } catch (err) {
       toast.error(err.response?.data?.message || 'ทำรายการไม่สำเร็จ');
     }
-  };
+  });
 
-  const handleChat = async () => {
+  const handleChat = () => requireAuth(async () => {
     try {
       const { data } = await openChat(id);
       navigate(`/chats/${data.data.conversation.id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'เปิดแชทไม่สำเร็จ');
     }
-  };
+  });
 
   if (loading || !shop) return <div className="flex min-h-screen items-center justify-center bg-surface-base"><Spinner /></div>;
 

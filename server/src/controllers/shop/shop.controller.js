@@ -6,16 +6,17 @@ const { ensureShopActive } = require('../../services/strike/strike.service');
 // POST /shops — any authenticated user can open a shop (renter becomes seller).
 const createShop = async (req, res, next) => {
   try {
-    const { shop_name, description, logo_url, cover_url, location, categories } = req.body;
+    const { shop_name, description, logo_url, cover_url, location, categories, rules_text, rules_image_url } = req.body;
     const existing = await db.query('SELECT id FROM shops WHERE owner_id = $1', [req.user.id]);
     if (existing.rows.length) return error(res, 'You already have a shop', 409);
 
     const { rows } = await db.query(
-      `INSERT INTO shops (owner_id, shop_name, description, logo_url, cover_url, location, categories)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO shops (owner_id, shop_name, description, logo_url, cover_url, location, categories, rules_text, rules_image_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [
         req.user.id, shop_name, description || null,
         logo_url || null, cover_url || null, location || null, categories || [],
+        rules_text || null, rules_image_url || null,
       ]
     );
 
@@ -56,17 +57,19 @@ const getMyShop = async (req, res, next) => {
 // PATCH /shops/me — update shop profile
 const updateShop = async (req, res, next) => {
   try {
-    const { shop_name, description, bank_account, logo_url, cover_url, location, categories } = req.body;
+    const { shop_name, description, bank_account, logo_url, cover_url, location, categories, rules_text, rules_image_url } = req.body;
     const { rows } = await db.query(
       `UPDATE shops SET
-         shop_name    = COALESCE($1, shop_name),
-         description  = COALESCE($2, description),
-         bank_account = COALESCE($3, bank_account),
-         logo_url     = COALESCE($4, logo_url),
-         cover_url    = COALESCE($5, cover_url),
-         location     = COALESCE($6, location),
-         categories   = COALESCE($7, categories),
-         updated_at   = NOW()
+         shop_name       = COALESCE($1, shop_name),
+         description      = COALESCE($2, description),
+         bank_account    = COALESCE($3, bank_account),
+         logo_url        = COALESCE($4, logo_url),
+         cover_url       = COALESCE($5, cover_url),
+         location        = COALESCE($6, location),
+         categories      = COALESCE($7, categories),
+         rules_text      = COALESCE($9, rules_text),
+         rules_image_url = COALESCE($10, rules_image_url),
+         updated_at      = NOW()
        WHERE owner_id = $8
        RETURNING *`,
       [
@@ -74,6 +77,7 @@ const updateShop = async (req, res, next) => {
         bank_account ? JSON.stringify(bank_account) : null,
         logo_url || null, cover_url || null, location || null,
         categories || null, req.user.id,
+        rules_text ?? null, rules_image_url ?? null,
       ]
     );
     if (!rows.length) return error(res, 'Shop not found', 404);
