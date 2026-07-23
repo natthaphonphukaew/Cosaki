@@ -116,7 +116,7 @@ export default function OrderDetail() {
               <Badge status={booking.status} label={booking.status.replace(/_/g,' ').toUpperCase()} />
             </div>
             <p className="mt-1 text-xs text-gray-400">Order #{String(booking.id).slice(0, 8)}</p>
-            <p className="mt-2 text-lg font-bold text-brand-purple">${booking.total_amount}</p>
+            <p className="mt-2 text-lg font-bold text-brand-purple">฿{booking.total_amount}</p>
           </div>
         </div>
 

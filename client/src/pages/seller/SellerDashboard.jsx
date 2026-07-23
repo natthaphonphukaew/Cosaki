@@ -90,7 +90,7 @@ export default function SellerDashboard() {
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Earnings</p>
           <div className="flex items-end justify-between mt-1">
-            <h2 className="text-3xl font-bold text-gray-900">${earnings.toFixed(2)}</h2>
+            <h2 className="text-3xl font-bold text-gray-900">฿{earnings.toFixed(2)}</h2>
             {earnings > 0 && (
               <div className="flex items-center gap-1 text-green-500 text-sm font-semibold">
                 <TrendingUp size={16} /> Active
@@ -178,7 +178,7 @@ export default function SellerDashboard() {
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
-                  <p className="mt-1 text-sm font-bold text-brand-purple">${item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                  <p className="mt-1 text-sm font-bold text-brand-purple">฿{item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
                 </div>
               </div>
             ))}

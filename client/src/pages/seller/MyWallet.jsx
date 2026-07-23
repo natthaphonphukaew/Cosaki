@@ -37,7 +37,7 @@ export default function MyWallet() {
     try {
       setBusy(true);
       await withdraw(amt);
-      toast.success(`$${amt.toFixed(2)} withdrawn`);
+      toast.success(`฿${amt.toFixed(2)} withdrawn`);
       setModal(null); setAmount('');
       load();
     } catch (err) {
@@ -91,14 +91,14 @@ export default function MyWallet() {
               <TrendingUp size={14} className="text-green-500" />
               <p className="text-xs text-gray-400">Total Earned</p>
             </div>
-            <p className="text-xl font-bold text-gray-800">${totalEarned.toFixed(2)}</p>
+            <p className="text-xl font-bold text-gray-800">฿{totalEarned.toFixed(2)}</p>
           </div>
           <div className="rounded-2xl bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
               <ArrowUpRight size={14} className="text-brand-purple" />
               <p className="text-xs text-gray-400">Withdrawn</p>
             </div>
-            <p className="text-xl font-bold text-gray-800">${(wallet?.totalPaidOut ?? 0).toFixed(2)}</p>
+            <p className="text-xl font-bold text-gray-800">฿{(wallet?.totalPaidOut ?? 0).toFixed(2)}</p>
           </div>
         </div>
 
@@ -124,7 +124,7 @@ export default function MyWallet() {
                     <p className="truncate text-sm font-medium text-gray-800">Withdrawal to bank</p>
                     <p className="text-xs text-gray-400">{p.created_at && format(parseISO(p.created_at), 'MMM d, yyyy')}</p>
                   </div>
-                  <p className="text-sm font-bold flex-shrink-0 text-gray-800">−${Number(p.amount).toFixed(2)}</p>
+                  <p className="text-sm font-bold flex-shrink-0 text-gray-800">−฿{Number(p.amount).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -135,7 +135,7 @@ export default function MyWallet() {
       {/* Withdraw modal */}
       {modal === 'withdraw' && (
         <Sheet title="Withdraw funds" onClose={() => setModal(null)}>
-          <p className="text-sm text-gray-500">Available: <span className="font-semibold text-brand-purple">${balance.toFixed(2)}</span></p>
+          <p className="text-sm text-gray-500">Available: <span className="font-semibold text-brand-purple">฿{balance.toFixed(2)}</span></p>
           <Input label="Amount (฿)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
           <button onClick={() => setAmount(String(balance))} className="text-xs font-semibold text-brand-purple">Withdraw all</button>
           <Button className="mt-4 w-full" loading={busy} onClick={handleWithdraw}>Confirm Withdrawal</Button>

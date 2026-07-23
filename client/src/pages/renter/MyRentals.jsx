@@ -74,7 +74,7 @@ export default function MyRentals() {
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <Badge status={b.status} label={b.status.replace(/_/g,' ').toUpperCase()} />
-                <span className="text-xs font-bold text-brand-purple">${b.total_amount}</span>
+                <span className="text-xs font-bold text-brand-purple">฿{b.total_amount}</span>
               </div>
             </div>
             <ChevronRight size={16} className="text-gray-300 flex-shrink-0" />

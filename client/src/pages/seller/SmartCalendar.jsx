@@ -198,7 +198,7 @@ export default function SmartCalendar() {
             {[
               { label: 'OCCUPANCY',   value: `${Math.round((todayBookings.length / Math.max(bookings.length, 1)) * 100)}%` },
               { label: 'TOP EARNER',  value: bookings[0]?.item_name?.split(' ')[0] || '—' },
-              { label: 'REVENUE',     value: `$${bookings.filter((b) => b.status === 'completed').reduce((s, b) => s + Number(b.rental_fee || 0), 0).toFixed(0)}` },
+              { label: 'REVENUE',     value: `฿${bookings.filter((b) => b.status === 'completed').reduce((s, b) => s + Number(b.rental_fee || 0), 0).toFixed(0)}` },
               { label: 'COMPLETED',   value: String(bookings.filter((b) => b.status === 'completed').length) },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-xl bg-gray-50 p-3">
