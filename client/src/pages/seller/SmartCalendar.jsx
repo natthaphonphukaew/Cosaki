@@ -11,21 +11,20 @@ import {
   eachDayOfInterval, isSameDay, parseISO, isBefore, isAfter,
   startOfDay, endOfDay,
 } from 'date-fns';
-import { th } from 'date-fns/locale';
 
-/* ─── colour palette – one per unique item ───────────────────────── */
+/* ─── colour palette ──────────────────────────────────────────────── */
 const PALETTE = [
-  { bg: 'bg-brand-purple',  text: 'text-white', hex: '#7C3AED' },
-  { bg: 'bg-pink-500',      text: 'text-white', hex: '#EC4899' },
-  { bg: 'bg-amber-500',     text: 'text-white', hex: '#F59E0B' },
-  { bg: 'bg-blue-500',      text: 'text-white', hex: '#3B82F6' },
-  { bg: 'bg-green-500',     text: 'text-white', hex: '#22C55E' },
-  { bg: 'bg-rose-400',      text: 'text-white', hex: '#FB7185' },
-  { bg: 'bg-indigo-500',    text: 'text-white', hex: '#6366F1' },
-  { bg: 'bg-teal-500',      text: 'text-white', hex: '#14B8A6' },
+  { bg: '#7C3AED', text: '#fff' },
+  { bg: '#EC4899', text: '#fff' },
+  { bg: '#F59E0B', text: '#fff' },
+  { bg: '#3B82F6', text: '#fff' },
+  { bg: '#22C55E', text: '#fff' },
+  { bg: '#FB7185', text: '#fff' },
+  { bg: '#6366F1', text: '#fff' },
+  { bg: '#14B8A6', text: '#fff' },
 ];
 
-const DAY_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const DAY_HEADERS = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
 const STATUS_LABEL = {
   escrowed:  'รอยืนยัน',
@@ -33,17 +32,34 @@ const STATUS_LABEL = {
   returned:  'ส่งคืนแล้ว',
   completed: 'เสร็จสิ้น',
   disputed:  'มีข้อพิพาท',
-  cancelled: 'ยกเลิก',
+  cancelled:  'ยกเลิก',
 };
 
 const ACTIVE_STATUSES = ['escrowed', 'shipped', 'returned', 'completed', 'disputed'];
+const BAR_H = 20;   // px height of each bar
+const BAR_GAP = 3;  // px gap between bars
+const DATE_ROW_H = 28; // px for date number row
+
+/* ── Lane assignment: greedy, per week-row ───────────────────────── */
+function assignLanes(segments) {
+  // sort by startCol then bookingId for stable order
+  const sorted = [...segments].sort((a, b) => a.startCol - b.startCol || a.booking.id - b.booking.id);
+  const laneEnds = []; // laneEnds[lane] = last endCol used in that lane
+  sorted.forEach((seg) => {
+    let lane = laneEnds.findIndex((end) => end <= seg.startCol);
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = seg.startCol + seg.span;
+    seg.lane = lane;
+  });
+  return sorted;
+}
 
 export default function SmartCalendar() {
   const navigate  = useNavigate();
   const [month, setMonth]       = useState(new Date());
   const [bookings, setBookings] = useState([]);
-  const [popup, setPopup]       = useState(null);   // { booking, anchorRect }
-  const [filterItem, setFilterItem] = useState('all'); // 'all' | item_id
+  const [popup, setPopup]       = useState(null);
+  const [filterItem, setFilterItem] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
   const popupRef = useRef(null);
 
@@ -55,22 +71,21 @@ export default function SmartCalendar() {
 
   /* Close popup on outside click */
   useEffect(() => {
+    if (!popup) return;
     const h = (e) => {
-      if (popup && popupRef.current && !popupRef.current.contains(e.target)) {
-        setPopup(null);
-      }
+      if (popupRef.current && !popupRef.current.contains(e.target)) setPopup(null);
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [popup]);
 
-  /* ── derived ─────────────────────────────────────────────────── */
+  /* ── derived ────────────────────────────────────────────────────── */
   const activeBookings = useMemo(() =>
     bookings.filter((b) =>
       ACTIVE_STATUSES.includes(b.status) && b.rental_start && b.rental_end,
     ), [bookings]);
 
-  /* unique items for filter + colour mapping */
+  /* assign a stable colour per item_id */
   const itemMap = useMemo(() => {
     const map = {};
     activeBookings.forEach((b) => {
@@ -88,42 +103,88 @@ export default function SmartCalendar() {
       : activeBookings.filter((b) => String(b.item_id) === String(filterItem)),
     [activeBookings, filterItem]);
 
-  /* calendar layout */
-  const days      = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
-  const startPad  = startOfMonth(month).getDay();
+  /* ── Build calendar weeks ────────────────────────────────────────── */
+  const startPad = startOfMonth(month).getDay();
+  const days     = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
   const totalCells = startPad + days.length;
-  const endPad    = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  const endPad   = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  const allCells = [
+    ...Array(startPad).fill(null),
+    ...days,
+    ...Array(endPad).fill(null),
+  ];
+  const weeks = [];
+  for (let i = 0; i < allCells.length; i += 7) {
+    weeks.push(allCells.slice(i, i + 7));
+  }
 
-  /* bookings that touch a given day */
-  const bookingsOnDay = (day) =>
-    displayed.filter((b) => {
-      const s = startOfDay(parseISO(b.rental_start));
-      const e = endOfDay(parseISO(b.rental_end));
-      return !isAfter(s, endOfDay(day)) && !isBefore(e, startOfDay(day));
+  /* ── For a given week, compute positioned booking segments ──────── */
+  function getWeekSegments(week) {
+    const realDays = week.filter(Boolean);
+    if (!realDays.length) return [];
+
+    const segments = [];
+
+    displayed.forEach((booking) => {
+      const bStart = startOfDay(parseISO(booking.rental_start));
+      const bEnd   = endOfDay(parseISO(booking.rental_end));
+
+      // find first & last real day in this week
+      const weekFirstDay = realDays[0];
+      const weekLastDay  = realDays[realDays.length - 1];
+
+      if (isAfter(bStart, endOfDay(weekLastDay))) return;
+      if (isBefore(bEnd,  startOfDay(weekFirstDay))) return;
+
+      // clamp segment to this week
+      const segStart = isAfter(bStart, startOfDay(weekFirstDay)) ? bStart : startOfDay(weekFirstDay);
+      const segEnd   = isBefore(bEnd, endOfDay(weekLastDay))     ? bEnd   : endOfDay(weekLastDay);
+
+      // find column indices within the 7-col week array
+      const startCol = week.findIndex(
+        (d) => d && isSameDay(d, segStart),
+      );
+      const endCol = week.findIndex(
+        (d) => d && isSameDay(d, startOfDay(segEnd)),
+      );
+
+      if (startCol === -1) return; // safety
+
+      const resolvedEnd = endCol === -1 ? 6 : endCol;
+      const span = resolvedEnd - startCol + 1;
+
+      segments.push({
+        booking,
+        startCol,
+        span,
+        isStart: isSameDay(segStart, bStart),           // booking starts here
+        isEnd:   isSameDay(startOfDay(segEnd), startOfDay(bEnd)), // booking ends here
+      });
     });
 
-  /* For a booking bar: is this the first day of the bar in this month? */
-  const isBarStart = (b, day) => {
-    const s = startOfDay(parseISO(b.rental_start));
-    return isSameDay(day, s) || isSameDay(day, startOfMonth(month));
-  };
+    return assignLanes(segments);
+  }
 
   return (
     <AppShell>
       <div className="px-3 pt-5 pb-32">
+
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-900">ปฏิทินการเช่า</h2>
             <p className="text-xs text-gray-400">ติดตามสถานะการจองแต่ละชิ้น</p>
           </div>
+
           {/* Item filter dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowFilter((v) => !v)}
               className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm"
             >
-              {filterItem === 'all' ? 'ทั้งหมด' : (itemMap[filterItem]?.name?.split(' ').slice(0,2).join(' ') || 'กรอง')}
+              {filterItem === 'all'
+                ? 'ทั้งหมด'
+                : (itemMap[filterItem]?.name?.split(' ').slice(0, 2).join(' ') || 'กรอง')}
               <ChevronDown size={12} />
             </button>
             {showFilter && (
@@ -138,9 +199,12 @@ export default function SmartCalendar() {
                   <button
                     key={item.id}
                     onClick={() => { setFilterItem(String(item.id)); setShowFilter(false); }}
-                    className={`w-full text-left flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${String(filterItem) === String(item.id) ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                    className="w-full text-left flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium hover:bg-gray-50"
                   >
-                    <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${item.color.bg}`} />
+                    <span
+                      className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                      style={{ background: item.color.bg }}
+                    />
                     <span className="truncate text-gray-700">{item.name}</span>
                   </button>
                 ))}
@@ -174,10 +238,18 @@ export default function SmartCalendar() {
             {Object.values(itemMap).map((item) => (
               <button
                 key={item.id}
-                onClick={() => setFilterItem(String(filterItem) === String(item.id) ? 'all' : String(item.id))}
+                onClick={() =>
+                  setFilterItem(String(filterItem) === String(item.id) ? 'all' : String(item.id))
+                }
                 className="flex items-center gap-1.5 text-xs text-gray-600"
               >
-                <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${item.color.bg} ${String(filterItem) === String(item.id) ? 'ring-2 ring-offset-1 ring-gray-400' : ''}`} />
+                <span
+                  className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                  style={{
+                    background: item.color.bg,
+                    boxShadow: String(filterItem) === String(item.id) ? `0 0 0 2px #fff, 0 0 0 3.5px ${item.color.bg}` : 'none',
+                  }}
+                />
                 <span className="max-w-[80px] truncate">{item.name}</span>
               </button>
             ))}
@@ -187,68 +259,112 @@ export default function SmartCalendar() {
         {/* Day headers */}
         <div className="grid grid-cols-7 text-center mb-0.5">
           {DAY_HEADERS.map((d) => (
-            <span key={d} className="text-[10px] font-semibold text-gray-400 py-1">{d}</span>
+            <span key={d} className="text-[11px] font-semibold text-gray-400 py-1">{d}</span>
           ))}
         </div>
 
-        {/* Calendar grid */}
-        <div className="rounded-2xl bg-white shadow-sm overflow-hidden border border-gray-100">
-          <div className="grid grid-cols-7 divide-x divide-y divide-gray-100">
-            {/* Padding before month start */}
-            {Array.from({ length: startPad }).map((_, i) => (
-              <div key={`pre-${i}`} className="min-h-[72px] bg-gray-50/50 p-1" />
-            ))}
+        {/* ── Calendar: week rows ─────────────────────────────────── */}
+        <div className="rounded-2xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+          {weeks.map((week, wi) => {
+            const segments  = getWeekSegments(week);
+            const maxLane   = segments.reduce((m, s) => Math.max(m, s.lane), -1);
+            const barsHeight = maxLane >= 0 ? (maxLane + 1) * (BAR_H + BAR_GAP) + 4 : 0;
 
-            {/* Month days */}
-            {days.map((day) => {
-              const isToday = isSameDay(day, new Date());
-              const dayBks  = bookingsOnDay(day);
-              return (
-                <div
-                  key={day.toISOString()}
-                  className={`min-h-[72px] p-1 relative ${isToday ? 'bg-brand-light/60' : ''}`}
-                >
-                  {/* Date number */}
-                  <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium mb-0.5 mx-auto
-                      ${isToday ? 'bg-brand-purple text-white font-bold' : 'text-gray-500'}`}
-                  >
-                    {format(day, 'd')}
-                  </span>
+            return (
+              <div
+                key={wi}
+                className={`border-b border-gray-100 last:border-b-0`}
+              >
+                {/* Date number row */}
+                <div className="grid grid-cols-7">
+                  {week.map((day, di) => {
+                    const isToday = day && isSameDay(day, new Date());
+                    return (
+                      <div
+                        key={di}
+                        className={`border-r border-gray-100 last:border-r-0 flex items-center justify-center`}
+                        style={{ height: DATE_ROW_H }}
+                      >
+                        {day && (
+                          <span
+                            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium
+                              ${isToday
+                                ? 'bg-brand-purple text-white font-bold'
+                                : 'text-gray-500'}`}
+                          >
+                            {format(day, 'd')}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
 
-                  {/* Booking bars (max 3 visible) */}
-                  <div className="flex flex-col gap-0.5">
-                    {dayBks.slice(0, 3).map((b) => {
-                      const color = itemMap[b.item_id]?.color || PALETTE[0];
-                      const showLabel = isBarStart(b, day);
+                {/* Booking bars layer */}
+                {barsHeight > 0 && (
+                  <div className="relative px-0.5" style={{ height: barsHeight }}>
+                    {segments.map((seg) => {
+                      const { startCol, span, isStart, isEnd, lane, booking } = seg;
+                      const color = itemMap[booking.item_id]?.color || PALETTE[0];
+                      const CELL_W = 100 / 7; // percent
+
+                      const leftPct  = startCol * CELL_W;
+                      const widthPct = span * CELL_W;
+                      const top      = lane * (BAR_H + BAR_GAP) + 2;
+
+                      // rounding: full pill if single cell start+end, else half-rounded on start/end
+                      const borderRadius = [
+                        isStart ? '999px' : '0',
+                        isEnd   ? '999px' : '0',
+                        isEnd   ? '999px' : '0',
+                        isStart ? '999px' : '0',
+                      ].join(' ');
+
+                      // margin so bar doesn't bleed to cell edge on start/end
+                      const ML = isStart ? 2 : 0;
+                      const MR = isEnd   ? 2 : 0;
+
                       return (
                         <button
-                          key={b.id}
+                          key={`${booking.id}-w${wi}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setPopup({ booking: b, rect });
+                            setPopup({ booking });
                           }}
-                          className={`w-full rounded-[4px] px-1 py-0.5 text-left text-[9px] font-semibold leading-tight ${color.bg} ${color.text} truncate`}
-                          title={b.item_name}
+                          title={booking.item_name}
+                          style={{
+                            position: 'absolute',
+                            left:   `calc(${leftPct}% + ${ML}px)`,
+                            width:  `calc(${widthPct}% - ${ML + MR}px)`,
+                            top,
+                            height: BAR_H,
+                            background:   color.bg,
+                            color:        color.text,
+                            borderRadius,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            lineHeight: `${BAR_H}px`,
+                            paddingLeft: isStart ? 8 : 4,
+                            paddingRight: 4,
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                          }}
                         >
-                          {showLabel ? b.item_name?.split(' ').slice(0, 3).join(' ') : ''}
+                          {isStart ? booking.item_name : ''}
                         </button>
                       );
                     })}
-                    {dayBks.length > 3 && (
-                      <span className="text-[9px] text-gray-400 text-center">+{dayBks.length - 3}</span>
-                    )}
                   </div>
-                </div>
-              );
-            })}
+                )}
 
-            {/* End padding to complete grid */}
-            {Array.from({ length: endPad }).map((_, i) => (
-              <div key={`post-${i}`} className="min-h-[72px] bg-gray-50/50 p-1" />
-            ))}
-          </div>
+                {/* Padding row when no bars */}
+                {barsHeight === 0 && <div style={{ height: 6 }} />}
+              </div>
+            );
+          })}
         </div>
 
         {/* Quick stats */}
@@ -265,7 +381,7 @@ export default function SmartCalendar() {
           ))}
         </div>
 
-        {/* Upcoming bookings list */}
+        {/* Recent bookings list */}
         <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm">
           <h3 className="mb-3 font-semibold text-gray-900 text-sm">การจองล่าสุด</h3>
           {displayed.length === 0 && (
@@ -279,7 +395,10 @@ export default function SmartCalendar() {
                 onClick={() => navigate(`/seller/orders/${b.id}`)}
                 className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 text-left"
               >
-                <span className={`h-9 w-1.5 rounded-full flex-shrink-0 ${color.bg}`} />
+                <span
+                  className="h-9 w-1.5 rounded-full flex-shrink-0"
+                  style={{ background: color.bg }}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 truncate">{b.item_name}</p>
                   <p className="text-xs text-gray-400">
@@ -288,7 +407,10 @@ export default function SmartCalendar() {
                     {' · '}{b.renter_name}
                   </p>
                 </div>
-                <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color.bg} ${color.text}`}>
+                <span
+                  className="flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  style={{ background: color.bg, color: color.text }}
+                >
                   {STATUS_LABEL[b.status] || b.status}
                 </span>
               </button>
@@ -297,11 +419,11 @@ export default function SmartCalendar() {
         </div>
       </div>
 
-      {/* ── Booking popup ────────────────────────────────────────── */}
+      {/* ── Booking popup ────────────────────────────────────────────── */}
       {popup && (() => {
         const b = popup.booking;
         const color = itemMap[b.item_id]?.color || PALETTE[0];
-        const img = Array.isArray(b.image_urls) ? b.image_urls[0] : b.image_urls?.[0];
+        const img = Array.isArray(b.image_urls) ? b.image_urls[0] : null;
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
@@ -312,23 +434,22 @@ export default function SmartCalendar() {
               className="w-full max-w-[320px] rounded-3xl bg-white shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Top strip with colour */}
-              <div className={`${color.bg} px-4 pt-4 pb-3`}>
+              {/* Coloured header */}
+              <div style={{ background: color.bg }} className="px-4 pt-4 pb-3">
                 <div className="flex items-start gap-3">
-                  {/* Item thumbnail */}
                   <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl bg-white/20">
                     {img
                       ? <img src={img} alt="" className="h-full w-full object-cover" />
-                      : <div className="flex h-full w-full items-center justify-center text-white text-2xl">👘</div>
+                      : <div className="flex h-full w-full items-center justify-center text-2xl">👘</div>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-base font-bold ${color.text} leading-tight`}>{b.item_name}</p>
+                    <p className="text-base font-bold text-white leading-tight">{b.item_name}</p>
                     <span className="mt-1 inline-block rounded-full bg-white/25 px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide">
                       {STATUS_LABEL[b.status] || b.status}
                     </span>
                   </div>
-                  <button onClick={() => setPopup(null)} className={`${color.text} opacity-70`}>
+                  <button onClick={() => setPopup(null)} className="text-white/70 mt-0.5">
                     <X size={18} />
                   </button>
                 </div>
@@ -366,7 +487,8 @@ export default function SmartCalendar() {
               <div className="px-4 pb-5">
                 <button
                   onClick={() => { setPopup(null); navigate(`/seller/orders/${b.id}`); }}
-                  className={`w-full rounded-full py-3 text-sm font-bold tracking-wide ${color.bg} ${color.text}`}
+                  className="w-full rounded-full py-3 text-sm font-bold tracking-wide text-white"
+                  style={{ background: color.bg }}
                 >
                   ดูรายละเอียดการจอง
                 </button>
