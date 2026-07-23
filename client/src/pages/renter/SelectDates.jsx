@@ -34,7 +34,7 @@ export default function SelectDates() {
   }, [id]);
 
   // Compute minimum bookable date based on shipping logic
-  const leadDays = item?.ship_lead_days || 7; // Default 7 days
+  const leadDays = item?.ship_lead_days ?? 2; // matches DB default; ?? so lead=0 (same-day) works
   const nowHour = getHours(new Date());
   
   let minBookableDate = addDays(today, leadDays);

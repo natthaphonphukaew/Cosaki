@@ -18,6 +18,7 @@ const createBookingRules = [
       return true;
     }),
   body('rate_type').optional().isIn(['test', 'private']).withMessage("rate_type must be 'test' or 'private'"),
+  body('is_express').optional().isBoolean().withMessage('is_express must be a boolean'),
   body('notes').optional().isLength({ max: 500 }),
 ];
 
