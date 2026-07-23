@@ -15,7 +15,6 @@ export default function EditProfile() {
   const navigate = useNavigate();
   const [name, setName]     = useState(user?.display_name || '');
   const [avatar, setAvatar] = useState(user?.avatar_url || '');
-  const [address, setAddress] = useState('');
   const [m, setM]           = useState({ bust: '', waist: '', hip: '', height: '' });
   const [busy, setBusy]     = useState(false);
 
@@ -23,7 +22,6 @@ export default function EditProfile() {
   useEffect(() => {
     getMe().then(({ data }) => {
       const u = data.data.user;
-      setAddress(u.address || '');
       setM({ bust: u.bust ?? '', waist: u.waist ?? '', hip: u.hip ?? '', height: u.height ?? '' });
     }).catch(() => {});
   }, []);
@@ -43,7 +41,6 @@ export default function EditProfile() {
       setBusy(true);
       const { data } = await updateMe({
         display_name: name.trim(), avatar_url: avatar || null,
-        address: address || null,
         bust: num(m.bust), waist: num(m.waist), hip: num(m.hip), height: num(m.height),
       });
       updateUser({ display_name: data.data.user.display_name, avatar_url: data.data.user.avatar_url });
@@ -72,10 +69,6 @@ export default function EditProfile() {
 
         <Input label="Display Name" value={name} onChange={(e) => setName(e.target.value)} />
         <Input label="Phone" value={user?.phone || ''} disabled />
-
-        <div className="mb-6">
-          <ThaiAddressSelector value={address} onChange={setAddress} />
-        </div>
 
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">สัดส่วนร่างกาย (ซม.)</label>

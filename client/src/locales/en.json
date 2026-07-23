@@ -43,7 +43,9 @@
     "menu": {
       "rentals": "My Rentals",
       "saved": "Saved Outfits",
+      "addresses": "My Addresses",
       "payments": "Payment Methods",
+      "vouchers": "Vouchers & Discounts",
       "settings": "Account Settings",
       "support": "Help & Support"
     }

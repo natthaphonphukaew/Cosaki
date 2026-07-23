@@ -5,7 +5,7 @@ import * as addressDataModule from '@bilions/thailand-address';
 const addressData = addressDataModule.default || addressDataModule;
 const { provinces = [], districts = [], subDistricts = [] } = addressData || {};
 
-export default function ThaiAddressSelector({ value, onChange }) {
+export default function ThaiAddressSelector({ value, initialAddressObj, onChange }) {
   const [houseNo, setHouseNo] = useState('');
   const [provId, setProvId] = useState('');
   const [distId, setDistId] = useState('');
@@ -16,14 +16,28 @@ export default function ThaiAddressSelector({ value, onChange }) {
   const [isInit, setIsInit] = useState(false);
 
   useEffect(() => {
-    if (!isInit && value) {
-      // Basic heuristic: just dump everything to houseNo for them to manually fix,
-      // because parsing free text accurately requires a complex regex.
-      // A smart user will clear it and re-select.
-      setHouseNo(value);
+    if (!isInit && (value || initialAddressObj)) {
+      if (initialAddressObj) {
+        setHouseNo(initialAddressObj.address_line1 || '');
+        if (initialAddressObj.province) {
+          const p = provinces.find(x => x.name_in_thai === initialAddressObj.province);
+          if (p) setProvId(p.id.toString());
+        }
+        if (initialAddressObj.district) {
+          const d = districts.find(x => x.name_in_thai === initialAddressObj.district);
+          if (d) setDistId(d.id.toString());
+        }
+        if (initialAddressObj.sub_district) {
+          const s = subDistricts.find(x => x.name_in_thai === initialAddressObj.sub_district);
+          if (s) setSubId(s.id.toString());
+        }
+      } else {
+        // Basic heuristic: just dump everything to houseNo for them to manually fix
+        setHouseNo(value);
+      }
       setIsInit(true);
     }
-  }, [value, isInit]);
+  }, [value, initialAddressObj, isInit]);
 
   const availableDistricts = useMemo(() => {
     if (!provId) return [];
@@ -69,12 +83,21 @@ export default function ThaiAddressSelector({ value, onChange }) {
         const provPrefix = isBKK ? '' : 'จ.';
         
         fullAddress = `${houseNo.trim()} ${subPrefix}${sub.name_in_thai} ${distPrefix}${dist.name_in_thai} ${provPrefix}${prov.name_in_thai} ${sub.zip_code}`.trim();
+        
+        onChange(fullAddress, {
+          address_line1: houseNo.trim(),
+          province: prov.name_in_thai,
+          district: dist.name_in_thai,
+          sub_district: sub.name_in_thai,
+          zip_code: sub.zip_code.toString()
+        });
+        return; // Handled
       }
     }
     
     // Only fire onChange if it differs from the incoming value to prevent loops
     if (fullAddress !== value) {
-      onChange(fullAddress);
+      onChange(fullAddress, { address_line1: fullAddress, province: '', district: '', sub_district: '', zip_code: '' });
     }
   }, [houseNo, provId, distId, subId]); // eslint-disable-line react-hooks/exhaustive-deps
 

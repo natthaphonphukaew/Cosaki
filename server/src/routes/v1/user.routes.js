@@ -15,4 +15,12 @@ router.patch('/me',
 );
 router.get('/:id/trust', userCtrl.getTrustScore);
 
+// Address management
+const addressCtrl = require('../../controllers/user/address.controller');
+router.get('/me/addresses', addressCtrl.getAddresses);
+router.post('/me/addresses', addressCtrl.addAddress);
+router.put('/me/addresses/:id', addressCtrl.updateAddress);
+router.delete('/me/addresses/:id', addressCtrl.deleteAddress);
+router.post('/me/addresses/:id/default', addressCtrl.setDefaultAddress);
+
 module.exports = router;

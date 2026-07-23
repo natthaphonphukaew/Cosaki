@@ -32,6 +32,7 @@ import ReviewRating      from '@/pages/post-rental/ReviewRating';
 // Profile
 import ProfilePage   from '@/pages/profile/ProfilePage';
 import EditProfile   from '@/pages/profile/EditProfile';
+import AddressBook   from '@/pages/profile/AddressBook';
 import SettingsPage  from '@/pages/profile/SettingsPage';
 import PaymentMethods from '@/pages/profile/PaymentMethods';
 import HelpSupport   from '@/pages/profile/HelpSupport';
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/profile"      element={<ProfilePage />} />
             <Route path="/profile/edit" element={<EditProfile />} />
+            <Route path="/profile/addresses" element={<AddressBook />} />
             <Route path="/profile/fandoms" element={<ManageFandomsPage />} />
             <Route path="/settings"     element={<SettingsPage />} />
             <Route path="/payments"     element={<PaymentMethods />} />

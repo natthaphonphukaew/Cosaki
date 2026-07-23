@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import ThaiAddressSelector from '@/components/ui/ThaiAddressSelector';
 import ProductImage from '@/components/ui/ProductImage';
 import { getBooking, applyCoupon } from '@/api/bookings';
+import { getAddresses } from '@/api/addresses';
 import useAuthStore from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { format, differenceInCalendarDays } from 'date-fns';
@@ -15,15 +16,25 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [booking, setBooking] = useState(null);
+  const [addresses, setAddresses] = useState([]);
   const [address, setAddress] = useState('');
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [coupon, setCoupon]   = useState('');
   const [payMode, setPayMode] = useState('full'); // full | deposit
   const [applying, setApplying] = useState(false);
 
-  const load = () => getBooking(bookingId).then(({ data }) => {
-    setBooking(data.data.booking);
-    setCoupon(data.data.booking.coupon_code || '');
-  });
+  const load = () => {
+    getBooking(bookingId).then(({ data }) => {
+      setBooking(data.data.booking);
+      setCoupon(data.data.booking.coupon_code || '');
+    });
+    getAddresses().then(({ data }) => {
+      const list = data.data.addresses || [];
+      setAddresses(list);
+      const def = list.find(a => a.is_default) || list[0];
+      if (def) setAddress(def.address);
+    });
+  };
   useEffect(() => { load(); }, [bookingId]);
 
   const handleApplyCoupon = async () => {
@@ -52,9 +63,9 @@ export default function CheckoutPage() {
   const dueToday = payMode === 'deposit' ? bookingFee : total;
   const dueLater = payMode === 'deposit' ? total - bookingFee : 0;
 
-  const goPay = () => {
+  const goPay = async () => {
     if (!address.trim()) return toast.error('กรุณากรอกที่อยู่จัดส่ง');
-    navigate(`/bookings/${bookingId}/pay`, { state: { payMode, amount: dueToday } });
+    navigate(`/bookings/${bookingId}/pay`, { state: { payMode, amount: dueToday, shipping_address: address.trim() } });
   };
 
   return (
@@ -63,9 +74,33 @@ export default function CheckoutPage() {
       <div className="px-4 pb-32 space-y-4">
         {/* Shipping address */}
         <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900 flex items-center gap-2"><MapPin size={18} className="text-gray-400" /> Shipping Address</h3>
-          <ThaiAddressSelector value={address} onChange={setAddress} />
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2"><MapPin size={18} className="text-gray-400" /> Shipping Address</h3>
+            <button className="text-xs font-semibold text-brand-purple" onClick={() => setShowAddressModal(true)}>เปลี่ยน</button>
+          </div>
+          {address ? (
+            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-xl">{address}</p>
+          ) : (
+            <p className="text-sm text-red-500 bg-red-50 p-3 rounded-xl">กรุณาเลือกที่อยู่จัดส่ง</p>
+          )}
         </div>
+
+        {showAddressModal && (
+          <div className="fixed inset-0 z-50 flex items-end bg-black/40 sm:items-center sm:justify-center">
+            <div className="w-full max-w-[390px] rounded-t-3xl bg-white p-6 pb-10 sm:rounded-3xl sm:pb-6 max-h-[80vh] overflow-y-auto">
+              <h3 className="mb-4 text-lg font-bold text-gray-900">เลือกที่อยู่จัดส่ง</h3>
+              <div className="space-y-3 mb-6">
+                {addresses.map(a => (
+                  <div key={a.id} onClick={() => { setAddress(a.address); setShowAddressModal(false); }} className={`p-3 rounded-xl border ${address === a.address ? 'border-brand-purple bg-purple-50' : 'border-gray-200'} cursor-pointer`}>
+                    <p className="text-sm">{a.address}</p>
+                  </div>
+                ))}
+              </div>
+              <Button variant="secondary" className="w-full mb-3" onClick={() => navigate('/profile/addresses')}>+ เพิ่มที่อยู่ใหม่</Button>
+              <Button className="w-full" onClick={() => setShowAddressModal(false)}>ปิด</Button>
+            </div>
+          </div>
+        )}
 
         {/* Order */}
         <div className="rounded-2xl bg-white p-4 shadow-sm flex gap-3 items-center">

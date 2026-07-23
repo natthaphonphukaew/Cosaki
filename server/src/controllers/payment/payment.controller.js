@@ -9,7 +9,7 @@ const { notify, shopOwnerId } = require('../../services/notification/notificatio
 //                        (stays pending_payment with a balance due).
 const createCharge = async (req, res, next) => {
   try {
-    const { booking_id, token, pay_mode = 'full' } = req.body;
+    const { booking_id, token, pay_mode = 'full', shipping_address } = req.body;
 
     const { rows: bookings } = await db.query(
       'SELECT * FROM bookings WHERE id = $1 AND renter_id = $2',
@@ -71,9 +71,10 @@ const createCharge = async (req, res, next) => {
       `UPDATE bookings SET
          pay_mode = $1, amount_paid = $2, balance_due = $3,
          status = CASE WHEN $4 THEN 'escrowed'::booking_status ELSE 'pending_payment'::booking_status END,
+         shipping_address = COALESCE($5, shipping_address),
          updated_at = NOW()
-       WHERE id = $5`,
-      [pay_mode, amountPaid, balanceDue, fullyPaid, booking_id]
+       WHERE id = $6`,
+      [pay_mode, amountPaid, balanceDue, fullyPaid, shipping_address ?? null, booking_id]
     );
 
     if (fullyPaid) {

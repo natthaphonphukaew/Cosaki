@@ -24,6 +24,7 @@ export default function PaymentQR() {
   const { state } = useLocation();
   const payMode = state?.payMode || 'full';
   const amount = state?.amount;
+  const shipping_address = state?.shipping_address;
   const [stage, setStage] = useState(0);   // 0 waiting, 1 paid, 2 confirmed
   const [loading, setLoading] = useState(false);
   const ref = `CSK-${bookingId.slice(0, 8).toUpperCase()}`;
@@ -32,7 +33,7 @@ export default function PaymentQR() {
   const handlePaid = async () => {
     try {
       setLoading(true);
-      await createCharge(bookingId, payMode);       // mock webhook confirms payment
+      await createCharge(bookingId, payMode, shipping_address);       // mock webhook confirms payment
       setStage(1);
       setTimeout(() => setStage(2), 900);            // simulate shop auto-confirm
       setTimeout(() => navigate(`/bookings/${bookingId}/success`), 1700);

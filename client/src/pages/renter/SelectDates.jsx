@@ -68,6 +68,14 @@ export default function SelectDates() {
 
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
   const startPad = startOfMonth(month).getDay(); // 0=Sun
+  
+  // Check if a day falls exactly in the actual rental period (for the orange dot)
+  const isActualRentalDay = (day) => booked.some((b) => {
+    const s = new Date(b.rental_start); s.setHours(0,0,0,0);
+    const e = new Date(b.rental_end);   e.setHours(0,0,0,0);
+    const d = new Date(day);            d.setHours(0,0,0,0);
+    return d >= s && d <= e;
+  });
 
   const handleDay = (day) => {
     if (isBefore(day, minBookableDate) || isBooked(day)) return;
@@ -195,6 +203,7 @@ export default function SelectDates() {
             const past    = isPast(day);
             const active  = start || end;
             const bookedDay = !past && isBooked(day);
+            const actualRental = !past && isActualRentalDay(day);
             return (
               <button
                 key={day.toISOString()}
@@ -210,7 +219,7 @@ export default function SelectDates() {
                 `}
               >
                 {format(day, 'd')}
-                {bookedDay && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-amber-400" />}
+                {actualRental && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-amber-400" />}
               </button>
             );
           })}
