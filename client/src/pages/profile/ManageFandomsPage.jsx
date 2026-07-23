@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, Search, Plus, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { updateMe } from '@/api/users';
 import useAuthStore from '@/store/authStore';
@@ -19,12 +19,24 @@ const ALL_FANDOMS = [
 export default function ManageFandomsPage() {
   const navigate = useNavigate();
   const { user, updateUser } = useAuthStore();
-  const [picked, setPicked] = useState(user?.fandoms || []);
+  
+  const getFandomsArray = (f) => {
+    if (Array.isArray(f)) return f;
+    if (typeof f === 'string') {
+      try { return JSON.parse(f); } catch { return f.replace(/^\{|\}$/g, '').split(',').map(s => s.trim()).filter(Boolean); }
+    }
+    return [];
+  };
+
+  const [picked, setPicked] = useState(() => getFandomsArray(user?.fandoms));
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState('');
 
   const toggle = (f) =>
-    setPicked((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]));
+    setPicked((p) => {
+      const arr = Array.isArray(p) ? p : [];
+      return arr.includes(f) ? arr.filter((x) => x !== f) : [...arr, f];
+    });
 
   const handleSave = async () => {
     try {
@@ -45,6 +57,9 @@ export default function ManageFandomsPage() {
     const lowerQ = q.toLowerCase();
     return ALL_FANDOMS.filter(([f]) => f.toLowerCase().includes(lowerQ));
   }, [q]);
+
+  const customFandom = q.trim();
+  const showAddCustom = customFandom && !ALL_FANDOMS.some(([f]) => f.toLowerCase() === customFandom.toLowerCase());
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
@@ -84,7 +99,23 @@ export default function ManageFandomsPage() {
           ))}
         </div>
         
-        {filteredFandoms.length === 0 && (
+        {showAddCustom && (
+          <div className="mt-6 text-center">
+            <button 
+              onClick={() => toggle(customFandom)}
+              className={`w-full flex items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm font-semibold transition-all ${
+                picked.includes(customFandom)
+                  ? 'border-brand-purple bg-brand-light/30 text-brand-purple'
+                  : 'border-dashed border-gray-300 text-gray-500 hover:border-brand-purple hover:text-brand-purple'
+              }`}
+            >
+              {picked.includes(customFandom) ? <X size={16} /> : <Plus size={16} />}
+              {picked.includes(customFandom) ? `ยกเลิกการเลือก "${customFandom}"` : `เพิ่ม "${customFandom}" เป็น Fandom ใหม่`}
+            </button>
+          </div>
+        )}
+        
+        {filteredFandoms.length === 0 && !showAddCustom && (
           <div className="mt-10 text-center text-sm text-gray-500">
             ไม่พบ Fandom ที่ค้นหา
           </div>
@@ -93,7 +124,7 @@ export default function ManageFandomsPage() {
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" loading={busy} onClick={handleSave}>
-          บันทึกการเปลี่ยนแปลง ({picked.length})
+          บันทึกการเปลี่ยนแปลง ({(picked || []).length})
         </Button>
       </div>
     </div>

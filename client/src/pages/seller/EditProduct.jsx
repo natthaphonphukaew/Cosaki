@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Camera, X, Trash2, Star } from 'lucide-react';
+import { Camera, X, Trash2, Star, Plus } from 'lucide-react';
+import useAuthStore from '@/store/authStore';
+import ManageFandomsModal from '@/components/ui/ManageFandomsModal';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -10,14 +12,15 @@ import { fileToDataUrl } from '@/utils/image';
 import toast from 'react-hot-toast';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
-const FANDOMS = ['Genshin Impact', 'Arcane', 'Valorant', 'Demon Slayer', 'Spy x Family', 'Chainsaw Man', 'JJK', 'Original'];
 
 export default function EditProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [photos, setPhotos]   = useState([]);
+  const [showFandomModal, setShowFandomModal] = useState(false);
   const [form, setForm] = useState({
     name: '', character: '', fandom: '', description: '',
     test_rate: '', private_rate: '', shipping_fee: '', min_age: 0, sizes: [], is_available: true,
@@ -135,14 +138,23 @@ export default function EditProduct() {
 
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">Fandom</label>
-          <input value={form.fandom} onChange={(e) => set('fandom', e.target.value)} placeholder="Type a fandom"
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-purple" />
-          <div className="mt-2 flex flex-wrap gap-2">
-            {FANDOMS.map((f) => (
+          <div className="flex flex-wrap gap-2">
+            {(user?.fandoms || []).map((f) => (
               <button key={f} onClick={() => set('fandom', f)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium ${form.fandom === f ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{f}</button>
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${form.fandom === f ? 'bg-brand-purple text-white shadow-md' : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}>
+                {f}
+              </button>
             ))}
+            <button 
+              onClick={() => setShowFandomModal(true)}
+              className="flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-gray-500 hover:bg-gray-50"
+            >
+              <Plus size={18} />
+            </button>
           </div>
+          {!(user?.fandoms?.length > 0) && (
+            <p className="mt-2 text-xs text-gray-400">ยังไม่มี Fandom ที่ถูกบันทึกไว้ กดปุ่ม + เพื่อเพิ่ม</p>
+          )}
         </div>
 
         <div>
@@ -239,6 +251,11 @@ export default function EditProduct() {
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" loading={saving} onClick={handleSave}>Save Changes</Button>
       </div>
+
+      <ManageFandomsModal 
+        isOpen={showFandomModal} 
+        onClose={() => setShowFandomModal(false)} 
+      />
     </div>
   );
 }

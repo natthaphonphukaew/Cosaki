@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, X, CheckCircle, Star } from 'lucide-react';
+import { ArrowLeft, Camera, X, Check, Star, Plus } from 'lucide-react';
+import useAuthStore from '@/store/authStore';
+import ManageFandomsModal from '@/components/ui/ManageFandomsModal';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -9,13 +11,24 @@ import { fileToDataUrl } from '@/utils/image';
 import toast from 'react-hot-toast';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
-const FANDOMS = ['Genshin Impact', 'Arcane', 'Valorant', 'Demon Slayer', 'Spy x Family', 'Chainsaw Man', 'JJK', 'Original'];
 
 export default function AddProduct() {
   const navigate = useNavigate();
-  const [step, setStep]     = useState(1);   // 1=photos, 2=details, 3=done
-  const [photos, setPhotos] = useState([]);  // data URLs
+  const [step, setStep] = useState(1);
+  const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showFandomModal, setShowFandomModal] = useState(false);
+  const { user } = useAuthStore();
+  
+  const getFandomsArray = (f) => {
+    if (Array.isArray(f)) return f;
+    if (typeof f === 'string') {
+      try { return JSON.parse(f); } catch { return f.replace(/^\{|\}$/g, '').split(',').map(s=>s.trim()).filter(Boolean); }
+    }
+    return [];
+  };
+  const userFandoms = getFandomsArray(user?.fandoms);
+
   const [form, setForm] = useState({
     name: '', character: '', fandom: '', description: '',
     test_rate: '', private_rate: '', shipping_fee: '', min_age: 0, sizes: [],
@@ -72,7 +85,6 @@ export default function AddProduct() {
     }
   };
 
-  /* ── Step 3: Success with cover preview ── */
   if (step === 3) return (
     <div className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col items-center justify-center bg-surface-base px-6 text-center">
       <div className="relative mb-5">
@@ -80,7 +92,7 @@ export default function AddProduct() {
           {photos[0] ? <img src={photos[0]} alt="cover" className="h-full w-full object-cover" /> : '🎭'}
         </div>
         <div className="absolute -bottom-3 -right-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-500 border-4 border-surface-base">
-          <CheckCircle size={24} className="text-white" />
+          <Check size={24} className="text-white" />
         </div>
       </div>
       <h2 className="text-2xl font-bold text-gray-900">Listing published!</h2>
@@ -100,8 +112,6 @@ export default function AddProduct() {
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
       <PageHeader title={step === 1 ? 'Add Photos' : 'Details & Rules'} />
-
-      {/* Step indicator */}
       <div className="flex items-center gap-2 px-4 pb-4">
         {[1, 2].map((s) => (
           <div key={s} className="flex flex-1 items-center gap-2">
@@ -111,12 +121,9 @@ export default function AddProduct() {
         ))}
       </div>
 
-      {/* ── Step 1: Photos ── */}
       {step === 1 && (
         <div className="px-4 pb-32 space-y-4">
           <p className="text-sm text-gray-500">Add up to 9 photos. The first is your cover.</p>
-
-          {/* Big cover slot */}
           <label className="block h-52 w-full cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-brand-purple/30 bg-brand-light/30">
             {photos[0]
               ? <div className="relative h-full w-full">
@@ -133,8 +140,6 @@ export default function AddProduct() {
             }
             <input type="file" accept="image/*" multiple className="hidden" onChange={addPhotos} />
           </label>
-
-          {/* Thumbnail strip */}
           <div className="grid grid-cols-4 gap-2">
             {photos.slice(1).map((url, i) => (
               <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-gray-100">
@@ -154,38 +159,30 @@ export default function AddProduct() {
               </label>
             )}
           </div>
-
-          <div className="rounded-2xl bg-white p-4 shadow-sm space-y-1.5">
-            <p className="text-sm font-semibold text-gray-800">📸 Photo tips</p>
-            {['Use natural lighting', 'Show full costume & accessories', 'Include detail close-ups', 'Plain background preferred'].map((t) => (
-              <p key={t} className="text-xs text-gray-500">• {t}</p>
-            ))}
-          </div>
         </div>
       )}
 
-      {/* ── Step 2: Details ── */}
       {step === 2 && (
         <div className="px-4 pb-32 space-y-5">
           <Input label="Costume Name *" placeholder="e.g. Arcane: Jinx Battle Armor" value={form.name} onChange={(e) => set('name', e.target.value)} />
           <Input label="Character" placeholder="e.g. Jinx" value={form.character} onChange={(e) => set('character', e.target.value)} />
-
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">Fandom</label>
-            <input
-              value={form.fandom}
-              onChange={(e) => set('fandom', e.target.value)}
-              placeholder="Type a fandom (e.g. Honkai: Star Rail)"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand-purple"
-            />
-            <div className="mt-2 flex flex-wrap gap-2">
-              {FANDOMS.map((f) => (
+            <div className="flex flex-wrap gap-2">
+              {userFandoms.map((f) => (
                 <button key={f} onClick={() => set('fandom', f)}
-                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${form.fandom === f ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${form.fandom === f ? 'bg-brand-purple text-white shadow-md' : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}>
                   {f}
                 </button>
               ))}
+              <button 
+                onClick={() => setShowFandomModal(true)}
+                className="flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-gray-500 hover:bg-gray-50"
+              >
+                <Plus size={18} />
+              </button>
             </div>
+            {!(userFandoms.length > 0) && <p className="mt-2 text-xs text-gray-400">ยังไม่มี Fandom ที่ถูกบันทึกไว้ กดปุ่ม + เพื่อเพิ่ม</p>}
           </div>
 
           <div>
@@ -213,7 +210,6 @@ export default function AddProduct() {
               <Input label="เทสที่บ้าน (฿) *" type="number" placeholder="500" value={form.test_rate} onChange={(e) => set('test_rate', e.target.value)} />
               <Input label="ไพรเวท/ออกงาน (฿)" type="number" placeholder="700" value={form.private_rate} onChange={(e) => set('private_rate', e.target.value)} />
             </div>
-            <p className="mt-1 text-xs text-gray-400">Leave private blank to use the same rate. Renter also pays a 10% Cosaki protection fee.</p>
           </div>
           <Input label="Shipping fee — ค่าส่งขาไป (฿)" type="number" placeholder="40" value={form.shipping_fee} onChange={(e) => set('shipping_fee', e.target.value)} />
 
@@ -229,7 +225,6 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {/* Measurements */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">สัดส่วนชุด (ซม.)</label>
             <div className="grid grid-cols-3 gap-2">
@@ -242,17 +237,14 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {/* SLA */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">กรอบเวลา (SLA)</label>
             <div className="grid grid-cols-2 gap-2">
               <Input label="เตรียมของก่อนส่ง (วัน)" type="number" value={form.ship_lead_days} onChange={(e) => set('ship_lead_days', e.target.value)} />
               <Input label="ส่งคืนภายใน (วัน)" type="number" value={form.return_days} onChange={(e) => set('return_days', e.target.value)} />
             </div>
-            <p className="mt-1 text-xs text-gray-400">ลูกค้าจะจองชุดนี้ได้ตั้งแต่ “วันนี้ + จำนวนวันเตรียมของ” (เช่น กรอก 2 = จองได้จากอีก 2 วันข้างหน้า)</p>
           </div>
 
-          {/* Badges */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ตัวเลือกด่วน</label>
             <div className="flex flex-wrap gap-2">
@@ -267,7 +259,6 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {/* Return couriers */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ขนส่งขากลับที่รับ</label>
             <div className="flex flex-wrap gap-2">
@@ -279,17 +270,9 @@ export default function AddProduct() {
               ))}
             </div>
           </div>
-
-          <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 space-y-1">
-            <p className="text-sm font-semibold text-amber-800">Rental Rules</p>
-            {['Return on agreed date', 'No permanent alterations', 'Report damage immediately', 'Renter liable for full loss'].map((r) => (
-              <p key={r} className="text-xs text-amber-700">• {r}</p>
-            ))}
-          </div>
         </div>
       )}
 
-      {/* Footer */}
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4 flex gap-3">
         {step === 2 && <Button variant="secondary" className="w-20" onClick={() => setStep(1)}>Back</Button>}
         {step === 1
@@ -297,6 +280,11 @@ export default function AddProduct() {
           : <Button className="flex-1" onClick={handleSubmit} loading={loading}>Publish Listing</Button>
         }
       </div>
+
+      <ManageFandomsModal 
+        isOpen={showFandomModal} 
+        onClose={() => setShowFandomModal(false)} 
+      />
     </div>
   );
 }
