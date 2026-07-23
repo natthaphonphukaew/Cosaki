@@ -10,6 +10,7 @@ import { getFavorites, toggleFavorite } from '@/utils/favorites';
 import useAuthStore from '@/store/authStore';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import { POPULAR_FANDOMS } from '@/constants/fandoms';
 
 export default function HomePage() {
   const [items, setItems]   = useState([]);
@@ -20,6 +21,10 @@ export default function HomePage() {
   const { t }               = useTranslation();
 
   useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
+
+  // New users have no fandoms yet — fall back to a curated popular list so the
+  // chip row isn't empty (§1.3).
+  const chipFandoms = user?.fandoms?.length ? user.fandoms : POPULAR_FANDOMS;
 
   useEffect(() => {
     // "All" boosts the user's own fandoms to the top of the feed (§1.3).
@@ -73,7 +78,7 @@ export default function HomePage() {
           <button onClick={() => navigate('/search')} className="text-sm font-medium text-brand-purple">{t('home.view_all', 'View All')}</button>
         </div>
         <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-          {['All', ...(user?.fandoms || [])].map((f) => (
+          {['All', ...chipFandoms].map((f) => (
             <button
               key={f}
               onClick={() => setFandom(f)}
@@ -129,8 +134,8 @@ export default function HomePage() {
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
                   <div className="mt-1 flex flex-col">
-                    <p className="text-[13px] font-bold text-brand-purple">{t('common.test_rate')} ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day')}</span></p>
-                    <p className="text-[13px] font-bold text-brand-pink">{t('common.private_rate')} ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day')}</span></p>
+                    <p className="text-[13px] font-bold text-brand-purple">{t('common.test_rate', 'เทส')} ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day', 'วัน')}</span></p>
+                    <p className="text-[13px] font-bold text-brand-pink">{t('common.private_rate', 'ไพร')} ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day', 'วัน')}</span></p>
                   </div>
                 </div>
               </div>

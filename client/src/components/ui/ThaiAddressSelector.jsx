@@ -1,15 +1,43 @@
 import { useState, useEffect, useMemo } from 'react';
-import * as addressDataModule from '@bilions/thailand-address';
 
-// Safely extract from either named exports or default export (depending on Vite's CJS interop)
-const addressData = addressDataModule.default || addressDataModule;
-const { provinces = [], districts = [], subDistricts = [] } = addressData || {};
-
+// The @bilions/thailand-address dataset is ~2MB. Load it lazily (dynamic import)
+// so it's only fetched when a form using this selector actually mounts, instead
+// of bloating the initial bundle for every page.
 export default function ThaiAddressSelector({ value, onChange }) {
   const [houseNo, setHouseNo] = useState('');
   const [provId, setProvId] = useState('');
   const [distId, setDistId] = useState('');
   const [subId, setSubId] = useState('');
+
+  // Address dataset, loaded on mount. Empty until the dynamic import resolves.
+  const [{ provinces, districts, subDistricts }, setAddressData] = useState({
+    provinces: [],
+    districts: [],
+    subDistricts: [],
+  });
+
+  useEffect(() => {
+    let alive = true;
+    import('@bilions/thailand-address')
+      .then((mod) => {
+        if (!alive) return;
+        const d = mod.default || mod;
+        if (!d?.provinces?.length) {
+          console.warn(
+            '[ThaiAddressSelector] address dataset missing expected exports — dropdowns will be empty.'
+          );
+        }
+        setAddressData({
+          provinces: d?.provinces || [],
+          districts: d?.districts || [],
+          subDistricts: d?.subDistricts || [],
+        });
+      })
+      .catch((err) => {
+        console.error('[ThaiAddressSelector] failed to load address dataset:', err);
+      });
+    return () => { alive = false; };
+  }, []);
   
   // Try to parse existing value only on first mount if possible, 
   // but since it's free text, we will just assign the whole thing to houseNo if we can't parse it.
@@ -28,12 +56,12 @@ export default function ThaiAddressSelector({ value, onChange }) {
   const availableDistricts = useMemo(() => {
     if (!provId) return [];
     return districts.filter(d => d.province_id === Number(provId));
-  }, [provId]);
+  }, [provId, districts]);
 
   const availableSubDistricts = useMemo(() => {
     if (!distId) return [];
     return subDistricts.filter(s => s.district_id === Number(distId));
-  }, [distId]);
+  }, [distId, subDistricts]);
 
   // Handle cascading resets
   const handleProvChange = (e) => {

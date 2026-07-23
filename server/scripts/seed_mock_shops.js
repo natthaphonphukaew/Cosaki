@@ -35,6 +35,20 @@ function getMeasurements(sizes) {
 }
 
 async function seed() {
+  // DEV-ONLY: this script DELETEs users and repopulates mock shops. Never run it
+  // against a real/production database. Requires an explicit --force to run when
+  // NODE_ENV is production.
+  const isProd = process.env.NODE_ENV === 'production';
+  const forced = process.argv.includes('--force');
+  if (isProd && !forced) {
+    console.error(
+      '✋ Refusing to seed: NODE_ENV=production. This deletes mock users and ' +
+      'reinserts data. If you REALLY mean it, re-run with --force.'
+    );
+    process.exit(1);
+  }
+  console.log(`Seeding mock shops (NODE_ENV=${process.env.NODE_ENV || 'undefined'})...`);
+
   console.log("Cleaning up old mock data...");
   await pool.query("DELETE FROM users WHERE display_name LIKE 'Mock Owner %'");
 
