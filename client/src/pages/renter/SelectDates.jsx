@@ -33,10 +33,9 @@ export default function SelectDates() {
     }
   }, [id]);
 
-  // Earliest bookable date = today + the shop's prep/lead time (§3.2). The shop
-  // sets this in Add Product ("ระยะเวลาเตรียมของก่อนส่ง"). Falls back to 7 days.
-  // e.g. today 23rd, lead 2 → bookable from the 25th. (`??` so lead 0 / same-day works.)
-  const leadDays = item?.ship_lead_days ?? 7;
+  // Earliest bookable date = today + 7 days for normal delivery.
+  // This allows time for shop prep + shipping, arriving ~2 days before usage.
+  const leadDays = 7;
   const nowHour = getHours(new Date());
 
   let minBookableDate = addDays(today, leadDays);
@@ -150,7 +149,7 @@ export default function SelectDates() {
           {isExpress ? (
             <span>ส่งด่วน — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
           ) : (
-            <span>ร้านเตรียมของ {leadDays} วัน — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
+            <span>เผื่อเวลาจัดส่ง 7 วัน (ได้รับก่อนใช้วันจริง) — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
           )}
         </div>
 
