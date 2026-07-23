@@ -22,16 +22,33 @@ const createCharge = async (req, res, next) => {
       return error(res, 'Booking is not awaiting payment', 422);
     }
 
-    const { rows: conflicts } = await db.query(
-      `SELECT id FROM bookings
+    const { rows: activeBookings } = await db.query(
+      `SELECT rental_start, rental_end, is_express FROM bookings
        WHERE item_id = $1
          AND status NOT IN ('cancelled', 'completed', 'draft', 'pending_kyc', 'pending_payment')
-         AND rental_start < $3 AND rental_end > $2
-         AND id != $4`,
-      [booking.item_id, booking.rental_start, booking.rental_end, booking.id]
+         AND id != $2`,
+      [booking.item_id, booking.id]
     );
 
-    if (conflicts.length > 0) {
+    const checkConflict = (bStart, bEnd, isExpr) => {
+      const bLeadDays = isExpr ? (new Date().getHours() < 12 ? 0 : 1) : 7;
+      const bLifeStart = new Date(bStart);
+      bLifeStart.setDate(bLifeStart.getDate() - bLeadDays);
+      const bLifeEnd = new Date(bEnd);
+      bLifeEnd.setDate(bLifeEnd.getDate() + 3);
+      
+      return activeBookings.some(a => {
+        const aLeadDays = a.is_express ? (new Date(a.rental_start).getHours() < 12 ? 0 : 1) : 7;
+        const aLifeStart = new Date(a.rental_start);
+        aLifeStart.setDate(aLifeStart.getDate() - aLeadDays);
+        const aLifeEnd = new Date(a.rental_end);
+        aLifeEnd.setDate(aLifeEnd.getDate() + 3);
+        
+        return bLifeStart < aLifeEnd && bLifeEnd > aLifeStart;
+      });
+    };
+
+    if (checkConflict(booking.rental_start, booking.rental_end, booking.is_express)) {
       await db.query(`UPDATE bookings SET status = 'cancelled' WHERE id = $1`, [booking.id]);
       return error(res, 'ขออภัย คิวนี้ถูกชำระเงินตัดหน้าไปแล้ว (คิวถูกยกเลิกอัตโนมัติ)', 409);
     }

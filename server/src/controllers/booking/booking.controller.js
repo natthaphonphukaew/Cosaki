@@ -60,15 +60,35 @@ const createBooking = async (req, res, next) => {
     );
     if (!gate.ok) return error(res, gate.reason, 403);
 
-    // Check calendar conflicts
-    const { rows: conflicts } = await db.query(
-      `SELECT id FROM bookings
+    // Check calendar conflicts using item lifecycle (preparation + usage + return buffer)
+    const { rows: activeBookings } = await db.query(
+      `SELECT rental_start, rental_end, is_express FROM bookings
        WHERE item_id = $1
-         AND status NOT IN ('cancelled', 'completed', 'draft', 'pending_kyc', 'pending_payment')
-         AND rental_start < $3 AND rental_end > $2`,
-      [item_id, rental_start, rental_end]
+         AND status NOT IN ('cancelled', 'completed', 'draft', 'pending_kyc', 'pending_payment')`,
+      [item_id]
     );
-    if (conflicts.length) return error(res, 'Item is already booked for those dates', 409);
+    
+    const checkConflict = (bStart, bEnd, isExpr) => {
+      const bLeadDays = isExpr ? (new Date().getHours() < 12 ? 0 : 1) : 7;
+      const bLifeStart = new Date(bStart);
+      bLifeStart.setDate(bLifeStart.getDate() - bLeadDays);
+      const bLifeEnd = new Date(bEnd);
+      bLifeEnd.setDate(bLifeEnd.getDate() + 3);
+      
+      return activeBookings.some(a => {
+        const aLeadDays = a.is_express ? (new Date(a.rental_start).getHours() < 12 ? 0 : 1) : 7;
+        const aLifeStart = new Date(a.rental_start);
+        aLifeStart.setDate(aLifeStart.getDate() - aLeadDays);
+        const aLifeEnd = new Date(a.rental_end);
+        aLifeEnd.setDate(aLifeEnd.getDate() + 3);
+        
+        return bLifeStart < aLifeEnd && bLifeEnd > aLifeStart;
+      });
+    };
+    
+    if (checkConflict(new Date(rental_start), new Date(rental_end), is_express)) {
+      return error(res, 'Item is already booked for those dates or is within the preparation/return buffer', 409);
+    }
 
     // Rental spans 1 usage day + up to 2 return days = a 3-calendar-day block
     // (§2.4). The price is flat per usage, so we MUST cap the span server-side —

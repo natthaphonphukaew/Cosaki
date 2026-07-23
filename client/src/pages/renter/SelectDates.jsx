@@ -44,12 +44,26 @@ export default function SelectDates() {
     minBookableDate = nowHour < 12 ? today : addDays(today, 1);
   }
 
-  // A day is unavailable if it falls inside any active booking range.
+  // A day is unavailable if its 3-day block's lifecycle overlaps with any active booking's lifecycle.
+  // Lifecycle = [start - lead_days, end + 3 days return buffer].
   const isBooked = (day) => booked.some((b) => {
-    const s = new Date(b.rental_start); s.setHours(0,0,0,0);
-    const e = new Date(b.rental_end);   e.setHours(0,0,0,0);
-    const d = new Date(day);            d.setHours(0,0,0,0);
-    return d >= s && d <= e;
+    const aStart = new Date(b.rental_start); aStart.setHours(0,0,0,0);
+    const aEnd   = new Date(b.rental_end);   aEnd.setHours(0,0,0,0);
+    
+    // Calculate booking A's lifecycle
+    const aLeadDays = b.is_express ? (getHours(new Date(b.rental_start)) < 12 ? 0 : 1) : 7;
+    const aLifeStart = addDays(aStart, -aLeadDays);
+    const aLifeEnd   = addDays(aEnd, 3);
+    
+    // Calculate this day's potential lifecycle (booking B)
+    const bLeadDays = isExpress ? (nowHour < 12 ? 0 : 1) : 7;
+    const bStart = new Date(day); bStart.setHours(0,0,0,0);
+    const bEnd   = addDays(bStart, 2);
+    const bLifeStart = addDays(bStart, -bLeadDays);
+    const bLifeEnd   = addDays(bEnd, 3);
+    
+    // Overlap condition: strictly less/greater than to allow same-day handoff
+    return bLifeStart < aLifeEnd && bLifeEnd > aLifeStart;
   });
 
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
