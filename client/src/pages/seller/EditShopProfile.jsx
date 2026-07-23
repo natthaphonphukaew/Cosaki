@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import ThaiAddressSelector from '@/components/ui/ThaiAddressSelector';
 import { getMyShop, updateShop } from '@/api/shops';
 import { fileToDataUrl } from '@/utils/image';
 import useAuthStore from '@/store/authStore';
@@ -76,7 +77,6 @@ export default function EditShopProfile() {
   const [form, setForm] = useState({
     shop_name: '',
     description: '',
-    location: '',
     rules: '',
     rules_images: [],
     couriers_out: [],
@@ -86,15 +86,20 @@ export default function EditShopProfile() {
     bank_account_name: '',
   });
 
+  // address fields managed separately so ThaiAddressSelector can init from saved data
+  const [addressStr, setAddressStr]     = useState('');
+  const [addressObj, setAddressObj]     = useState(null);
+  const [initAddressObj, setInitAddressObj] = useState(null);
+
   useEffect(() => {
     getMyShop()
       .then(({ data }) => {
         const s = data.data.shop;
         const ba = s.bank_account || {};
+        const ad = s.address_detail || {};
         setForm({
           shop_name: s.shop_name || '',
           description: s.description || '',
-          location: s.location || '',
           rules: s.rules || '',
           rules_images: s.rules_images || [],
           couriers_out: s.couriers_out || [],
@@ -103,6 +108,13 @@ export default function EditShopProfile() {
           bank_account_number: ba.account_number || '',
           bank_account_name: ba.account_name || '',
         });
+        // Restore saved address
+        if (s.address_detail) {
+          const full = s.location || '';
+          setAddressStr(full);
+          setInitAddressObj(ad);
+          setAddressObj(ad);
+        }
         setCover(s.cover_url || null);
         setLogo(s.logo_url || null);
       })
@@ -144,7 +156,9 @@ export default function EditShopProfile() {
       const payload = {
         shop_name: form.shop_name.trim(),
         description: form.description.trim() || null,
-        location: form.location.trim() || null,
+        // location stores the human-readable full address for display
+        location: addressStr.trim() || null,
+        address_detail: addressObj || null,
         rules: form.rules.trim() || null,
         rules_images: form.rules_images,
         couriers_out: form.couriers_out,
@@ -257,12 +271,14 @@ export default function EditShopProfile() {
         </Section>
 
         {/* Location */}
-        <Section icon={MapPin} title="ที่อยู่ / จังหวัด">
-          <Input
-            label="ที่อยู่ร้าน"
-            value={form.location}
-            onChange={(e) => set('location', e.target.value)}
-            placeholder="เช่น กรุงเทพมหานคร"
+        <Section icon={MapPin} title="ที่อยู่ร้าน">
+          <ThaiAddressSelector
+            value={addressStr}
+            initialAddressObj={initAddressObj}
+            onChange={(full, obj) => {
+              setAddressStr(full);
+              if (obj) setAddressObj(obj);
+            }}
           />
         </Section>
 

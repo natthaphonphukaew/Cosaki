@@ -59,6 +59,7 @@ const updateShop = async (req, res, next) => {
     const {
       shop_name, description, bank_account, logo_url, cover_url,
       location, categories, rules, rules_images, couriers_out, couriers_return,
+      address_detail,
     } = req.body;
     const { rows } = await db.query(
       `UPDATE shops SET
@@ -73,8 +74,9 @@ const updateShop = async (req, res, next) => {
          rules_images    = COALESCE($9, rules_images),
          couriers_out    = COALESCE($10, couriers_out),
          couriers_return = COALESCE($11, couriers_return),
+         address_detail  = COALESCE($12, address_detail),
          updated_at      = NOW()
-       WHERE owner_id = $12
+       WHERE owner_id = $13
        RETURNING *`,
       [
         shop_name || null, description || null,
@@ -85,6 +87,7 @@ const updateShop = async (req, res, next) => {
         rules_images || null,
         couriers_out || null,
         couriers_return || null,
+        address_detail ? JSON.stringify(address_detail) : null,
         req.user.id,
       ]
     );
