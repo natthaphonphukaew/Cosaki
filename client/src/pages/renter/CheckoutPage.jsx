@@ -7,6 +7,7 @@ import ThaiAddressSelector from '@/components/ui/ThaiAddressSelector';
 import ProductImage from '@/components/ui/ProductImage';
 import { getBooking, applyCoupon } from '@/api/bookings';
 import { getAddresses } from '@/api/addresses';
+import { getMyCoupons } from '@/api/coupons';
 import useAuthStore from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { format, differenceInCalendarDays } from 'date-fns';
@@ -19,21 +20,33 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState([]);
   const [address, setAddress] = useState('');
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
   const [coupon, setCoupon]   = useState('');
   const [payMode, setPayMode] = useState('full'); // full | deposit
   const [applying, setApplying] = useState(false);
 
-  const load = () => {
-    getBooking(bookingId).then(({ data }) => {
-      setBooking(data.data.booking);
-      setCoupon(data.data.booking.coupon_code || '');
-    });
-    getAddresses().then(({ data }) => {
-      const list = data.data.addresses || [];
-      setAddresses(list);
-      const def = list.find(a => a.is_default) || list[0];
+  const load = async () => {
+    try {
+      const { data } = await getBooking(bookingId);
+      const b = data.data.booking;
+      setBooking(b);
+      if (b.coupon_code) setCoupon(b.coupon_code);
+
+      const [addrRes, coupRes] = await Promise.all([
+        getAddresses(),
+        getMyCoupons()
+      ]);
+      
+      const addrList = addrRes.data.data.addresses || [];
+      setAddresses(addrList);
+      const def = addrList.find(a => a.is_default) || addrList[0];
       if (def) setAddress(def.address);
-    });
+
+      setAvailableCoupons(coupRes.data.data.available || []);
+    } catch (err) {
+      console.error(err);
+    }
   };
   useEffect(() => { load(); }, [bookingId]);
 
@@ -115,19 +128,75 @@ export default function CheckoutPage() {
 
         {/* Coupon */}
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">คูปองส่วนลด</p>
+          <div className="mb-2 flex justify-between items-center">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">คูปองส่วนลด</p>
+            <button onClick={() => setShowCouponModal(true)} className="text-xs font-semibold text-brand-purple">
+              ดูคูปองของฉัน
+            </button>
+          </div>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Tag size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 placeholder="เช่น COSAKI10"
-                className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-brand-purple" />
+                className="w-full h-11 rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-brand-purple" />
             </div>
-            <Button variant="secondary" className="w-24" loading={applying} onClick={handleApplyCoupon}>
+            <Button variant="secondary" className="w-24 h-11 !py-0 flex items-center justify-center" loading={applying} onClick={handleApplyCoupon}>
               {booking.coupon_code ? 'เปลี่ยน' : 'ใช้'}
             </Button>
           </div>
         </div>
+
+        {showCouponModal && (
+          <div className="fixed inset-0 z-[60] flex items-end bg-black/40 sm:items-center sm:justify-center" onClick={() => setShowCouponModal(false)}>
+            <div className="w-full max-w-[390px] rounded-t-3xl bg-white p-6 pb-10 sm:rounded-3xl sm:pb-6 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <h3 className="mb-4 text-lg font-bold text-gray-900">เลือกคูปองส่วนลด</h3>
+              
+              <div className="space-y-3 mb-6">
+                {availableCoupons.length === 0 ? (
+                  <p className="text-center text-sm text-gray-500 py-4">ไม่มีคูปองที่ใช้งานได้</p>
+                ) : (
+                  availableCoupons.map(c => (
+                    <div key={c.id} className="relative overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100 flex h-[100px]">
+                      <div className="w-[80px] flex-shrink-0 bg-brand-gradient flex flex-col justify-center items-center text-white relative">
+                        <Tag size={24} className="mb-1" />
+                        <span className="text-[10px] font-bold tracking-widest">{c.scope === 'cosaki' ? 'COSAKI' : 'SHOP'}</span>
+                        <div className="absolute right-0 top-0 bottom-0 w-2 flex flex-col justify-between py-1">
+                          {[...Array(5)].map((_, i) => (
+                            <div key={i} className="h-3 w-3 rounded-full bg-white -mr-1.5" />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex-1 p-3 flex flex-col justify-center relative">
+                        <h3 className="text-sm font-bold text-gray-900 leading-tight">ส่วนลด {c.discount_type === 'percent' ? `${c.discount_value}%` : `฿${c.discount_value}`}</h3>
+                        <p className="text-[11px] text-gray-500 mt-0.5">{c.max_discount ? `ลดสูงสุด ฿${c.max_discount}` : ''}</p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-xs font-mono font-semibold text-brand-purple bg-brand-light/50 px-2 py-0.5 rounded">{c.code}</span>
+                          <button onClick={async () => {
+                            setShowCouponModal(false);
+                            setCoupon(c.code);
+                            try {
+                              setApplying(true);
+                              const { data } = await applyCoupon(bookingId, c.code);
+                              setBooking((b) => ({ ...b, ...data.data.booking }));
+                              toast.success(`ใช้คูปองแล้ว −฿${data.data.discount}`);
+                            } catch (err) {
+                              toast.error(err.response?.data?.message || 'คูปองใช้ไม่ได้');
+                            } finally { setApplying(false); }
+                          }} className="text-xs font-semibold text-white bg-brand-purple px-3 py-1.5 rounded-full">
+                            ใช้คูปอง
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <Button className="w-full" onClick={() => setShowCouponModal(false)}>ปิด</Button>
+            </div>
+          </div>
+        )}
 
         {/* Payment mode */}
         <div>

@@ -23,4 +23,8 @@ router.put('/me/addresses/:id', addressCtrl.updateAddress);
 router.delete('/me/addresses/:id', addressCtrl.deleteAddress);
 router.post('/me/addresses/:id/default', addressCtrl.setDefaultAddress);
 
+// Coupon management
+const couponCtrl = require('../../controllers/coupon/coupon.controller');
+router.get('/me/coupons', couponCtrl.getMyCoupons);
+
 module.exports = router;

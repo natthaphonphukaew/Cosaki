@@ -179,7 +179,7 @@ export default function SearchPage() {
 
       {/* Advanced Filter sheet (§2.1) */}
       {showFilter && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setShowFilter(false)}>
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30" onClick={() => setShowFilter(false)}>
           <div className="max-h-[85vh] w-full max-w-[390px] overflow-y-auto rounded-t-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900">ตัวกรองอัจฉริยะ</h3>

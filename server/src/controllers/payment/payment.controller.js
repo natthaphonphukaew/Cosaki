@@ -22,6 +22,16 @@ const createCharge = async (req, res, next) => {
       return error(res, 'Booking is not awaiting payment', 422);
     }
 
+    if (booking.coupon_code) {
+      const { rows: used } = await db.query(
+        `SELECT id FROM bookings WHERE renter_id = $1 AND coupon_code = $2 AND id != $3 AND status NOT IN ('pending_payment', 'cancelled')`,
+        [req.user.id, booking.coupon_code, booking.id]
+      );
+      if (used.length > 0) {
+        return error(res, 'คูปองที่ใช้ถูกใช้งานไปแล้วกับออเดอร์อื่น กรุณายกเลิกคูปองก่อนชำระเงิน', 422);
+      }
+    }
+
     const { rows: activeBookings } = await db.query(
       `SELECT rental_start, rental_end, is_express FROM bookings
        WHERE item_id = $1

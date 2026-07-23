@@ -4,7 +4,11 @@ const { success, error } = require('../../utils/response');
 const computeDiscount = (coupon, subtotal) => {
   const val = Number(coupon.discount_value);
   const raw = coupon.discount_type === 'percent' ? (subtotal * val) / 100 : val;
-  return Math.min(Number(raw.toFixed(2)), subtotal); // never exceed subtotal
+  let final = Math.min(Number(raw.toFixed(2)), subtotal); // never exceed subtotal
+  if (coupon.max_discount && final > Number(coupon.max_discount)) {
+    final = Number(coupon.max_discount);
+  }
+  return final;
 };
 
 // POST /bookings/:id/coupon  { code }  — apply (or clear with empty code) a coupon.
@@ -44,6 +48,15 @@ const applyCoupon = async (req, res, next) => {
     const subtotal = Number(b.rental_fee) + Number(b.cosaki_fee) + Number(b.shipping_fee) + Number(b.booking_fee);
     if (subtotal < Number(coupon.min_spend)) {
       return error(res, `ยอดขั้นต่ำสำหรับคูปองนี้คือ ฿${coupon.min_spend}`, 422);
+    }
+
+    // Check one-time use per user
+    const { rows: used } = await db.query(
+      `SELECT id FROM bookings WHERE renter_id = $1 AND coupon_code = $2 AND id != $3 AND status NOT IN ('pending_payment', 'cancelled')`,
+      [req.user.id, code, b.id]
+    );
+    if (used.length > 0) {
+      return error(res, 'คูปองนี้ถูกคุณใช้งานไปแล้ว', 422);
     }
 
     const discount = computeDiscount(coupon, subtotal);
@@ -122,4 +135,36 @@ const toggleShopCoupon = async (req, res, next) => {
   }
 };
 
-module.exports = { applyCoupon, createShopCoupon, listShopCoupons, toggleShopCoupon };
+// GET /users/me/coupons — list user's available and used coupons.
+const getMyCoupons = async (req, res, next) => {
+  try {
+    // Get all active global coupons
+    const { rows: allCoupons } = await db.query(
+      `SELECT * FROM coupons WHERE scope = 'cosaki' AND active = TRUE ORDER BY created_at DESC`
+    );
+
+    // Get coupons used by this user
+    const { rows: used } = await db.query(
+      `SELECT DISTINCT coupon_code FROM bookings WHERE renter_id = $1 AND coupon_code IS NOT NULL AND status NOT IN ('pending_payment', 'cancelled')`,
+      [req.user.id]
+    );
+    const usedCodes = new Set(used.map(r => r.coupon_code));
+
+    const available = [];
+    const usedCoupons = [];
+    
+    for (const c of allCoupons) {
+      if (usedCodes.has(c.code)) {
+        usedCoupons.push(c);
+      } else {
+        available.push(c);
+      }
+    }
+
+    return success(res, { available, used: usedCoupons });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { applyCoupon, createShopCoupon, listShopCoupons, toggleShopCoupon, getMyCoupons };
