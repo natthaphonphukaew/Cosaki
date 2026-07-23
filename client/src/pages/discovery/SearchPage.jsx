@@ -8,6 +8,8 @@ import { searchItems } from '@/api/items';
 import { getFavorites, toggleFavorite } from '@/utils/favorites';
 import toast from 'react-hot-toast';
 import useAuthStore from '@/store/authStore';
+import { useTranslation } from 'react-i18next';
+import { POPULAR_FANDOMS } from '@/constants/fandoms';
 
 const EMPTY_FILTER = { fandom: null, size: null, price_min: '', price_max: '', bust: '', waist: '', hip: '', date_from: '', date_to: '', allow_event: false };
 
@@ -23,6 +25,11 @@ export default function SearchPage() {
   const [history, setHistory] = useState(() => loadLS('cosaki-search-history', []));
   const navigate            = useNavigate();
   const { user }            = useAuthStore();
+  const { t }               = useTranslation();
+
+  // New users have no fandoms yet — fall back to a curated popular list so the
+  // filter isn't empty (§2.1).
+  const filterFandoms = user?.fandoms?.length ? user.fandoms : POPULAR_FANDOMS;
 
   useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
 
@@ -167,8 +174,8 @@ export default function SearchPage() {
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
                   <div className="mt-1 flex flex-col">
-                    <p className="text-[13px] font-bold text-brand-purple">เทส ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
-                    <p className="text-[13px] font-bold text-brand-pink">ไพร ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                    <p className="text-[13px] font-bold text-brand-purple">{t('common.test_rate', 'เทส')} ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day', 'วัน')}</span></p>
+                    <p className="text-[13px] font-bold text-brand-pink">{t('common.private_rate', 'ไพร')} ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day', 'วัน')}</span></p>
                   </div>
                 </div>
               </div>
@@ -219,7 +226,7 @@ export default function SearchPage() {
 
             <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-gray-400">Fandom</p>
             <div className="flex flex-wrap gap-2">
-              {(user?.fandoms || []).map((f) => (
+              {filterFandoms.map((f) => (
                 <button key={f} onClick={() => set('fandom', filter.fandom === f ? null : f)}
                   className={`rounded-full px-4 py-1.5 text-sm font-medium ${filter.fandom === f ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
                   {f}
