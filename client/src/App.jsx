@@ -36,6 +36,7 @@ import SettingsPage  from '@/pages/profile/SettingsPage';
 import PaymentMethods from '@/pages/profile/PaymentMethods';
 import HelpSupport   from '@/pages/profile/HelpSupport';
 import SavedOutfits  from '@/pages/profile/SavedOutfits';
+import ManageFandomsPage from '@/pages/profile/ManageFandomsPage';
 
 // Notifications
 import NotificationsPage from '@/pages/notifications/NotificationsPage';
@@ -100,6 +101,7 @@ export default function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/profile"      element={<ProfilePage />} />
             <Route path="/profile/edit" element={<EditProfile />} />
+            <Route path="/profile/fandoms" element={<ManageFandomsPage />} />
             <Route path="/settings"     element={<SettingsPage />} />
             <Route path="/payments"     element={<PaymentMethods />} />
             <Route path="/support"      element={<HelpSupport />} />

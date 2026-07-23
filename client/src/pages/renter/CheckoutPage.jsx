@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Shield, Lock, Tag } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
+import ThaiAddressSelector from '@/components/ui/ThaiAddressSelector';
 import ProductImage from '@/components/ui/ProductImage';
 import { getBooking, applyCoupon } from '@/api/bookings';
 import useAuthStore from '@/store/authStore';
@@ -61,17 +62,9 @@ export default function CheckoutPage() {
       <PageHeader title="Checkout" />
       <div className="px-4 pb-32 space-y-4">
         {/* Shipping address */}
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Shipping Address</p>
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin size={16} className="text-brand-purple flex-shrink-0" />
-              <p className="text-sm font-semibold text-gray-800">{user?.display_name || 'Recipient'}</p>
-            </div>
-            <textarea rows={2} value={address} onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter your full shipping address..."
-              className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple" />
-          </div>
+        <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-gray-900 flex items-center gap-2"><MapPin size={18} className="text-gray-400" /> Shipping Address</h3>
+          <ThaiAddressSelector value={address} onChange={setAddress} />
         </div>
 
         {/* Order */}
@@ -130,7 +123,16 @@ export default function CheckoutPage() {
               </div>
               <span className="text-sm font-semibold text-brand-purple">฿{booking.cosaki_fee}</span>
             </div>
-            <Row label="ค่าส่ง (Shipping)" value={booking.shipping_fee || 0} />
+            
+            {booking.is_express ? (
+              <div className="flex justify-between text-sm text-amber-600">
+                <span>ค่าส่งด่วน (Express)</span>
+                <span className="font-medium text-xs rounded-full bg-amber-100 px-2 py-0.5">ชำระตามจริง (เก็บปลายทาง)</span>
+              </div>
+            ) : (
+              <Row label="ค่าส่ง (Shipping)" value={booking.shipping_fee || 0} />
+            )}
+            
             <Row label="ค่าจองคิว (§5.2)" value={bookingFee} />
             {Number(booking.discount) > 0 && (
               <div className="flex justify-between text-sm text-green-600">

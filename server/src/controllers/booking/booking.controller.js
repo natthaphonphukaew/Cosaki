@@ -28,7 +28,7 @@ const canTransition = (from, to) => VALID_TRANSITIONS[from]?.includes(to) ?? fal
 // POST /bookings — renter initiates booking
 const createBooking = async (req, res, next) => {
   try {
-    const { item_id, rental_start, rental_end, notes, rate_type = 'test' } = req.body;
+    const { item_id, rental_start, rental_end, notes, rate_type = 'test', is_express = false } = req.body;
 
     // Fetch item + shop info
     const { rows: items } = await db.query(
@@ -70,20 +70,29 @@ const createBooking = async (req, res, next) => {
     );
     if (conflicts.length) return error(res, 'Item is already booked for those dates', 409);
 
+    // Rental spans 1 usage day + up to 2 return days = a 3-calendar-day block
+    // (§2.4). The price is flat per usage, so we MUST cap the span server-side —
+    // the 3-day lock in SelectDates is UI-only and can be bypassed via the API.
     const days = Math.ceil(
       (new Date(rental_end) - new Date(rental_start)) / (1000 * 60 * 60 * 24)
     );
+    if (days < 1 || days > 3) {
+      return error(res, 'ช่วงวันเช่าต้องอยู่ภายใน 3 วัน (ใช้งาน 1 วัน + ส่งคืน)', 422);
+    }
 
     // Money model (PRD §4.1): renter pays rental + 10% protection fee + shipping;
-    // seller receives rental − 10% commission. No deposit.
+    // seller receives rental − 10% commission. No deposit. Rate is flat per usage.
     const rate = rate_type === 'private'
       ? (item.private_rate ?? item.test_rate ?? item.daily_rate)
       : (item.test_rate ?? item.daily_rate);
-    const rental_fee    = parseFloat((rate * days).toFixed(2));
+    const rental_fee    = parseFloat(Number(rate).toFixed(2));
     const cosaki_fee    = parseFloat((rental_fee * 0.10).toFixed(2));   // → insurance fund
     const commission    = parseFloat((rental_fee * 0.10).toFixed(2));   // → platform revenue
     const seller_payout = parseFloat((rental_fee - commission).toFixed(2));
-    const shipping_fee  = parseFloat(Number(item.shipping_fee || 0).toFixed(2));
+    // Express is only free if the ITEM actually offers it — never trust the
+    // client flag alone, or any booking could claim free shipping.
+    const express       = Boolean(is_express) && item.express_delivery === true;
+    const shipping_fee  = express ? 0 : parseFloat(Number(item.shipping_fee || 0).toFixed(2));
     const token = generateToken();
 
     // Determine initial status based on renter's KYC
@@ -95,14 +104,15 @@ const createBooking = async (req, res, next) => {
       `INSERT INTO bookings
          (shop_id, renter_id, item_id, rental_start, rental_end, status,
           payment_link_token, rate_type, rental_fee, cosaki_fee, commission,
-          seller_payout, shipping_fee, booking_fee, deposit_amount, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,0,$15)
+          seller_payout, shipping_fee, booking_fee, deposit_amount, notes, is_express)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,0,$15,$16)
        RETURNING *`,
       [
         item.shop_id, req.user.id, item_id,
         rental_start, rental_end, initialStatus,
         token, rate_type, rental_fee, cosaki_fee, commission,
         seller_payout, shipping_fee, booking_fee, notes || null,
+        express
       ]
     );
 

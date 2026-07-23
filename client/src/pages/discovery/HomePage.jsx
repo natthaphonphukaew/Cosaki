@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { Heart, Plus } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import NotificationBell from '@/components/ui/NotificationBell';
@@ -8,8 +8,8 @@ import ChatButton from '@/components/ui/ChatButton';
 import { searchItems } from '@/api/items';
 import { getFavorites, toggleFavorite } from '@/utils/favorites';
 import useAuthStore from '@/store/authStore';
-
-const FANDOMS = ['All','Genshin','Arcane','Valorant','Demon Slayer','JJK'];
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 
 export default function HomePage() {
   const [items, setItems]   = useState([]);
@@ -17,6 +17,7 @@ export default function HomePage() {
   const [favs, setFavs]     = useState([]);
   const { user }            = useAuthStore();
   const navigate            = useNavigate();
+  const { t }               = useTranslation();
 
   useEffect(() => { setFavs(getFavorites().map((x) => x.id)); }, []);
 
@@ -45,11 +46,12 @@ export default function HomePage() {
             <span className="text-sm font-bold text-brand-purple">{user?.display_name?.[0] || 'C'}</span>
           </div>
           <div>
-            <p className="text-xs text-gray-400">Welcome back</p>
-            <p className="text-sm font-semibold text-gray-800">{user?.display_name || 'Cosplayer'}</p>
+            <p className="text-xs text-gray-400">{t('home.welcome_back', 'Welcome back')}</p>
+            <p className="text-sm font-semibold text-gray-800">{user?.display_name || t('home.cosplayer', 'Cosplayer')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <ChatButton size={20} className="h-10 w-10 bg-white shadow-sm" />
           <NotificationBell size={20} className="h-10 w-10 bg-white shadow-sm" />
         </div>
@@ -57,21 +59,21 @@ export default function HomePage() {
 
       {/* Hero banner */}
       <div className="mx-4 mb-5 overflow-hidden rounded-2xl bg-brand-gradient p-5">
-        <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">LIMITED OFFER</span>
-        <h2 className="mt-2 text-xl font-bold text-white">New Season Drops</h2>
+        <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">{t('home.limited_offer', 'LIMITED OFFER')}</span>
+        <h2 className="mt-2 text-xl font-bold text-white">{t('home.new_season', 'New Season Drops')}</h2>
         <button onClick={() => navigate('/search')} className="mt-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-brand-purple">
-          Rent Now
+          {t('home.rent_now', 'Rent Now')}
         </button>
       </div>
 
       {/* Trending fandoms */}
       <div className="mb-4 px-4">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Trending Fandoms</h3>
-          <button onClick={() => navigate('/search')} className="text-sm font-medium text-brand-purple">View All</button>
+          <h3 className="font-semibold text-gray-900">{t('home.trending_fandoms', 'My Fandoms')}</h3>
+          <button onClick={() => navigate('/search')} className="text-sm font-medium text-brand-purple">{t('home.view_all', 'View All')}</button>
         </div>
         <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-          {['All', ...new Set([...(user?.fandoms || []), ...FANDOMS.slice(1)])].map((f) => (
+          {['All', ...(user?.fandoms || [])].map((f) => (
             <button
               key={f}
               onClick={() => setFandom(f)}
@@ -84,19 +86,25 @@ export default function HomePage() {
               {f}
             </button>
           ))}
+          <button 
+            onClick={() => navigate('/profile/fandoms')}
+            className="flex-shrink-0 flex items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            <Plus size={16} />
+          </button>
         </div>
       </div>
 
       {/* Recommended grid */}
       <div className="px-4">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Recommended for You</h3>
-          <button onClick={() => navigate('/search')} className="text-sm font-medium text-brand-purple">View All</button>
+          <h3 className="font-semibold text-gray-900">{t('home.recommended', 'Recommended for You')}</h3>
+          <button onClick={() => navigate('/search')} className="text-sm font-medium text-brand-purple">{t('home.view_all', 'View All')}</button>
         </div>
         {items.length === 0 ? (
           <div className="flex flex-col items-center py-12 text-center">
             <div className="mb-3 text-5xl">🎭</div>
-            <p className="text-sm text-gray-400">No costumes found yet</p>
+            <p className="text-sm text-gray-400">{t('home.no_items', 'No costumes found yet')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -107,15 +115,23 @@ export default function HomePage() {
                 className="cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm active:scale-[0.97] transition-transform"
               >
                 <div className="relative h-40">
+                  {item.express_delivery && (
+                    <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      🚀 ส่งด่วน
+                    </div>
+                  )}
                   <ProductImage item={item} emojiClassName="text-5xl" />
-                  <button onClick={(e) => onFav(e, item)} className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm">
+                  <button onClick={(e) => onFav(e, item)} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm">
                     <Heart size={14} className={favs.includes(item.id) ? 'text-brand-pink' : 'text-gray-500'} fill={favs.includes(item.id) ? '#EC4899' : 'none'} />
                   </button>
                 </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
-                  <p className="mt-1 text-sm text-brand-purple font-bold">${item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                  <div className="mt-1 flex flex-col">
+                    <p className="text-[13px] font-bold text-brand-purple">{t('common.test_rate')} ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day')}</span></p>
+                    <p className="text-[13px] font-bold text-brand-pink">{t('common.private_rate')} ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / {t('common.day')}</span></p>
+                  </div>
                 </div>
               </div>
             ))}
