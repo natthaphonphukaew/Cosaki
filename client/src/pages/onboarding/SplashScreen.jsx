@@ -8,7 +8,8 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const { user } = useAuthStore.getState();
-    const dest = !accessToken ? '/login'
+    // Guests land on Home and can browse/search; login is prompted on gated actions.
+    const dest = !accessToken ? '/home'
       : user?.role === 'shop_admin' ? '/seller/dashboard'
       : '/home';
     const t = setTimeout(() => navigate(dest), 2000);

@@ -51,7 +51,7 @@ export default function PaymentSuccess() {
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wider">Total Paid</p>
               <p className="mt-1 text-sm font-semibold text-gray-800 flex items-center gap-1">
-                💳 ${booking.total_amount}
+                💳 ฿{booking.total_amount}
               </p>
             </div>
           </div>

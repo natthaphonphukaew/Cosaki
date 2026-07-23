@@ -7,6 +7,8 @@ const createShopRules = [
   body('categories').optional().isArray(),
   body('logo_url').optional().isString(),
   body('cover_url').optional().isString(),
+  body('rules_text').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+  body('rules_image_url').optional({ nullable: true }).isString(),
 ];
 
 const updateShopRules = [
@@ -20,6 +22,8 @@ const updateShopRules = [
   body('bank_account.bank').optional().isString(),
   body('bank_account.account_name').optional().isString(),
   body('bank_account.account_number').optional().isString(),
+  body('rules_text').optional({ nullable: true }).isString().isLength({ max: 2000 }),
+  body('rules_image_url').optional({ nullable: true }).isString(),
 ];
 
 const createItemRules = [

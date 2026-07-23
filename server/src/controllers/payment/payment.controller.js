@@ -2,6 +2,19 @@ const crypto = require('crypto');
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
 const { notify, shopOwnerId } = require('../../services/notification/notification.service');
+const { findCommittedConflicts } = require('../../utils/bookingRules');
+
+// The slot is claimed at PAYMENT, not at date selection. Before escrowing, make
+// sure no other PAID booking has taken this item's window (+10-day freeze).
+const slotStillFree = async (booking) => {
+  const conflicts = await findCommittedConflicts({
+    itemId: booking.item_id,
+    start: booking.rental_start,
+    end: booking.rental_end,
+    excludeBookingId: booking.id,
+  });
+  return conflicts.length === 0;
+};
 
 // POST /payments/charge — mock PromptPay/Omise charge. Supports split payment:
 //   pay_mode 'full'    → charge the whole total → escrowed.
@@ -20,6 +33,12 @@ const createCharge = async (req, res, next) => {
     const booking = bookings[0];
     if (booking.status !== 'pending_payment' || Number(booking.amount_paid) > 0) {
       return error(res, 'Booking is not awaiting payment', 422);
+    }
+
+    // Paying in full escrows the booking → claims the slot now. Re-check that no
+    // other paid booking grabbed this item's window (+freeze) since date select.
+    if (pay_mode !== 'deposit' && !(await slotStillFree(booking))) {
+      return error(res, 'ช่วงวันนี้เพิ่งถูกจองไปแล้ว กรุณาเลือกวันใหม่', 409);
     }
 
     const total  = Number(booking.total_amount);
@@ -68,6 +87,11 @@ const payBalance = async (req, res, next) => {
     const booking = bookings[0];
     if (Number(booking.balance_due) <= 0 || booking.status !== 'pending_payment') {
       return error(res, 'ไม่มียอดค้างชำระ', 422);
+    }
+
+    // Paying the balance escrows the booking → claims the slot. Re-check freshness.
+    if (!(await slotStillFree(booking))) {
+      return error(res, 'ช่วงวันนี้เพิ่งถูกจองไปแล้ว กรุณาติดต่อร้านหรือเลือกวันใหม่', 409);
     }
 
     const mockGatewayRef = `ch_mock_${Date.now()}`;

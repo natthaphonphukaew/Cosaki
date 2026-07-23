@@ -41,9 +41,9 @@ export default function ResolutionCenter() {
       await resolveDispute(dispute.id, {
         resolution,
         compensation_amount: Number(deductAmt),
-        resolution_note: `${deduction}% deducted from deposit ($${deductAmt}); $${refundAmt} refunded to renter.`,
+        resolution_note: `${deduction}% deducted from deposit (฿${deductAmt}); ฿${refundAmt} refunded to renter.`,
       });
-      toast.success(`Resolved — $${deductAmt} deducted, $${refundAmt} refunded to renter`);
+      toast.success(`Resolved — ฿${deductAmt} deducted, ฿${refundAmt} refunded to renter`);
       navigate(-1);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not resolve dispute');
@@ -112,7 +112,7 @@ export default function ResolutionCenter() {
         <div className="rounded-2xl bg-white p-4 shadow-sm">
           <p className="mb-3 text-sm font-semibold text-gray-800">Escrow Deposit Balance</p>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-2xl font-bold text-gray-900">${deposit.toFixed(2)}</span>
+            <span className="text-2xl font-bold text-gray-900">฿{deposit.toFixed(2)}</span>
             <Shield size={20} className="text-brand-purple" />
           </div>
 
@@ -131,8 +131,8 @@ export default function ResolutionCenter() {
 
           <div className="rounded-xl bg-brand-light p-3 text-center">
             <p className="text-xs text-gray-500">Deduct <span className="font-bold text-brand-purple">{deduction}%</span> for Minor Stain</p>
-            <p className="text-xl font-bold text-brand-purple mt-1">${deductAmt}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Renter refund: ${refundAmt}</p>
+            <p className="text-xl font-bold text-brand-purple mt-1">฿{deductAmt}</p>
+            <p className="text-xs text-gray-400 mt-0.5">Renter refund: ฿{refundAmt}</p>
           </div>
         </div>
 
@@ -144,7 +144,7 @@ export default function ResolutionCenter() {
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" onClick={handleConfirm} loading={loading} disabled={resolved}>
-          {resolved ? 'Dispute Resolved' : `Confirm Deduction — $${deductAmt}`}
+          {resolved ? 'Dispute Resolved' : `Confirm Deduction — ฿${deductAmt}`}
         </Button>
       </div>
     </div>

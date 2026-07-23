@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import { listBookings } from '@/api/bookings';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth,
@@ -21,7 +20,6 @@ export default function SmartCalendar() {
   const [month, setMonth]     = useState(new Date());
   const [bookings, setBookings] = useState([]);
   const [selected, setSelected] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     listBookings({ as: 'shop', limit: 50 })
@@ -52,14 +50,9 @@ export default function SmartCalendar() {
     <AppShell>
       <div className="px-4 pt-5">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Inventory Scheduler</h2>
-            <p className="text-xs text-gray-400">Track your rentals and costume availability</p>
-          </div>
-          <button onClick={() => navigate('/seller/items/new')} className="flex items-center gap-1 rounded-full bg-brand-purple px-3 py-2 text-xs font-semibold text-white">
-            <Plus size={14} /> LIST NEW
-          </button>
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Inventory Scheduler</h2>
+          <p className="text-xs text-gray-400">Track your rentals and costume availability</p>
         </div>
 
         {/* View tabs */}
@@ -192,7 +185,7 @@ export default function SmartCalendar() {
             {[
               { label: 'OCCUPANCY',   value: `${Math.round((todayBookings.length / Math.max(bookings.length, 1)) * 100)}%` },
               { label: 'TOP EARNER',  value: bookings[0]?.item_name?.split(' ')[0] || '—' },
-              { label: 'REVENUE',     value: `$${bookings.filter((b) => b.status === 'completed').reduce((s, b) => s + Number(b.rental_fee || 0), 0).toFixed(0)}` },
+              { label: 'REVENUE',     value: `฿${bookings.filter((b) => b.status === 'completed').reduce((s, b) => s + Number(b.rental_fee || 0), 0).toFixed(0)}` },
               { label: 'COMPLETED',   value: String(bookings.filter((b) => b.status === 'completed').length) },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-xl bg-gray-50 p-3">

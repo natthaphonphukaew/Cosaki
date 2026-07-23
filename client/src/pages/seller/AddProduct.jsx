@@ -20,7 +20,7 @@ export default function AddProduct() {
     name: '', character: '', fandom: '', description: '',
     test_rate: '', private_rate: '', shipping_fee: '', min_age: 0, sizes: [],
     bust: '', waist: '', hip: '', height_recommended: '',
-    ship_lead_days: 2, return_days: 2, allow_event: false, express_delivery: false, return_couriers: [],
+    return_days: 2, allow_event: false, express_delivery: false, return_couriers: [],
   });
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -57,7 +57,6 @@ export default function AddProduct() {
         waist:        form.waist ? Number(form.waist) : undefined,
         hip:          form.hip ? Number(form.hip) : undefined,
         height_recommended: form.height_recommended || undefined,
-        ship_lead_days: Number(form.ship_lead_days) || 2,
         return_days:  Number(form.return_days) || 2,
         allow_event:  form.allow_event,
         express_delivery: form.express_delivery,
@@ -245,11 +244,8 @@ export default function AddProduct() {
           {/* SLA */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">กรอบเวลา (SLA)</label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input label="เตรียมของก่อนส่ง (วัน)" type="number" value={form.ship_lead_days} onChange={(e) => set('ship_lead_days', e.target.value)} />
-              <Input label="ส่งคืนภายใน (วัน)" type="number" value={form.return_days} onChange={(e) => set('return_days', e.target.value)} />
-            </div>
-            <p className="mt-1 text-xs text-gray-400">ลูกค้าจะจองชุดนี้ได้ตั้งแต่ “วันนี้ + จำนวนวันเตรียมของ” (เช่น กรอก 2 = จองได้จากอีก 2 วันข้างหน้า)</p>
+            <Input label="ส่งคืนภายใน (วัน)" type="number" value={form.return_days} onChange={(e) => set('return_days', e.target.value)} />
+            <p className="mt-1 text-xs text-gray-400">ระบบเผื่อเวลาขนส่งให้อัตโนมัติ 7 วัน (ลูกค้าจองล่วงหน้าอย่างน้อย 7 วัน) และพักชุด 10 วันหลังรับคืนก่อนปล่อยเช่ารอบถัดไป</p>
           </div>
 
           {/* Badges */}

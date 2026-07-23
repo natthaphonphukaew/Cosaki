@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import ThaiAddressSelector from '@/components/ui/ThaiAddressSelector';
 import ProductImage from '@/components/ui/ProductImage';
 import { getBooking, applyCoupon } from '@/api/bookings';
+import { getMe, updateMe } from '@/api/users';
 import useAuthStore from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { format, differenceInCalendarDays } from 'date-fns';
@@ -16,6 +17,7 @@ export default function CheckoutPage() {
   const { user } = useAuthStore();
   const [booking, setBooking] = useState(null);
   const [address, setAddress] = useState('');
+  const [savedAddress, setSavedAddress] = useState('');   // profile address, to detect edits
   const [coupon, setCoupon]   = useState('');
   const [payMode, setPayMode] = useState('full'); // full | deposit
   const [applying, setApplying] = useState(false);
@@ -25,6 +27,15 @@ export default function CheckoutPage() {
     setCoupon(data.data.booking.coupon_code || '');
   });
   useEffect(() => { load(); }, [bookingId]);
+
+  // Prefill the shipping address from the saved profile (shopee-like). If the
+  // renter edits or fills it here, it is saved back to the profile on pay.
+  useEffect(() => {
+    getMe().then(({ data }) => {
+      const a = data.data.user?.address || '';
+      if (a) { setAddress(a); setSavedAddress(a); }
+    }).catch(() => {});
+  }, []);
 
   const handleApplyCoupon = async () => {
     try {
@@ -52,8 +63,13 @@ export default function CheckoutPage() {
   const dueToday = payMode === 'deposit' ? bookingFee : total;
   const dueLater = payMode === 'deposit' ? total - bookingFee : 0;
 
-  const goPay = () => {
-    if (!address.trim()) return toast.error('กรุณากรอกที่อยู่จัดส่ง');
+  const goPay = async () => {
+    const addr = address.trim();
+    if (!addr) return toast.error('กรุณากรอกที่อยู่จัดส่ง');
+    // Persist a new/edited address back to the profile so next time it prefills.
+    if (addr !== savedAddress.trim()) {
+      try { await updateMe({ address: addr }); setSavedAddress(addr); } catch { /* non-blocking */ }
+    }
     navigate(`/bookings/${bookingId}/pay`, { state: { payMode, amount: dueToday } });
   };
 
@@ -133,7 +149,7 @@ export default function CheckoutPage() {
               <Row label="ค่าส่ง (Shipping)" value={booking.shipping_fee || 0} />
             )}
             
-            <Row label="ค่าจองคิว (§5.2)" value={bookingFee} />
+            <Row label="ค่าจองคิว" value={bookingFee} />
             {Number(booking.discount) > 0 && (
               <div className="flex justify-between text-sm text-green-600">
                 <span>ส่วนลด ({booking.coupon_code})</span>

@@ -33,45 +33,52 @@ export default function SelectDates() {
     }
   }, [id]);
 
-  // Earliest bookable date = today + the shop's prep/lead time (§3.2). The shop
-  // sets this in Add Product ("ระยะเวลาเตรียมของก่อนส่ง"). Falls back to 7 days.
-  // e.g. today 23rd, lead 2 → bookable from the 25th. (`??` so lead 0 / same-day works.)
-  const leadDays = item?.ship_lead_days ?? 7;
+  // Fixed 7-day shipping buffer: non-express items are bookable from today + 7.
+  // Express skips the queue: before noon → today, after noon → tomorrow.
+  const SHIP_BUFFER_DAYS = 7;
+  const RETURN_FREEZE_DAYS = 10;
+  const returnDays = Math.max(1, Number(item?.return_days ?? 2));
   const nowHour = getHours(new Date());
 
-  let minBookableDate = addDays(today, leadDays);
+  let minBookableDate = addDays(today, SHIP_BUFFER_DAYS);
   if (isExpress) {
-    // Express skips the prep queue: before noon → today, after noon → tomorrow.
     minBookableDate = nowHour < 12 ? today : addDays(today, 1);
   }
 
-  // A day is unavailable if it falls inside any active booking range.
-  const isBooked = (day) => booked.some((b) => {
-    const s = new Date(b.rental_start); s.setHours(0,0,0,0);
-    const e = new Date(b.rental_end);   e.setHours(0,0,0,0);
-    const d = new Date(day);            d.setHours(0,0,0,0);
-    return d >= s && d <= e;
+  // Each PAID booking occupies [rental_start, blocked_until) — the return date
+  // plus a 10-day wash/iron freeze. A day sits inside an existing block if:
+  const midnight = (v) => { const d = new Date(v); d.setHours(0,0,0,0); return d; };
+  const inExistingBlock = (day) => booked.some((b) => {
+    const s = midnight(b.rental_start);
+    const until = midnight(b.blocked_until);   // exclusive: first free day
+    const d = midnight(day);
+    return d >= s && d < until;
   });
+
+  // Picking `day` as start would occupy [day, day + returnDays + freeze). It is
+  // invalid if that span overlaps any existing block (mirrors the server rule).
+  const startConflicts = (day) => {
+    const myStart = midnight(day);
+    const myUntil = midnight(addDays(day, returnDays + RETURN_FREEZE_DAYS)); // exclusive
+    return booked.some((b) => {
+      const s = midnight(b.rental_start);
+      const until = midnight(b.blocked_until);
+      return myStart < until && s < myUntil;   // half-open overlap
+    });
+  };
 
   const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
   const startPad = startOfMonth(month).getDay(); // 0=Sun
 
   const handleDay = (day) => {
-    if (isBefore(day, minBookableDate) || isBooked(day)) return;
-    
-    // Auto-lock end date to 2 days after start date
-    const end = addDays(day, 2);
-    
-    // Check if the 3-day block overlaps with any booked dates
-    for (let i = 0; i <= 2; i++) {
-      if (isBooked(addDays(day, i))) {
-        toast.error('วันที่คืนสินค้าติดคิวจองอื่น กรุณาเลือกวันอื่น');
-        return;
-      }
+    if (isBefore(day, minBookableDate)) return;
+    if (startConflicts(day)) {
+      toast.error('ช่วงวันนี้ติดคิวเช่า/รอบพักผ้า กรุณาเลือกวันอื่น');
+      return;
     }
-
+    // Return-by date = start + the shop's return_days.
     setStart(day);
-    setEnd(end);
+    setEnd(addDays(day, returnDays));
   };
 
   const isInRange = (day) => startDate && endDate && isAfter(day, startDate) && isBefore(day, endDate);
@@ -144,13 +151,13 @@ export default function SelectDates() {
           </div>
         )}
 
-        {/* Earliest-bookable hint (based on the shop's prep time) */}
+        {/* Earliest-bookable hint (fixed 7-day shipping buffer) */}
         <div className="mb-4 flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-600">
           <span>📦</span>
           {isExpress ? (
             <span>ส่งด่วน — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
           ) : (
-            <span>ร้านเตรียมของ {leadDays} วัน — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
+            <span>เผื่อระยะเวลาขนส่ง {SHIP_BUFFER_DAYS} วัน — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
           )}
         </div>
 
@@ -181,7 +188,7 @@ export default function SelectDates() {
             const end     = isEnd(day);
             const past    = isPast(day);
             const active  = start || end;
-            const bookedDay = !past && isBooked(day);
+            const bookedDay = !past && (inExistingBlock(day) || startConflicts(day));
             return (
               <button
                 key={day.toISOString()}

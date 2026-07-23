@@ -53,6 +53,7 @@ import ResolutionCenter from '@/pages/seller/ResolutionCenter';
 import AddProduct       from '@/pages/seller/AddProduct';
 import MyWallet         from '@/pages/seller/MyWallet';
 import ShopOnboarding   from '@/pages/seller/ShopOnboarding';
+import ShopProfileEdit  from '@/pages/seller/ShopProfileEdit';
 import OrderDetail      from '@/pages/seller/OrderDetail';
 import MyListings       from '@/pages/seller/MyListings';
 import EditProduct      from '@/pages/seller/EditProduct';
@@ -82,6 +83,13 @@ export default function App() {
           <Route path="/auth/callback" element={<OAuthCallback />} />
           <Route path="/consent/:token" element={<ConsentPage />} />
 
+          {/* Public browse — guests may view/search without logging in. Gated
+              actions (rent, open shop, follow, chat) prompt sign-up inline. */}
+          <Route path="/home"     element={<HomePage />} />
+          <Route path="/search"   element={<SearchPage />} />
+          <Route path="/items/:id" element={<ProductDetail />} />
+          <Route path="/shops/:id" element={<ShopProfile />} />
+
           {/* Guest only */}
           <Route element={<GuestGuard />}>
             <Route path="/login" element={<LoginPage />} />
@@ -96,8 +104,6 @@ export default function App() {
             <Route path="/seller/onboarding" element={<ShopOnboarding />} />
 
             {/* Renter main */}
-            <Route path="/home"     element={<HomePage />} />
-            <Route path="/search"   element={<SearchPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/profile"      element={<ProfilePage />} />
             <Route path="/profile/edit" element={<EditProfile />} />
@@ -112,8 +118,6 @@ export default function App() {
             <Route path="/rentals"  element={<MyRentals />} />
 
             {/* Renter journey */}
-            <Route path="/items/:id"                         element={<ProductDetail />} />
-            <Route path="/shops/:id"                         element={<ShopProfile />} />
             <Route path="/items/:id/dates"                   element={<SelectDates />} />
             <Route path="/bookings/:bookingId/checkout"      element={<CheckoutPage />} />
             <Route path="/bookings/:bookingId/pay"           element={<PaymentQR />} />
@@ -124,6 +128,7 @@ export default function App() {
 
             {/* Seller */}
             <Route path="/seller/dashboard"         element={<SellerDashboard />} />
+            <Route path="/seller/shop/edit"         element={<ShopProfileEdit />} />
             <Route path="/seller/orders"            element={<OrderManagement />} />
             <Route path="/seller/orders/:id"        element={<OrderDetail />} />
             <Route path="/seller/calendar"          element={<SmartCalendar />} />
