@@ -1,214 +1,380 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight, X, ChevronDown,
+  User, Calendar, Tag,
+} from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import { listBookings } from '@/api/bookings';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth,
-         eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
+import {
+  format, addMonths, subMonths, startOfMonth, endOfMonth,
+  eachDayOfInterval, isSameDay, parseISO, isBefore, isAfter,
+  startOfDay, endOfDay,
+} from 'date-fns';
+import { th } from 'date-fns/locale';
 
-const VIEW_TABS = ['MONTHLY', 'WEEKLY', 'LIST'];
-
-const BOOKING_COLORS = [
-  'bg-brand-purple text-white',
-  'bg-pink-400 text-white',
-  'bg-amber-400 text-white',
-  'bg-blue-400 text-white',
-  'bg-green-400 text-white',
+/* ─── colour palette – one per unique item ───────────────────────── */
+const PALETTE = [
+  { bg: 'bg-brand-purple',  text: 'text-white', hex: '#7C3AED' },
+  { bg: 'bg-pink-500',      text: 'text-white', hex: '#EC4899' },
+  { bg: 'bg-amber-500',     text: 'text-white', hex: '#F59E0B' },
+  { bg: 'bg-blue-500',      text: 'text-white', hex: '#3B82F6' },
+  { bg: 'bg-green-500',     text: 'text-white', hex: '#22C55E' },
+  { bg: 'bg-rose-400',      text: 'text-white', hex: '#FB7185' },
+  { bg: 'bg-indigo-500',    text: 'text-white', hex: '#6366F1' },
+  { bg: 'bg-teal-500',      text: 'text-white', hex: '#14B8A6' },
 ];
 
+const DAY_HEADERS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+const STATUS_LABEL = {
+  escrowed:  'รอยืนยัน',
+  shipped:   'จัดส่งแล้ว',
+  returned:  'ส่งคืนแล้ว',
+  completed: 'เสร็จสิ้น',
+  disputed:  'มีข้อพิพาท',
+  cancelled: 'ยกเลิก',
+};
+
+const ACTIVE_STATUSES = ['escrowed', 'shipped', 'returned', 'completed', 'disputed'];
+
 export default function SmartCalendar() {
-  const [view, setView]       = useState('MONTHLY');
-  const [month, setMonth]     = useState(new Date());
+  const navigate  = useNavigate();
+  const [month, setMonth]       = useState(new Date());
   const [bookings, setBookings] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const navigate = useNavigate();
+  const [popup, setPopup]       = useState(null);   // { booking, anchorRect }
+  const [filterItem, setFilterItem] = useState('all'); // 'all' | item_id
+  const [showFilter, setShowFilter] = useState(false);
+  const popupRef = useRef(null);
 
   useEffect(() => {
-    listBookings({ as: 'shop', limit: 50 })
+    listBookings({ as: 'shop', limit: 100 })
       .then(({ data }) => setBookings(data.data.bookings))
       .catch(() => {});
   }, []);
 
-  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
-  const startPad = startOfMonth(month).getDay();
+  /* Close popup on outside click */
+  useEffect(() => {
+    const h = (e) => {
+      if (popup && popupRef.current && !popupRef.current.contains(e.target)) {
+        setPopup(null);
+      }
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [popup]);
 
+  /* ── derived ─────────────────────────────────────────────────── */
+  const activeBookings = useMemo(() =>
+    bookings.filter((b) =>
+      ACTIVE_STATUSES.includes(b.status) && b.rental_start && b.rental_end,
+    ), [bookings]);
+
+  /* unique items for filter + colour mapping */
+  const itemMap = useMemo(() => {
+    const map = {};
+    activeBookings.forEach((b) => {
+      if (!map[b.item_id]) {
+        const idx = Object.keys(map).length % PALETTE.length;
+        map[b.item_id] = { id: b.item_id, name: b.item_name, color: PALETTE[idx] };
+      }
+    });
+    return map;
+  }, [activeBookings]);
+
+  const displayed = useMemo(() =>
+    filterItem === 'all'
+      ? activeBookings
+      : activeBookings.filter((b) => String(b.item_id) === String(filterItem)),
+    [activeBookings, filterItem]);
+
+  /* calendar layout */
+  const days      = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
+  const startPad  = startOfMonth(month).getDay();
+  const totalCells = startPad + days.length;
+  const endPad    = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+
+  /* bookings that touch a given day */
   const bookingsOnDay = (day) =>
-    bookings.filter((b) => {
-      const isConfirmed = ['shipped', 'returned', 'completed', 'disputed'].includes(b.status) || 
-                          (b.status === 'escrowed' && b.accepted_at);
-      if (!isConfirmed) return false;
-      if (!b.rental_start || !b.rental_end) return false;
-      const s = parseISO(b.rental_start);
-      const e = parseISO(b.rental_end);
-      return day >= s && day <= e;
+    displayed.filter((b) => {
+      const s = startOfDay(parseISO(b.rental_start));
+      const e = endOfDay(parseISO(b.rental_end));
+      return !isAfter(s, endOfDay(day)) && !isBefore(e, startOfDay(day));
     });
 
-  const todayBookings = bookings.filter((b) => {
-    const isConfirmed = ['shipped', 'returned', 'completed', 'disputed'].includes(b.status) || 
-                        (b.status === 'escrowed' && b.accepted_at);
-    if (!isConfirmed) return false;
-    if (!b.rental_start || !b.rental_end) return false;
-    const now = new Date();
-    return now >= parseISO(b.rental_start) && now <= parseISO(b.rental_end);
-  });
-
-  const pendingCount = bookings.filter((b) => b.status === 'escrowed').length;
+  /* For a booking bar: is this the first day of the bar in this month? */
+  const isBarStart = (b, day) => {
+    const s = startOfDay(parseISO(b.rental_start));
+    return isSameDay(day, s) || isSameDay(day, startOfMonth(month));
+  };
 
   return (
     <AppShell>
-      <div className="px-4 pt-5">
+      <div className="px-3 pt-5 pb-32">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Inventory Scheduler</h2>
-            <p className="text-xs text-gray-400">Track your rentals and costume availability</p>
+            <h2 className="text-xl font-bold text-gray-900">ปฏิทินการเช่า</h2>
+            <p className="text-xs text-gray-400">ติดตามสถานะการจองแต่ละชิ้น</p>
           </div>
-          <button onClick={() => navigate('/seller/items/new')} className="flex items-center gap-1 rounded-full bg-brand-purple px-3 py-2 text-xs font-semibold text-white">
-            <Plus size={14} /> LIST NEW
+          {/* Item filter dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFilter((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-sm"
+            >
+              {filterItem === 'all' ? 'ทั้งหมด' : (itemMap[filterItem]?.name?.split(' ').slice(0,2).join(' ') || 'กรอง')}
+              <ChevronDown size={12} />
+            </button>
+            {showFilter && (
+              <div className="absolute right-0 top-10 z-50 min-w-[180px] rounded-2xl bg-white p-2 shadow-xl border border-gray-100">
+                <button
+                  onClick={() => { setFilterItem('all'); setShowFilter(false); }}
+                  className={`w-full text-left rounded-xl px-3 py-2 text-sm font-medium transition-colors ${filterItem === 'all' ? 'bg-brand-purple text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  ทั้งหมด
+                </button>
+                {Object.values(itemMap).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setFilterItem(String(item.id)); setShowFilter(false); }}
+                    className={`w-full text-left flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${String(filterItem) === String(item.id) ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+                  >
+                    <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${item.color.bg}`} />
+                    <span className="truncate text-gray-700">{item.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Month nav */}
+        <div className="mb-3 flex items-center justify-between">
+          <button
+            onClick={() => setMonth(subMonths(month, 1))}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-semibold text-gray-800">
+            {format(month, 'MMMM yyyy')}
+          </span>
+          <button
+            onClick={() => setMonth(addMonths(month, 1))}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm"
+          >
+            <ChevronRight size={16} />
           </button>
         </div>
 
-        {/* View tabs */}
-        <div className="mb-4 flex rounded-xl bg-gray-100 p-1">
-          {VIEW_TABS.map((t) => (
-            <button
-              key={t}
-              onClick={() => setView(t)}
-              className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors ${
-                view === t ? 'bg-white text-brand-purple shadow-sm' : 'text-gray-500'
-              }`}
-            >
-              {t}
-            </button>
+        {/* Colour legend */}
+        {Object.values(itemMap).length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1.5">
+            {Object.values(itemMap).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setFilterItem(String(filterItem) === String(item.id) ? 'all' : String(item.id))}
+                className="flex items-center gap-1.5 text-xs text-gray-600"
+              >
+                <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${item.color.bg} ${String(filterItem) === String(item.id) ? 'ring-2 ring-offset-1 ring-gray-400' : ''}`} />
+                <span className="max-w-[80px] truncate">{item.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Day headers */}
+        <div className="grid grid-cols-7 text-center mb-0.5">
+          {DAY_HEADERS.map((d) => (
+            <span key={d} className="text-[10px] font-semibold text-gray-400 py-1">{d}</span>
           ))}
         </div>
 
-        {view === 'MONTHLY' && (
-          <>
-            {/* Month nav */}
-            <div className="mb-3 flex items-center justify-between">
-              <button onClick={() => setMonth(subMonths(month, 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm">
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-sm font-semibold text-gray-800">{format(month, 'MMMM yyyy')}</span>
-              <button onClick={() => setMonth(addMonths(month, 1))} className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm">
-                <ChevronRight size={16} />
-              </button>
-            </div>
+        {/* Calendar grid */}
+        <div className="rounded-2xl bg-white shadow-sm overflow-hidden border border-gray-100">
+          <div className="grid grid-cols-7 divide-x divide-y divide-gray-100">
+            {/* Padding before month start */}
+            {Array.from({ length: startPad }).map((_, i) => (
+              <div key={`pre-${i}`} className="min-h-[72px] bg-gray-50/50 p-1" />
+            ))}
 
-            {/* Day headers */}
-            <div className="mb-1 grid grid-cols-7 text-center">
-              {['SUN','MON','TUE','WED','THU','FRI','SAT'].map((d) => (
-                <span key={d} className="text-[10px] font-semibold text-gray-400">{d}</span>
-              ))}
-            </div>
-
-            {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-y-1">
-              {Array.from({ length: startPad }).map((_, i) => <div key={`p${i}`} />)}
-              {days.map((day) => {
-                const dayBookings = bookingsOnDay(day);
-                const isToday = isSameDay(day, new Date());
-                return (
-                  <div
-                    key={day.toISOString()}
-                    onClick={() => setSelected(dayBookings.length ? { day, bookings: dayBookings } : null)}
-                    className={`min-h-[52px] rounded-lg p-1 cursor-pointer transition-colors ${isToday ? 'bg-brand-light' : 'hover:bg-gray-50'}`}
+            {/* Month days */}
+            {days.map((day) => {
+              const isToday = isSameDay(day, new Date());
+              const dayBks  = bookingsOnDay(day);
+              return (
+                <div
+                  key={day.toISOString()}
+                  className={`min-h-[72px] p-1 relative ${isToday ? 'bg-brand-light/60' : ''}`}
+                >
+                  {/* Date number */}
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium mb-0.5 mx-auto
+                      ${isToday ? 'bg-brand-purple text-white font-bold' : 'text-gray-500'}`}
                   >
-                    <span className={`block text-center text-xs font-medium mb-0.5 ${isToday ? 'font-bold text-brand-purple' : 'text-gray-600'}`}>
-                      {format(day, 'd')}
-                    </span>
-                    {dayBookings.slice(0,2).map((b, i) => (
-                      <div key={b.id} className={`truncate rounded px-1 text-[9px] font-semibold mb-0.5 ${BOOKING_COLORS[i % BOOKING_COLORS.length]}`}>
-                        {b.item_name?.split(' ').slice(0,2).join(' ')}
-                      </div>
-                    ))}
-                    {dayBookings.length > 2 && (
-                      <div className="text-[9px] text-gray-400 text-center">+{dayBookings.length - 2}</div>
+                    {format(day, 'd')}
+                  </span>
+
+                  {/* Booking bars (max 3 visible) */}
+                  <div className="flex flex-col gap-0.5">
+                    {dayBks.slice(0, 3).map((b) => {
+                      const color = itemMap[b.item_id]?.color || PALETTE[0];
+                      const showLabel = isBarStart(b, day);
+                      return (
+                        <button
+                          key={b.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setPopup({ booking: b, rect });
+                          }}
+                          className={`w-full rounded-[4px] px-1 py-0.5 text-left text-[9px] font-semibold leading-tight ${color.bg} ${color.text} truncate`}
+                          title={b.item_name}
+                        >
+                          {showLabel ? b.item_name?.split(' ').slice(0, 3).join(' ') : ''}
+                        </button>
+                      );
+                    })}
+                    {dayBks.length > 3 && (
+                      <span className="text-[9px] text-gray-400 text-center">+{dayBks.length - 3}</span>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {view === 'LIST' && (
-          <div className="space-y-3 mt-2">
-            {bookings.length === 0
-              ? <p className="text-center text-sm text-gray-400 py-8">No bookings yet</p>
-              : bookings.map((b, i) => (
-                <div key={b.id} className={`flex items-center gap-3 rounded-2xl p-3 ${BOOKING_COLORS[i % BOOKING_COLORS.length]}`}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate">{b.item_name}</p>
-                    <p className="text-xs opacity-80">
-                      {b.rental_start && format(parseISO(b.rental_start), 'MMM d')} –{' '}
-                      {b.rental_end   && format(parseISO(b.rental_end),   'MMM d')}
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold opacity-80 uppercase">{b.status}</span>
                 </div>
-              ))
-            }
-          </div>
-        )}
+              );
+            })}
 
-        {/* Booking detail popover */}
-        {selected && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setSelected(null)}>
-            <div className="w-full max-w-[390px] rounded-t-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
-              <p className="mb-3 text-sm font-bold text-gray-800">{format(selected.day, 'EEEE, MMM d')}</p>
-              {selected.bookings.map((b) => (
-                <div key={b.id} className="mb-3 rounded-xl border border-gray-100 p-3">
-                  <div className="flex justify-between items-start">
-                    <p className="text-sm font-semibold text-gray-800">{b.item_name}</p>
-                    <span className="text-xs font-semibold text-brand-purple uppercase">{b.status}</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">Renter: {b.renter_name}</p>
-                </div>
-              ))}
-              <button onClick={() => setSelected(null)} className="w-full rounded-full bg-gray-100 py-2.5 text-sm font-medium text-gray-600">Close</button>
-            </div>
-          </div>
-        )}
-
-        {/* Pending shipments */}
-        <div className="mt-5 rounded-2xl bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">Pending Shipments</h3>
-            {pendingCount > 0 && (
-              <span className="rounded-full bg-brand-purple px-2.5 py-0.5 text-xs font-bold text-white">{pendingCount} NEW</span>
-            )}
-          </div>
-          {bookings.filter((b) => b.status === 'escrowed').slice(0,3).map((b) => (
-            <div key={b.id} className="flex items-center gap-2 py-2 border-b border-gray-50 last:border-0">
-              <div className="h-2 w-2 rounded-full bg-brand-purple flex-shrink-0" />
-              <p className="text-sm text-gray-700">Ship "{b.item_name?.split(' ')[0]}"</p>
-            </div>
-          ))}
-          {bookings.filter((b) => b.status === 'escrowed').length === 0 && (
-            <p className="text-sm text-gray-400">No pending shipments</p>
-          )}
-        </div>
-
-        {/* Quick insights */}
-        <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm mb-4">
-          <h3 className="mb-3 font-semibold text-gray-900">Quick Insights</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'OCCUPANCY',   value: `${Math.round((todayBookings.length / Math.max(bookings.length, 1)) * 100)}%` },
-              { label: 'TOP EARNER',  value: bookings[0]?.item_name?.split(' ')[0] || '—' },
-              { label: 'REVENUE',     value: `฿${bookings.filter((b) => b.status === 'completed').reduce((s, b) => s + Number(b.rental_fee || 0), 0).toFixed(0)}` },
-              { label: 'COMPLETED',   value: String(bookings.filter((b) => b.status === 'completed').length) },
-            ].map(({ label, value }) => (
-              <div key={label} className="rounded-xl bg-gray-50 p-3">
-                <p className="text-xs text-gray-400 uppercase tracking-wider">{label}</p>
-                <p className="mt-1 text-lg font-bold text-gray-800">{value}</p>
-              </div>
+            {/* End padding to complete grid */}
+            {Array.from({ length: endPad }).map((_, i) => (
+              <div key={`post-${i}`} className="min-h-[72px] bg-gray-50/50 p-1" />
             ))}
           </div>
         </div>
+
+        {/* Quick stats */}
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {[
+            { label: 'กำลังเช่า',  value: displayed.filter(b => b.status === 'shipped').length },
+            { label: 'รอยืนยัน',   value: displayed.filter(b => b.status === 'escrowed').length },
+            { label: 'เสร็จสิ้น',  value: displayed.filter(b => b.status === 'completed').length },
+          ].map(({ label, value }) => (
+            <div key={label} className="rounded-2xl bg-white p-3 shadow-sm text-center">
+              <p className="text-xl font-bold text-brand-purple">{value}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Upcoming bookings list */}
+        <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm">
+          <h3 className="mb-3 font-semibold text-gray-900 text-sm">การจองล่าสุด</h3>
+          {displayed.length === 0 && (
+            <p className="text-sm text-gray-400 text-center py-4">ไม่มีการจอง</p>
+          )}
+          {displayed.slice(0, 5).map((b) => {
+            const color = itemMap[b.item_id]?.color || PALETTE[0];
+            return (
+              <button
+                key={b.id}
+                onClick={() => navigate(`/seller/orders/${b.id}`)}
+                className="w-full flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0 text-left"
+              >
+                <span className={`h-9 w-1.5 rounded-full flex-shrink-0 ${color.bg}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{b.item_name}</p>
+                  <p className="text-xs text-gray-400">
+                    {b.rental_start && format(parseISO(b.rental_start), 'd MMM')} –{' '}
+                    {b.rental_end   && format(parseISO(b.rental_end),   'd MMM')}
+                    {' · '}{b.renter_name}
+                  </p>
+                </div>
+                <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${color.bg} ${color.text}`}>
+                  {STATUS_LABEL[b.status] || b.status}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+      {/* ── Booking popup ────────────────────────────────────────── */}
+      {popup && (() => {
+        const b = popup.booking;
+        const color = itemMap[b.item_id]?.color || PALETTE[0];
+        const img = Array.isArray(b.image_urls) ? b.image_urls[0] : b.image_urls?.[0];
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+            onClick={() => setPopup(null)}
+          >
+            <div
+              ref={popupRef}
+              className="w-full max-w-[320px] rounded-3xl bg-white shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Top strip with colour */}
+              <div className={`${color.bg} px-4 pt-4 pb-3`}>
+                <div className="flex items-start gap-3">
+                  {/* Item thumbnail */}
+                  <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl bg-white/20">
+                    {img
+                      ? <img src={img} alt="" className="h-full w-full object-cover" />
+                      : <div className="flex h-full w-full items-center justify-center text-white text-2xl">👘</div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-base font-bold ${color.text} leading-tight`}>{b.item_name}</p>
+                    <span className="mt-1 inline-block rounded-full bg-white/25 px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide">
+                      {STATUS_LABEL[b.status] || b.status}
+                    </span>
+                  </div>
+                  <button onClick={() => setPopup(null)} className={`${color.text} opacity-70`}>
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="px-4 py-4 space-y-2.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-gray-400 font-medium">
+                    <User size={14} /> ผู้เช่า
+                  </span>
+                  <span className="font-semibold text-gray-800">{b.renter_name || '—'}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-gray-400 font-medium">
+                    <Calendar size={14} /> ช่วงเช่า
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {b.rental_start && format(parseISO(b.rental_start), 'd MMM')}
+                    {' – '}
+                    {b.rental_end && format(parseISO(b.rental_end), 'd MMM')}
+                  </span>
+                </div>
+                {b.total_amount && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5 text-gray-400 font-medium">
+                      <Tag size={14} /> ยอดรวม
+                    </span>
+                    <span className="font-semibold text-gray-800">฿{b.total_amount}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* CTA */}
+              <div className="px-4 pb-5">
+                <button
+                  onClick={() => { setPopup(null); navigate(`/seller/orders/${b.id}`); }}
+                  className={`w-full rounded-full py-3 text-sm font-bold tracking-wide ${color.bg} ${color.text}`}
+                >
+                  ดูรายละเอียดการจอง
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </AppShell>
   );
 }
