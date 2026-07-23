@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, TrendingUp, Plus } from 'lucide-react';
+import { ChevronRight, TrendingUp, Plus, Settings } from 'lucide-react';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import NotificationBell from '@/components/ui/NotificationBell';
@@ -48,7 +48,13 @@ export default function SellerDashboard() {
             </div>
             <span className="text-base font-bold text-gray-800 truncate max-w-[180px]">{shopName}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/seller/shop/edit')}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-600 hover:bg-gray-100"
+            >
+              <Settings size={18} />
+            </button>
             <ChatButton />
             <NotificationBell />
           </div>

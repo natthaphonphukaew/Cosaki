@@ -48,17 +48,18 @@ import ChatList from '@/pages/chat/ChatList';
 import ChatRoom from '@/pages/chat/ChatRoom';
 
 // Seller
-import SellerDashboard  from '@/pages/seller/SellerDashboard';
-import OrderManagement  from '@/pages/seller/OrderManagement';
-import SmartCalendar    from '@/pages/seller/SmartCalendar';
-import ResolutionCenter from '@/pages/seller/ResolutionCenter';
-import AddProduct       from '@/pages/seller/AddProduct';
-import MyWallet         from '@/pages/seller/MyWallet';
-import ShopOnboarding   from '@/pages/seller/ShopOnboarding';
-import OrderDetail      from '@/pages/seller/OrderDetail';
-import MyListings       from '@/pages/seller/MyListings';
-import EditProduct      from '@/pages/seller/EditProduct';
-import Campaigns        from '@/pages/seller/Campaigns';
+import SellerDashboard   from '@/pages/seller/SellerDashboard';
+import OrderManagement   from '@/pages/seller/OrderManagement';
+import SmartCalendar     from '@/pages/seller/SmartCalendar';
+import ResolutionCenter  from '@/pages/seller/ResolutionCenter';
+import AddProduct        from '@/pages/seller/AddProduct';
+import MyWallet          from '@/pages/seller/MyWallet';
+import ShopOnboarding    from '@/pages/seller/ShopOnboarding';
+import OrderDetail       from '@/pages/seller/OrderDetail';
+import MyListings        from '@/pages/seller/MyListings';
+import EditProduct       from '@/pages/seller/EditProduct';
+import Campaigns         from '@/pages/seller/Campaigns';
+import EditShopProfile   from '@/pages/seller/EditShopProfile';
 
 function OAuthCallback() {
   const params = new URLSearchParams(window.location.search);
@@ -127,15 +128,16 @@ export default function App() {
             <Route path="/bookings/:bookingId/review"        element={<ReviewRating />} />
 
             {/* Seller */}
-            <Route path="/seller/dashboard"         element={<SellerDashboard />} />
-            <Route path="/seller/orders"            element={<OrderManagement />} />
-            <Route path="/seller/orders/:id"        element={<OrderDetail />} />
-            <Route path="/seller/calendar"          element={<SmartCalendar />} />
-            <Route path="/seller/wallet"            element={<MyWallet />} />
-            <Route path="/seller/items"             element={<MyListings />} />
-            <Route path="/seller/items/new"         element={<AddProduct />} />
-            <Route path="/seller/items/:id/edit"    element={<EditProduct />} />
-            <Route path="/seller/campaigns"         element={<Campaigns />} />
+            <Route path="/seller/dashboard"           element={<SellerDashboard />} />
+            <Route path="/seller/shop/edit"           element={<EditShopProfile />} />
+            <Route path="/seller/orders"              element={<OrderManagement />} />
+            <Route path="/seller/orders/:id"          element={<OrderDetail />} />
+            <Route path="/seller/calendar"            element={<SmartCalendar />} />
+            <Route path="/seller/wallet"              element={<MyWallet />} />
+            <Route path="/seller/items"               element={<MyListings />} />
+            <Route path="/seller/items/new"           element={<AddProduct />} />
+            <Route path="/seller/items/:id/edit"      element={<EditProduct />} />
+            <Route path="/seller/campaigns"           element={<Campaigns />} />
             <Route path="/seller/disputes/:bookingId" element={<ResolutionCenter />} />
           </Route>
 

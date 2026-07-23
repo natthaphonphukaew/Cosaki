@@ -56,24 +56,34 @@ const getMyShop = async (req, res, next) => {
 // PATCH /shops/me — update shop profile
 const updateShop = async (req, res, next) => {
   try {
-    const { shop_name, description, bank_account, logo_url, cover_url, location, categories } = req.body;
+    const {
+      shop_name, description, bank_account, logo_url, cover_url,
+      location, categories, rules, couriers_out, couriers_return,
+    } = req.body;
     const { rows } = await db.query(
       `UPDATE shops SET
-         shop_name    = COALESCE($1, shop_name),
-         description  = COALESCE($2, description),
-         bank_account = COALESCE($3, bank_account),
-         logo_url     = COALESCE($4, logo_url),
-         cover_url    = COALESCE($5, cover_url),
-         location     = COALESCE($6, location),
-         categories   = COALESCE($7, categories),
-         updated_at   = NOW()
-       WHERE owner_id = $8
+         shop_name       = COALESCE($1, shop_name),
+         description     = COALESCE($2, description),
+         bank_account    = COALESCE($3, bank_account),
+         logo_url        = COALESCE($4, logo_url),
+         cover_url       = COALESCE($5, cover_url),
+         location        = COALESCE($6, location),
+         categories      = COALESCE($7, categories),
+         rules           = COALESCE($8, rules),
+         couriers_out    = COALESCE($9, couriers_out),
+         couriers_return = COALESCE($10, couriers_return),
+         updated_at      = NOW()
+       WHERE owner_id = $11
        RETURNING *`,
       [
         shop_name || null, description || null,
         bank_account ? JSON.stringify(bank_account) : null,
         logo_url || null, cover_url || null, location || null,
-        categories || null, req.user.id,
+        categories || null,
+        rules !== undefined ? rules : null,
+        couriers_out || null,
+        couriers_return || null,
+        req.user.id,
       ]
     );
     if (!rows.length) return error(res, 'Shop not found', 404);
