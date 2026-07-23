@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Search, Star, Store, Users, MessageCircle } from 'lucide-react';
+import { Search, Star, Store, Users, MessageCircle, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import ProductImage from '@/components/ui/ProductImage';
 import Spinner from '@/components/ui/Spinner';
@@ -24,6 +24,7 @@ export default function ShopProfile() {
   const [q, setQ]             = useState('');
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -104,6 +105,38 @@ export default function ShopProfile() {
             </div>
           )}
         </div>
+
+        {/* Shop rules (if any) */}
+        {(shop.rules || (shop.rules_images && shop.rules_images.length > 0)) && (
+          <div className="rounded-2xl bg-white shadow-sm mt-3 overflow-hidden">
+            <button 
+              onClick={() => setRulesOpen(!rulesOpen)} 
+              className="w-full flex items-center justify-between p-4"
+            >
+              <div className="flex items-center gap-2 font-bold text-gray-900">
+                <FileText size={18} className="text-brand-purple" /> กฎของร้าน
+              </div>
+              {rulesOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+            </button>
+            {rulesOpen && (
+              <div className="px-4 pb-4">
+                {shop.rules && (
+                  <div className="text-sm text-gray-600 whitespace-pre-wrap">
+                    <p className="font-semibold text-gray-800 mb-2">ระบุกฎหรือเงื่อนไขการเช่า</p>
+                    {shop.rules}
+                  </div>
+                )}
+                {shop.rules_images?.length > 0 && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {shop.rules_images.map((img, i) => (
+                      <img key={i} src={img} alt="shop rule" className="w-full rounded-xl object-cover" />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mt-4 flex gap-2">

@@ -58,7 +58,7 @@ const updateShop = async (req, res, next) => {
   try {
     const {
       shop_name, description, bank_account, logo_url, cover_url,
-      location, categories, rules, couriers_out, couriers_return,
+      location, categories, rules, rules_images, couriers_out, couriers_return,
     } = req.body;
     const { rows } = await db.query(
       `UPDATE shops SET
@@ -70,10 +70,11 @@ const updateShop = async (req, res, next) => {
          location        = COALESCE($6, location),
          categories      = COALESCE($7, categories),
          rules           = COALESCE($8, rules),
-         couriers_out    = COALESCE($9, couriers_out),
-         couriers_return = COALESCE($10, couriers_return),
+         rules_images    = COALESCE($9, rules_images),
+         couriers_out    = COALESCE($10, couriers_out),
+         couriers_return = COALESCE($11, couriers_return),
          updated_at      = NOW()
-       WHERE owner_id = $11
+       WHERE owner_id = $12
        RETURNING *`,
       [
         shop_name || null, description || null,
@@ -81,6 +82,7 @@ const updateShop = async (req, res, next) => {
         logo_url || null, cover_url || null, location || null,
         categories || null,
         rules !== undefined ? rules : null,
+        rules_images || null,
         couriers_out || null,
         couriers_return || null,
         req.user.id,

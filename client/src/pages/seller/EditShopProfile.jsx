@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Camera, Store, MapPin, FileText, CreditCard,
-  Truck, Package, ChevronDown, ChevronUp,
+  Truck, Package, ChevronDown, ChevronUp, X
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -78,6 +78,7 @@ export default function EditShopProfile() {
     description: '',
     location: '',
     rules: '',
+    rules_images: [],
     couriers_out: [],
     couriers_return: [],
     bank_name: '',
@@ -95,6 +96,7 @@ export default function EditShopProfile() {
           description: s.description || '',
           location: s.location || '',
           rules: s.rules || '',
+          rules_images: s.rules_images || [],
           couriers_out: s.couriers_out || [],
           couriers_return: s.couriers_return || [],
           bank_name: ba.bank_name || '',
@@ -120,6 +122,21 @@ export default function EditShopProfile() {
     }
   };
 
+  const addRulesPhotos = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    try {
+      const urls = await Promise.all(files.map(fileToDataUrl));
+      setForm((p) => ({ ...p, rules_images: [...p.rules_images, ...urls].slice(0, 5) }));
+    } catch {
+      toast.error('ไม่สามารถอ่านรูปภาพได้');
+    }
+  };
+
+  const removeRulesPhoto = (i) => {
+    setForm((p) => ({ ...p, rules_images: p.rules_images.filter((_, idx) => idx !== i) }));
+  };
+
   const handleSave = async () => {
     if (!form.shop_name.trim()) return toast.error('กรุณาใส่ชื่อร้าน');
     setSaving(true);
@@ -129,6 +146,7 @@ export default function EditShopProfile() {
         description: form.description.trim() || null,
         location: form.location.trim() || null,
         rules: form.rules.trim() || null,
+        rules_images: form.rules_images,
         couriers_out: form.couriers_out,
         couriers_return: form.couriers_return,
         cover_url: cover || null,
@@ -259,8 +277,29 @@ export default function EditShopProfile() {
               value={form.rules}
               onChange={(e) => set('rules', e.target.value)}
               placeholder={`เช่น:\n- ห้ามนำชุดไปออกงานโดยไม่แจ้ง\n- ต้องส่งคืนภายใน 3 วันหลังใช้งาน\n- หากชุดเสียหายจะหักจากเงินมัดจำ`}
-              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm outline-none focus:border-brand-purple"
+              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm outline-none focus:border-brand-purple mb-3"
             />
+            {/* Rules images */}
+            <div className="flex flex-wrap gap-2">
+              {form.rules_images.map((img, i) => (
+                <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-gray-100 bg-gray-50 flex-shrink-0">
+                  <img src={img} alt="rule" className="h-full w-full object-cover" />
+                  <button
+                    onClick={() => removeRulesPhoto(i)}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+              {form.rules_images.length < 5 && (
+                <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-gray-200 text-gray-400 flex-shrink-0 hover:bg-gray-50">
+                  <Camera size={20} />
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={addRulesPhotos} />
+                </label>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-gray-400">ใส่ได้สูงสุด 5 รูป สำหรับอธิบายกฎต่างๆ เพิ่มเติม</p>
           </div>
         </Section>
 
