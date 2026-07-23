@@ -168,6 +168,16 @@ export default function EditProduct() {
         </div>
 
         <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">สัดส่วนชุด (ซม.)</label>
+          <div className="grid grid-cols-3 gap-2">
+            <Input label="อก" type="number" value={form.bust} onChange={(e) => set('bust', e.target.value)} />
+            <Input label="เอว" type="number" value={form.waist} onChange={(e) => set('waist', e.target.value)} />
+            <Input label="สะโพก" type="number" value={form.hip} onChange={(e) => set('hip', e.target.value)} />
+          </div>
+          <div className="mt-2"><Input label="ส่วนสูงที่แนะนำ" value={form.height_recommended} onChange={(e) => set('height_recommended', e.target.value)} placeholder="เช่น 155-170 ซม." /></div>
+        </div>
+
+        <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">Description</label>
           <textarea rows={3} value={form.description} onChange={(e) => set('description', e.target.value)}
             className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple" />
@@ -192,16 +202,6 @@ export default function EditProduct() {
               </button>
             ))}
           </div>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">สัดส่วนชุด (ซม.)</label>
-          <div className="grid grid-cols-3 gap-2">
-            <Input label="อก" type="number" value={form.bust} onChange={(e) => set('bust', e.target.value)} />
-            <Input label="เอว" type="number" value={form.waist} onChange={(e) => set('waist', e.target.value)} />
-            <Input label="สะโพก" type="number" value={form.hip} onChange={(e) => set('hip', e.target.value)} />
-          </div>
-          <div className="mt-2"><Input label="ส่วนสูงที่แนะนำ" value={form.height_recommended} onChange={(e) => set('height_recommended', e.target.value)} placeholder="เช่น 155-170 ซม." /></div>
         </div>
 
         <div>
