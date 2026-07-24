@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Search, Star, Store, Users, MessageCircle, Truck } from 'lucide-react';
+import { Search, Star, Store, Users, MessageCircle, Truck, MapPin } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import ProductImage from '@/components/ui/ProductImage';
 import Spinner from '@/components/ui/Spinner';
@@ -95,6 +95,12 @@ export default function ShopProfile() {
             </div>
           </div>
           {shop.description && <p className="mt-3 text-xs text-gray-500">{shop.description}</p>}
+          {shop.shop_address?.province && (
+            <p className="mt-2 flex items-start gap-1 text-xs text-gray-500">
+              <MapPin size={13} className="mt-0.5 flex-shrink-0 text-gray-400" />
+              <span>{[shop.shop_address.detail, shop.shop_address.subdistrict, shop.shop_address.district, shop.shop_address.province, shop.shop_address.postal_code].filter(Boolean).join(' ')}</span>
+            </p>
+          )}
           {!isOwner && (
             <div className="mt-3 flex gap-2">
               <button onClick={handleFollow}

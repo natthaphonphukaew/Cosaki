@@ -155,16 +155,17 @@ export default function CheckoutPage() {
         {/* Coupon */}
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">คูปองส่วนลด</p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Tag size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Tag size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 placeholder="เช่น COSAKI10"
-                className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-brand-purple" />
+                className="h-11 w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-brand-purple" />
             </div>
-            <Button variant="secondary" className="w-24" loading={applying} onClick={handleApplyCoupon}>
-              {booking.coupon_code ? 'เปลี่ยน' : 'ใช้'}
-            </Button>
+            <button onClick={handleApplyCoupon} disabled={applying}
+              className="flex h-11 items-center justify-center rounded-full border-2 border-brand-purple px-7 text-sm font-semibold text-brand-purple disabled:opacity-50">
+              {applying ? '...' : (booking.coupon_code ? 'เปลี่ยน' : 'ใช้')}
+            </button>
           </div>
         </div>
 

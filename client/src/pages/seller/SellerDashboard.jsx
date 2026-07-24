@@ -12,7 +12,7 @@ import useAuthStore from '@/store/authStore';
 import { AlertTriangle } from 'lucide-react';
 
 export default function SellerDashboard() {
-  const { user, shop } = useAuthStore();
+  const { user, shop, mode } = useAuthStore();
   const navigate = useNavigate();
   const [items, setItems]     = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -38,28 +38,27 @@ export default function SellerDashboard() {
   return (
     <AppShell>
       <div className="px-4 pt-5">
-        {/* Top bar — tap the shop identity to edit the shop profile */}
+        {/* Top bar — logo/name identity; manage-shop lives in the icon button (seller mode only) */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={() => navigate('/seller/shop/edit')} className="flex items-center gap-3 min-w-0 active:opacity-80">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 overflow-hidden rounded-full bg-brand-light flex items-center justify-center font-bold text-brand-purple flex-shrink-0">
               {shop?.logo_url
                 ? <img src={shop.logo_url} alt="shop" className="h-full w-full object-cover" />
                 : (shopName[0] || 'S')}
             </div>
-            <span className="text-base font-bold text-gray-800 truncate max-w-[160px]">{shopName}</span>
-          </button>
+            <span className="text-base font-bold text-gray-800 truncate max-w-[150px]">{shopName}</span>
+          </div>
           <div className="flex items-center gap-2">
+            {mode === 'seller' && (
+              <button onClick={() => navigate('/seller/shop/edit')} aria-label="จัดการโปรไฟล์ร้าน"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-light text-brand-purple active:opacity-80">
+                <Store size={20} />
+              </button>
+            )}
             <ChatButton />
             <NotificationBell />
           </div>
         </div>
-
-        {/* Prominent shop-profile button */}
-        <button onClick={() => navigate('/seller/shop/edit')}
-          className="mb-4 flex w-full items-center justify-between rounded-2xl bg-brand-gradient p-4 text-white active:opacity-90">
-          <span className="flex items-center gap-2 text-sm font-semibold"><Store size={18} /> จัดการโปรไฟล์ร้าน & กฎของร้าน</span>
-          <ChevronRight size={18} />
-        </button>
 
         {/* Shop discipline banner (§4.2) */}
         {shopStatus?.is_frozen ? (
