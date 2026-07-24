@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Settings, HelpCircle, Heart, ShoppingBag,
-         CreditCard, Store, ArrowLeftRight, Repeat } from 'lucide-react';
+         CreditCard, Store, ArrowLeftRight, Repeat, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
 import NotificationBell from '@/components/ui/NotificationBell';
@@ -19,9 +19,10 @@ const ACCOUNT_STATUS = {
 };
 
 const menuItems = [
-  { icon: ShoppingBag, key: 'profile.menu.rentals',  to: '/rentals'  },
-  { icon: Heart,       key: 'profile.menu.saved',    to: '/saved'    },
-  { icon: CreditCard,  key: 'profile.menu.payments', to: '/payments' },
+  { icon: ShoppingBag, key: 'profile.menu.rentals',   to: '/rentals'   },
+  { icon: Heart,       key: 'profile.menu.saved',     to: '/saved'     },
+  { icon: MapPin,      key: 'profile.menu.addresses', to: '/addresses' },
+  { icon: CreditCard,  key: 'profile.menu.payments',  to: '/payments'  },
   { divider: true },
   { icon: Settings,    key: 'profile.menu.settings', to: '/settings' },
   { icon: HelpCircle,  key: 'profile.menu.support',  to: '/support'  },

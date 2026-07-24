@@ -32,7 +32,7 @@ export default function ProductDetail() {
   const { id }      = useParams();
   const navigate    = useNavigate();
   const requireAuth = useRequireAuth();
-  const { accessToken } = useAuthStore();
+  const { accessToken, user } = useAuthStore();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [slide, setSlide] = useState(0);
@@ -356,10 +356,14 @@ export default function ProductDetail() {
             <span className="text-xs text-gray-400">{rateType === 'private' ? 'ไพรเวท' : 'เทสที่บ้าน'}</span>
             <p className="text-lg font-bold text-brand-purple">฿{selectedRate}<span className="text-sm font-normal text-gray-400"> / ครั้ง</span></p>
           </div>
-          <Button className="w-40" disabled={!agree1 || !agree2}
-            onClick={() => requireAuth(() => navigate(`/items/${item.id}/dates`, { state: { rateType, item } }))}>
-            {(!agree1 || !agree2) ? 'ยอมรับข้อตกลง' : 'Book Now'}
-          </Button>
+          {user?.id && item.shop_owner_id === user.id ? (
+            <Button className="w-44" disabled>นี่คือสินค้าของร้านคุณ</Button>
+          ) : (
+            <Button className="w-40" disabled={!agree1 || !agree2}
+              onClick={() => requireAuth(() => navigate(`/items/${item.id}/dates`, { state: { rateType, item } }))}>
+              {(!agree1 || !agree2) ? 'ยอมรับข้อตกลง' : 'Book Now'}
+            </Button>
+          )}
         </div>
       </div>
     </div>

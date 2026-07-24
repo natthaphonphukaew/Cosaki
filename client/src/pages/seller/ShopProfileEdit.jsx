@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Camera, ImagePlus, MapPin, ScrollText } from 'lucide-react';
+import { Store, Camera, ImagePlus, MapPin, ScrollText, Truck } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import useAuthStore from '@/store/authStore';
 import { getMyShop, updateShop } from '@/api/shops';
 import { fileToDataUrl } from '@/utils/image';
+import { COURIERS } from '@/constants/couriers';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = ['Anime', 'Game', 'Movie & TV', 'K-Pop', 'Original Design', 'Props & Wigs'];
@@ -21,13 +22,13 @@ export default function ShopProfileEdit() {
   const [rulesImage, setRulesImage] = useState(null);
   const [form, setForm] = useState({
     shop_name: '', description: '', location: '', categories: [], rules_text: '',
+    ship_couriers: [], return_couriers: [],
   });
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
-  const toggleCat = (c) =>
-    set('categories', form.categories.includes(c)
-      ? form.categories.filter((x) => x !== c)
-      : [...form.categories, c]);
+  const toggleIn = (key, c) =>
+    set(key, form[key].includes(c) ? form[key].filter((x) => x !== c) : [...form[key], c]);
+  const toggleCat = (c) => toggleIn('categories', c);
 
   // Load the shop's current profile into the form.
   useEffect(() => {
@@ -39,6 +40,8 @@ export default function ShopProfileEdit() {
         location: s.location || '',
         categories: s.categories || [],
         rules_text: s.rules_text || '',
+        ship_couriers: s.ship_couriers || [],
+        return_couriers: s.return_couriers || [],
       });
       setCover(s.cover_url || null);
       setLogo(s.logo_url || null);
@@ -66,6 +69,8 @@ export default function ShopProfileEdit() {
         cover_url:   cover,
         rules_text:      form.rules_text.trim(),
         rules_image_url: rulesImage,
+        ship_couriers:   form.ship_couriers,
+        return_couriers: form.return_couriers,
       });
       // Keep the seller dashboard's cached shop in sync.
       setStoreShop(data.data.shop);
@@ -138,6 +143,34 @@ export default function ShopProfileEdit() {
                 <button key={c} onClick={() => toggleCat(c)}
                   className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                     form.categories.includes(c) ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Shipping couriers (shown to renters on the shop page) */}
+          <div className="rounded-2xl border border-brand-purple/15 bg-brand-light/30 p-4">
+            <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+              <Truck size={16} className="text-brand-purple" /> ขนส่งที่ร้านจัดส่งให้ลูกค้า
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {COURIERS.map((c) => (
+                <button key={c} onClick={() => toggleIn('ship_couriers', c)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                    form.ship_couriers.includes(c) ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <label className="mb-2 mt-4 flex items-center gap-2 text-sm font-semibold text-gray-800">
+              <Truck size={16} className="text-brand-purple" /> ขนส่งที่ร้านอนุญาตให้ลูกค้าส่งคืน
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {COURIERS.map((c) => (
+                <button key={c} onClick={() => toggleIn('return_couriers', c)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                    form.return_couriers.includes(c) ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
                   {c}
                 </button>
               ))}

@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
 import { getItem, updateItem, deleteItem } from '@/api/items';
 import { fileToDataUrl } from '@/utils/image';
+import { COURIERS } from '@/constants/couriers';
 import toast from 'react-hot-toast';
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
@@ -210,7 +211,7 @@ export default function EditProduct() {
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ขนส่งขากลับที่รับ</label>
           <div className="flex flex-wrap gap-2">
-            {['Flash','EMS','Kerry','J&T','ไปรษณีย์'].map((c) => (
+            {COURIERS.map((c) => (
               <button key={c} onClick={() => toggleCourier(c)}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium ${form.return_couriers.includes(c) ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>{c}</button>
             ))}

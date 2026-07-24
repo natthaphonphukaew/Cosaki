@@ -62,6 +62,7 @@ const getItem = async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT i.*, s.shop_name, s.rating AS shop_rating, s.review_count AS shop_review_count,
+              s.owner_id AS shop_owner_id,
               s.rules_text AS shop_rules_text, s.rules_image_url AS shop_rules_image,
               (SELECT COUNT(*) FROM bookings b WHERE b.item_id = i.id AND b.status = 'completed')::int AS rented_count
        FROM items i JOIN shops s ON s.id = i.shop_id

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Shield, Lock, Tag } from 'lucide-react';
+import { MapPin, Shield, Lock, Tag, Plus } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
-import ThaiAddressSelector from '@/components/ui/ThaiAddressSelector';
 import ProductImage from '@/components/ui/ProductImage';
 import { getBooking, applyCoupon } from '@/api/bookings';
-import { getMe, updateMe } from '@/api/users';
+import { listAddresses } from '@/api/addresses';
 import useAuthStore from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { format, differenceInCalendarDays } from 'date-fns';
@@ -16,8 +15,9 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [booking, setBooking] = useState(null);
-  const [address, setAddress] = useState('');
-  const [savedAddress, setSavedAddress] = useState('');   // profile address, to detect edits
+  const [addresses, setAddresses] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [pickOpen, setPickOpen] = useState(false);
   const [coupon, setCoupon]   = useState('');
   const [payMode, setPayMode] = useState('full'); // full | deposit
   const [applying, setApplying] = useState(false);
@@ -28,14 +28,21 @@ export default function CheckoutPage() {
   });
   useEffect(() => { load(); }, [bookingId]);
 
-  // Prefill the shipping address from the saved profile (shopee-like). If the
-  // renter edits or fills it here, it is saved back to the profile on pay.
+  // Load the renter's saved addresses; preselect the default. Re-runs on focus so
+  // an address added on /addresses/new shows up when they come back.
+  const loadAddresses = () => listAddresses().then(({ data }) => {
+    const list = data.data.addresses;
+    setAddresses(list);
+    setSelectedId((cur) => cur || list.find((a) => a.is_default)?.id || list[0]?.id || null);
+  }).catch(() => {});
   useEffect(() => {
-    getMe().then(({ data }) => {
-      const a = data.data.user?.address || '';
-      if (a) { setAddress(a); setSavedAddress(a); }
-    }).catch(() => {});
+    loadAddresses();
+    const onFocus = () => loadAddresses();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
+
+  const selectedAddress = addresses.find((a) => a.id === selectedId) || null;
 
   const handleApplyCoupon = async () => {
     try {
@@ -63,25 +70,76 @@ export default function CheckoutPage() {
   const dueToday = payMode === 'deposit' ? bookingFee : total;
   const dueLater = payMode === 'deposit' ? total - bookingFee : 0;
 
-  const goPay = async () => {
-    const addr = address.trim();
-    if (!addr) return toast.error('กรุณากรอกที่อยู่จัดส่ง');
-    // Persist a new/edited address back to the profile so next time it prefills.
-    if (addr !== savedAddress.trim()) {
-      try { await updateMe({ address: addr }); setSavedAddress(addr); } catch { /* non-blocking */ }
-    }
-    navigate(`/bookings/${bookingId}/pay`, { state: { payMode, amount: dueToday } });
+  const goPay = () => {
+    if (!selectedAddress) return toast.error('กรุณาเลือกที่อยู่จัดส่ง');
+    navigate(`/bookings/${bookingId}/pay`, {
+      state: { payMode, amount: dueToday, shipping_address_id: selectedAddress.id },
+    });
   };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
       <PageHeader title="Checkout" />
       <div className="px-4 pb-32 space-y-4">
-        {/* Shipping address */}
+        {/* Shipping address — pick from the saved address book */}
         <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
-          <h3 className="mb-3 font-semibold text-gray-900 flex items-center gap-2"><MapPin size={18} className="text-gray-400" /> Shipping Address</h3>
-          <ThaiAddressSelector value={address} onChange={setAddress} />
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2"><MapPin size={18} className="text-gray-400" /> ที่อยู่จัดส่ง</h3>
+            {addresses.length > 0 && (
+              <button onClick={() => setPickOpen(true)} className="text-sm font-medium text-brand-purple">เปลี่ยน</button>
+            )}
+          </div>
+          {selectedAddress ? (
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-800">{selectedAddress.recipient_name}</span>
+                <span className="text-gray-300">|</span>
+                <span className="text-sm text-gray-500">{selectedAddress.phone}</span>
+                {selectedAddress.is_default && (
+                  <span className="rounded border border-brand-pink px-1.5 py-0.5 text-[10px] font-semibold text-brand-pink">ค่าเริ่มต้น</span>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-gray-600">{selectedAddress.detail_line}</p>
+              <p className="text-sm text-gray-600">{[selectedAddress.subdistrict, selectedAddress.district, selectedAddress.province, selectedAddress.postal_code].filter(Boolean).join(' ')}</p>
+            </div>
+          ) : (
+            <button onClick={() => navigate('/addresses/new')}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-brand-purple/40 py-3 text-sm font-semibold text-brand-purple">
+              <Plus size={16} /> เพิ่มที่อยู่จัดส่ง
+            </button>
+          )}
         </div>
+
+        {/* Address picker sheet */}
+        {pickOpen && (
+          <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/30" onClick={() => setPickOpen(false)}>
+            <div className="flex max-h-[80vh] w-full max-w-[390px] flex-col rounded-t-3xl bg-white" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                <h3 className="text-base font-bold text-gray-900">เลือกที่อยู่จัดส่ง</h3>
+                <button onClick={() => setPickOpen(false)} className="text-gray-400 text-lg">✕</button>
+              </div>
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2 space-y-2">
+                {addresses.map((a) => (
+                  <button key={a.id} onClick={() => { setSelectedId(a.id); setPickOpen(false); }}
+                    className={`w-full rounded-xl border p-3 text-left ${a.id === selectedId ? 'border-2 border-brand-purple bg-brand-light/30' : 'border-gray-200'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-800">{a.recipient_name}</span>
+                      <span className="text-sm text-gray-500">{a.phone}</span>
+                      {a.is_default && <span className="rounded border border-brand-pink px-1.5 py-0.5 text-[10px] font-semibold text-brand-pink">ค่าเริ่มต้น</span>}
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">{a.detail_line} {[a.subdistrict, a.district, a.province, a.postal_code].filter(Boolean).join(' ')}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="border-t border-gray-100 bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                <button onClick={() => { setPickOpen(false); navigate('/addresses/new'); }}
+                  className="flex w-full items-center justify-center gap-2 rounded-full border border-brand-purple py-3 text-sm font-semibold text-brand-purple">
+                  <Plus size={16} /> เพิ่มที่อยู่ใหม่
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Order */}
         <div className="rounded-2xl bg-white p-4 shadow-sm flex gap-3 items-center">

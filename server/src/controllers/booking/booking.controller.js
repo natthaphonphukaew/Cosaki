@@ -51,6 +51,11 @@ const createBooking = async (req, res, next) => {
     const shop = await ensureShopActive(item.shop_id);
     if (shop?.is_frozen) return error(res, 'ร้านนี้ถูกระงับชั่วคราว ไม่สามารถเช่าได้', 403);
 
+    // A shop owner cannot rent their own shop's items.
+    if (shop?.owner_id === req.user.id) {
+      return error(res, 'ไม่สามารถเช่าสินค้าจากร้านของตนเองได้', 403);
+    }
+
     // ── Age & account-status gating (PRD §1.2, §5.1) ──────────────────────────
     const { rows: [renter] } = await db.query(
       `SELECT date_of_birth, is_minor, parent_approved, account_status
