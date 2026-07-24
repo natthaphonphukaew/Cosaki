@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Search, Star, Store, Users, MessageCircle } from 'lucide-react';
+import { Search, Star, Store, Users, MessageCircle, Truck } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import ProductImage from '@/components/ui/ProductImage';
 import Spinner from '@/components/ui/Spinner';
@@ -108,6 +108,46 @@ export default function ShopProfile() {
             </div>
           )}
         </div>
+
+        {/* Shipping / courier info */}
+        {(shop.ship_couriers?.length > 0 || shop.return_couriers?.length > 0) && (
+          <div className="mt-3 rounded-2xl bg-white p-4 shadow-sm">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <Truck size={16} className="text-brand-purple" /> การจัดส่ง
+            </h3>
+            {shop.ship_couriers?.length > 0 && (
+              <div className="mb-2">
+                <p className="mb-1 text-xs text-gray-400">จัดส่งโดย</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {shop.ship_couriers.map((c) => (
+                    <span key={c} className="rounded-full bg-brand-light px-2.5 py-0.5 text-xs font-medium text-brand-purple">{c}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {shop.return_couriers?.length > 0 && (
+              <div>
+                <p className="mb-1 text-xs text-gray-400">รับคืนผ่าน</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {shop.return_couriers.map((c) => (
+                    <span key={c} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">{c}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Shop rules */}
+        {(shop.rules_text || shop.rules_image_url) && (
+          <div className="mt-3 rounded-2xl border border-brand-purple/15 bg-brand-light/30 p-4">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900">📋 กฎของร้าน</h3>
+            {shop.rules_text && <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600">{shop.rules_text}</p>}
+            {shop.rules_image_url && (
+              <img src={shop.rules_image_url} alt="กฎของร้าน" className="mt-3 w-full rounded-xl border border-gray-100 object-cover" />
+            )}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mt-4 flex gap-2">

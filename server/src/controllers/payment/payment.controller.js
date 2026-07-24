@@ -22,7 +22,7 @@ const slotStillFree = async (booking) => {
 //                        (stays pending_payment with a balance due).
 const createCharge = async (req, res, next) => {
   try {
-    const { booking_id, token, pay_mode = 'full' } = req.body;
+    const { booking_id, token, pay_mode = 'full', shipping_address_id } = req.body;
 
     const { rows: bookings } = await db.query(
       'SELECT * FROM bookings WHERE id = $1 AND renter_id = $2',
@@ -33,6 +33,16 @@ const createCharge = async (req, res, next) => {
     const booking = bookings[0];
     if (booking.status !== 'pending_payment' || Number(booking.amount_paid) > 0) {
       return error(res, 'Booking is not awaiting payment', 422);
+    }
+
+    // Snapshot the chosen shipping address onto the booking (owner-scoped lookup).
+    let shippingSnapshot = null;
+    if (shipping_address_id) {
+      const { rows: addr } = await db.query(
+        'SELECT * FROM user_addresses WHERE id = $1 AND user_id = $2',
+        [shipping_address_id, req.user.id]
+      );
+      if (addr.length) shippingSnapshot = addr[0];
     }
 
     // Paying in full escrows the booking → claims the slot now. Re-check that no
@@ -59,9 +69,11 @@ const createCharge = async (req, res, next) => {
       `UPDATE bookings SET
          pay_mode = $1, amount_paid = $2, balance_due = $3,
          status = CASE WHEN $4 THEN 'escrowed'::booking_status ELSE 'pending_payment'::booking_status END,
+         shipping_address = COALESCE($6, shipping_address),
          updated_at = NOW()
        WHERE id = $5`,
-      [pay_mode, amountPaid, balanceDue, fullyPaid, booking_id]
+      [pay_mode, amountPaid, balanceDue, fullyPaid, booking_id,
+       shippingSnapshot ? JSON.stringify(shippingSnapshot) : null]
     );
 
     if (fullyPaid) {
