@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Camera, ImagePlus, MapPin, ScrollText, Truck } from 'lucide-react';
+import { Store, Camera, ImagePlus, ScrollText, Truck, Landmark } from 'lucide-react';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import ThaiRegionPicker from '@/components/ui/ThaiRegionPicker';
 import useAuthStore from '@/store/authStore';
 import { getMyShop, updateShop } from '@/api/shops';
 import { fileToDataUrl } from '@/utils/image';
 import { COURIERS } from '@/constants/couriers';
+import { THAI_BANKS } from '@/constants/banks';
 import toast from 'react-hot-toast';
 
 const CATEGORIES = ['Anime', 'Game', 'Movie & TV', 'K-Pop', 'Original Design', 'Props & Wigs'];
@@ -21,8 +23,11 @@ export default function ShopProfileEdit() {
   const [logo, setLogo]       = useState(null);
   const [rulesImage, setRulesImage] = useState(null);
   const [form, setForm] = useState({
-    shop_name: '', description: '', location: '', categories: [], rules_text: '',
+    shop_name: '', description: '', categories: [], rules_text: '',
     ship_couriers: [], return_couriers: [],
+    bank: { bank: '', account_number: '', account_name: '' },
+    region: { province: '', district: '', subdistrict: '', postal_code: '', latitude: null, longitude: null },
+    address_detail: '',
   });
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -34,14 +39,24 @@ export default function ShopProfileEdit() {
   useEffect(() => {
     getMyShop().then(({ data }) => {
       const s = data.data.shop;
+      const a = s.shop_address || {};
       setForm({
         shop_name: s.shop_name || '',
         description: s.description || '',
-        location: s.location || '',
         categories: s.categories || [],
         rules_text: s.rules_text || '',
         ship_couriers: s.ship_couriers || [],
         return_couriers: s.return_couriers || [],
+        bank: {
+          bank: s.bank_account?.bank || '',
+          account_number: s.bank_account?.account_number || '',
+          account_name: s.bank_account?.account_name || '',
+        },
+        region: {
+          province: a.province || '', district: a.district || '', subdistrict: a.subdistrict || '',
+          postal_code: a.postal_code || '', latitude: a.latitude ?? null, longitude: a.longitude ?? null,
+        },
+        address_detail: a.detail || '',
       });
       setCover(s.cover_url || null);
       setLogo(s.logo_url || null);
@@ -60,10 +75,21 @@ export default function ShopProfileEdit() {
     if (!form.shop_name.trim()) return toast.error('กรุณาตั้งชื่อร้าน');
     setLoading(true);
     try {
+      const r = form.region;
+      const hasAddress = !!r.province;
+      const shop_address = hasAddress
+        ? { ...r, detail: form.address_detail.trim() }
+        : null;
+      // Compose a display "location" for legacy reads.
+      const location = hasAddress
+        ? [r.subdistrict, r.district, r.province].filter(Boolean).join(' ')
+        : undefined;
+      const bank_account = form.bank.bank ? form.bank : undefined;
+
       const { data } = await updateShop({
         shop_name:   form.shop_name.trim(),
         description: form.description.trim(),
-        location:    form.location.trim(),
+        location,
         categories:  form.categories,
         logo_url:    logo,
         cover_url:   cover,
@@ -71,6 +97,8 @@ export default function ShopProfileEdit() {
         rules_image_url: rulesImage,
         ship_couriers:   form.ship_couriers,
         return_couriers: form.return_couriers,
+        bank_account,
+        shop_address,
       });
       // Keep the seller dashboard's cached shop in sync.
       setStoreShop(data.data.shop);
@@ -127,13 +155,34 @@ export default function ShopProfileEdit() {
               className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple" />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ที่ตั้ง</label>
-            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-3">
-              <MapPin size={16} className="text-brand-purple" />
-              <input value={form.location} onChange={(e) => set('location', e.target.value)}
-                placeholder="เมือง/จังหวัด" className="flex-1 text-sm outline-none" />
+          {/* Shop address — same structured picker as the renter address book */}
+          <div className="space-y-3">
+            <ThaiRegionPicker value={form.region} onChange={(v) => set('region', v)} />
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">บ้านเลขที่, ซอย, หมู่, ถนน, แขวง/ตำบล</label>
+              <textarea rows={2} value={form.address_detail} onChange={(e) => set('address_detail', e.target.value)}
+                placeholder="เช่น 85 ซอยประชาอุทิศ 27 แขวงบางมด เขตทุ่งครุ"
+                className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple" />
             </div>
+          </div>
+
+          {/* Bank account (payout) */}
+          <div className="rounded-2xl border border-brand-purple/15 bg-brand-light/30 p-4 space-y-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+              <Landmark size={16} className="text-brand-purple" /> บัญชีธนาคาร (รับเงินโอน)
+            </label>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ธนาคาร</label>
+              <select value={form.bank.bank} onChange={(e) => set('bank', { ...form.bank, bank: e.target.value })}
+                className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple">
+                <option value="">เลือกธนาคาร</option>
+                {THAI_BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+            <Input label="เลขบัญชี" value={form.bank.account_number}
+              onChange={(e) => set('bank', { ...form.bank, account_number: e.target.value })} placeholder="เลขที่บัญชี" />
+            <Input label="ชื่อบัญชี" value={form.bank.account_name}
+              onChange={(e) => set('bank', { ...form.bank, account_name: e.target.value })} placeholder="ชื่อเจ้าของบัญชี" />
           </div>
 
           <div>

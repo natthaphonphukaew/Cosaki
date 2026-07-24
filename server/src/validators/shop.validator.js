@@ -2,24 +2,25 @@ const { body } = require('express-validator');
 
 const createShopRules = [
   body('shop_name').trim().notEmpty().isLength({ max: 150 }).withMessage('shop_name required (max 150)'),
-  body('description').optional().isLength({ max: 1000 }),
-  body('location').optional().trim().isLength({ max: 120 }),
+  body('description').optional({ nullable: true }).isLength({ max: 1000 }),
+  body('location').optional({ nullable: true }).isString().isLength({ max: 120 }),
   body('categories').optional().isArray(),
-  body('logo_url').optional().isString(),
-  body('cover_url').optional().isString(),
+  body('logo_url').optional({ nullable: true }).isString(),
+  body('cover_url').optional({ nullable: true }).isString(),
   body('rules_text').optional({ nullable: true }).isString().isLength({ max: 2000 }),
   body('rules_image_url').optional({ nullable: true }).isString(),
   body('ship_couriers').optional().isArray(),
   body('return_couriers').optional().isArray(),
+  body('shop_address').optional({ nullable: true }).isObject(),
 ];
 
 const updateShopRules = [
   body('shop_name').optional().trim().isLength({ max: 150 }),
-  body('description').optional().isLength({ max: 1000 }),
-  body('location').optional().trim().isLength({ max: 120 }),
+  body('description').optional({ nullable: true }).isLength({ max: 1000 }),
+  body('location').optional({ nullable: true }).isString().isLength({ max: 120 }),
   body('categories').optional().isArray(),
-  body('logo_url').optional().isString(),
-  body('cover_url').optional().isString(),
+  body('logo_url').optional({ nullable: true }).isString(),
+  body('cover_url').optional({ nullable: true }).isString(),
   body('bank_account').optional().isObject(),
   body('bank_account.bank').optional().isString(),
   body('bank_account.account_name').optional().isString(),
@@ -28,6 +29,7 @@ const updateShopRules = [
   body('rules_image_url').optional({ nullable: true }).isString(),
   body('ship_couriers').optional().isArray(),
   body('return_couriers').optional().isArray(),
+  body('shop_address').optional({ nullable: true }).isObject(),
 ];
 
 const createItemRules = [
