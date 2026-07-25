@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
 import { sendOTP } from '@/api/auth';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleContinue = async () => {
-    if (!phone.trim()) return toast.error('Please enter your phone number');
+    if (!phone.trim()) return toast.error(t('onboarding.enterPhone'));
     // Normalize: strip leading 0, prepend +66
     const digits = phone.trim().replace(/\D/g, '');
     const normalized = '+66' + (digits.startsWith('66') ? digits.slice(2) : digits.startsWith('0') ? digits.slice(1) : digits);
@@ -20,7 +21,7 @@ export default function LoginPage() {
       const { data } = await sendOTP(normalized);
       navigate('/otp', { state: { phone: normalized, demoCode: data?.data?.demoCode } });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send OTP');
+      toast.error(err.response?.data?.message || t('onboarding.sendFailed'));
     } finally {
       setLoading(false);
     }
@@ -38,16 +39,16 @@ export default function LoginPage() {
         </div>
 
         <h1 className="mb-2 text-center text-3xl font-bold text-gray-900">
-          Welcome to Cosaki
+          {t('onboarding.welcome')}
         </h1>
         <p className="mb-10 text-center text-sm text-gray-500">
-          Join our curated community of cosplay creators and enthusiasts.
+          {t('onboarding.welcomeDesc')}
         </p>
 
         {/* Phone input */}
         <div className="w-full">
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Phone Number
+            {t('onboarding.phone')}
           </label>
           <div className="flex gap-2">
             <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm">
@@ -57,7 +58,7 @@ export default function LoginPage() {
             </div>
             <input
               type="tel"
-              placeholder="Enter number"
+              placeholder={t('onboarding.phonePlaceholder')}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleContinue()}
@@ -67,13 +68,13 @@ export default function LoginPage() {
         </div>
 
         <Button onClick={handleContinue} loading={loading} className="mt-6 w-full">
-          Continue
+          {t('onboarding.continue')}
         </Button>
 
         {/* Divider */}
         <div className="my-6 flex w-full items-center gap-3">
           <div className="flex-1 border-t border-gray-200" />
-          <span className="text-xs text-gray-400 font-medium">OR</span>
+          <span className="text-xs text-gray-400 font-medium">{t('common.or')}</span>
           <div className="flex-1 border-t border-gray-200" />
         </div>
 
@@ -84,7 +85,7 @@ export default function LoginPage() {
           onClick={() => window.location.href = '/api/v1/auth/google'}
           icon={<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="h-5 w-5" alt="G" />}
         >
-          Continue with Google
+          {t('onboarding.google')}
         </Button>
         <Button
           variant="facebook"
@@ -92,14 +93,10 @@ export default function LoginPage() {
           onClick={() => window.location.href = '/api/v1/auth/facebook'}
           icon={<span className="text-xl leading-none">f</span>}
         >
-          Continue with Facebook
+          {t('onboarding.facebook')}
         </Button>
 
-        <p className="mt-8 px-4 text-center text-xs text-gray-400">
-          By continuing, you agree to Cosaki's{' '}
-          <span className="font-semibold text-brand-purple">Terms of Service</span> and{' '}
-          <span className="font-semibold text-brand-purple">Privacy Policy</span>.
-        </p>
+        <p className="mt-8 px-4 text-center text-xs text-gray-400">{t('onboarding.terms')}</p>
       </div>
     </div>
   );

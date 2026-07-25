@@ -5,7 +5,6 @@ import GanttCalendar from '@/components/calendar/GanttCalendar';
 import ProductImage from '@/components/ui/ProductImage';
 import { listBookings } from '@/api/bookings';
 import { format, parseISO } from 'date-fns';
-import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
 export default function CalendarPage() {
@@ -22,9 +21,8 @@ export default function CalendarPage() {
   return (
     <AppShell>
       <div className="px-4 pt-5">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4">
           <h2 className="text-xl font-bold text-gray-900">{t('calendar.title', 'My Schedule')}</h2>
-          <LanguageSwitcher />
         </div>
 
         {/* Gantt-style month calendar (colored bars per item) */}

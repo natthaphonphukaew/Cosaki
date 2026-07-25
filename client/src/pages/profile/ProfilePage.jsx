@@ -6,7 +6,6 @@ import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
 import NotificationBell from '@/components/ui/NotificationBell';
 import ChatButton from '@/components/ui/ChatButton';
-import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import useAuthStore from '@/store/authStore';
 import { getMyShop } from '@/api/shops';
 import { getKYCStatus } from '@/api/kyc';
@@ -63,7 +62,6 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-6">
           <span className="text-xl font-bold text-brand-purple">{t('profile.title', 'Cosaki')}</span>
           <div className="flex items-center gap-2">
-            <LanguageSwitcher />
             <ChatButton />
             <NotificationBell />
           </div>

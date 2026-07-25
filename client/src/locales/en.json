@@ -1,58 +1,207 @@
 {
-  "nav": {
-    "home": "Home",
-    "search": "Search",
-    "calendar": "Calendar",
-    "profile": "Profile",
-    "orders": "Orders"
+  "nav": { "home": "Home", "search": "Search", "calendar": "Calendar", "profile": "Profile", "orders": "Orders" },
+  "common": {
+    "save": "Save", "cancel": "Cancel", "confirm": "Confirm", "close": "Close", "edit": "Edit", "delete": "Delete",
+    "back": "Back", "next": "Next", "viewAll": "View all", "search": "Search", "apply": "Apply", "change": "Change",
+    "clear": "Clear", "clearAll": "Clear all", "all": "All", "add": "Add", "submit": "Submit", "retry": "Retry",
+    "loading": "Loading…", "optional": "(optional)", "or": "OR", "day": "day", "days": "days",
+    "error": "Something went wrong", "notFound": "Not found", "perUse": "/ use", "perDay": "/ day", "verifying": "Verifying…",
+    "test_rate": "Test", "private_rate": "Event", "baht": "THB", "expressShort": "Express", "hidden": "Hidden"
+  },
+  "status": {
+    "pending_kyc": "Awaiting ID check", "pending_payment": "Awaiting payment", "escrowed": "Paid (in escrow)",
+    "shipped": "Shipped", "returned": "Returned", "completed": "Completed", "disputed": "Disputed",
+    "cancelled": "Cancelled", "draft": "Draft"
+  },
+  "header": {
+    "settings": "Account Settings", "wallet": "My Wallet", "checkout": "Checkout", "myRentals": "My Rentals",
+    "tracking": "Rental Tracking", "selectDates": "Select Dates", "help": "Help & Support",
+    "saved": "Saved Outfits", "notifications": "Notifications", "editProfile": "Edit Profile",
+    "payments": "Payment Methods", "addresses": "My Addresses", "addressNew": "New Address",
+    "addressEdit": "Edit Address", "review": "Review & Rating", "returnVerify": "Return Verification",
+    "paymentQr": "Pay via PromptPay", "identity": "Identity", "parentalConsent": "Parental Consent",
+    "addProduct": "Add Product", "editProduct": "Edit Product", "campaign": "Campaign Builder",
+    "resolution": "Resolution Center", "openShop": "Open Your Shop", "shopEdit": "Edit Shop Profile",
+    "orderDetail": "Order Detail", "myListings": "My Listings", "chat": "Chat", "fandoms": "Choose Fandoms"
+  },
+  "settings": {
+    "language": "Language", "notifications": "Notifications", "about": "About", "version": "Version",
+    "push_label": "Push notifications", "push_desc": "Booking updates & messages",
+    "email_label": "Email updates", "email_desc": "Receipts and announcements",
+    "marketing_label": "Promotions", "marketing_desc": "Offers and new drops"
   },
   "home": {
-    "welcome_back": "Welcome back",
-    "cosplayer": "Cosplayer",
-    "limited_offer": "LIMITED OFFER",
-    "new_season": "New Season Drops",
-    "rent_now": "Rent Now",
-    "trending_fandoms": "Trending Fandoms",
-    "view_all": "View All",
-    "recommended": "Recommended for You",
-    "no_items": "No costumes found yet"
+    "welcome_back": "Welcome back", "cosplayer": "Cosplayer", "limited_offer": "LIMITED OFFER",
+    "new_season": "New Season Drops", "rent_now": "Rent Now", "trending_fandoms": "Trending Fandoms",
+    "view_all": "View all", "recommended": "Recommended for You", "no_items": "No costumes found yet", "login": "Log in"
   },
-  "common": {
-    "test_rate": "Test",
-    "private_rate": "Event",
-    "day": "day"
+  "search": {
+    "placeholder": "Search characters, series, fandoms…", "recent": "Recent searches", "noResults": "No results",
+    "tryAgain": "Try different keywords or filters", "smartFilter": "Smart Filter", "priceRange": "Price range (฿/day)",
+    "min": "Min", "max": "Max", "myMeasurements": "My measurements (cm) — matched to costume sizes",
+    "bust": "Bust", "waist": "Waist", "hip": "Hip", "useDates": "Dates you need it — hides unavailable costumes",
+    "size": "Size", "eventOnly": "🎭 Event-approved costumes only", "saveFilter": "Save Filter",
+    "useSaved": "Use saved", "filterSaved": "Filter saved", "noSavedFilter": "No saved filter yet",
+    "savedApplied": "Saved filter applied"
   },
+  "product": {
+    "testAtHome": "Test at Home", "eventRate": "Private / Event",
+    "protectionTitle": "10% Damage Protection Fee",
+    "protectionDesc": "Adds ฿{{fee}} (10% of the rental) to the Cosaki insurance fund — no deposit required",
+    "rentedTimes": "🔥 Rented {{count}} times", "allowEvent": "🎭 Event-ready", "express": "⚡ Same-province express",
+    "measurements": "Costume Measurements", "cm": "cm", "inch": "in", "noMeasure": "The shop hasn't listed measurements",
+    "recHeight": "Rec. height", "size": "Size", "shopRules": "Shop Rules",
+    "shippingNote": "🚚 Allow {{ship}} days for shipping · return within {{ret}} days after use",
+    "returnCouriers": "📦 Accepted return couriers: {{list}}",
+    "queueNote": "📅 {{count}} time slots already booked — unavailable dates are disabled at date selection",
+    "agreementTitle": "Rental Agreement", "agreeRules": "the shop's rental rules", "agreeRulesRest": "(no cutting/washing wigs, test price is in-room only, no subletting)",
+    "agreePenalty": "Cosaki's standard penalty schedule", "agreePenaltyRest": "(damage / late / loss)",
+    "reviews": "Reviews", "noReviews": "No reviews yet — be the first to rent and review", "reviewerMeasure": "Reviewer's measurements:",
+    "accept": "Accept the agreement", "bookNow": "Book Now", "ownItem": "This is your shop's item", "chat": "Chat",
+    "follow": "Follow", "following": "Following", "linkCopied": "Link copied", "actionFailed": "Action failed",
+    "chatFailed": "Couldn't open chat"
+  },
+  "dates": {
+    "expressTitle": "🚀 Same-province express", "expressBefore": "Book before noon, get it today",
+    "expressAfter": "Book after noon, get it tomorrow at the earliest", "expressHint": "Express — bookable from",
+    "bufferHint": "Allow {{days}} days for shipping — bookable from", "checkIn": "Rental start", "checkOut": "Return by",
+    "tapConfirm": "Tap confirm to continue", "selectDatesFirst": "Please select dates", "confirmDays": "Confirm {{n}} days",
+    "selectDates": "Select dates", "slotBusy": "These dates are booked / in the wash-buffer, please pick others",
+    "rescheduled": "Rescheduled successfully", "createFailed": "Couldn't create booking", "dayUnit": "days"
+  },
+  "checkout": {
+    "shippingAddress": "Shipping Address", "addAddress": "Add a shipping address", "addNewAddress": "Add new address",
+    "selectAddress": "Select shipping address", "default": "Default", "dayRental": "{{days}}-day rental",
+    "coupon": "Discount Coupon", "couponPlaceholder": "e.g. COSAKI10", "couponApplied": "Coupon applied −฿{{amount}}",
+    "couponRemoved": "Coupon removed", "couponFailed": "Invalid coupon", "payMode": "Payment method",
+    "payFull": "Pay in full", "payDeposit": "Reserve first", "balance": "฿{{amount}} due", "summary": "Payment Summary",
+    "rentalFee": "Rental fee ({{type}})", "protection": "Damage protection (10%)", "shipping": "Shipping",
+    "expressFee": "Express shipping", "expressCod": "Charged on delivery (COD)", "bookingFee": "Booking fee",
+    "discount": "Discount", "total": "Total", "payToday": "Pay today ฿{{today}} · ฿{{later}} due (before ship date)",
+    "secured": "Paid via PromptPay · amount auto-locked", "payViaQr": "Pay ฿{{amount}} via QR",
+    "selectAddressFirst": "Please select a shipping address"
+  },
+  "payment": {
+    "promptpay": "PromptPay", "account": "Payee: Cosaki (amount locked)", "ref": "Ref: {{ref}}",
+    "statusRealtime": "Payment status (real-time)", "step0": "Awaiting payment", "step1": "Paid (awaiting confirm)",
+    "step2": "Shop confirmed the queue", "paidDemo": "I've paid (demo)", "goingNext": "✓ Payment successful, continuing…",
+    "failed": "Payment failed", "successTitle": "Payment Successful!",
+    "successDesc": "Your rental is confirmed. The payment is held in escrow and released to the shop once the return is confirmed.",
+    "viewRental": "View rental", "backHome": "Back to Home", "orderRef": "Order Reference", "rentalPeriod": "Rental Period",
+    "totalPaid": "Total Paid", "protectionActive": "Buyer Protection Active",
+    "protectionDesc": "Your funds are protected by our satisfaction guarantee and secure rental insurance.",
+    "trackOrder": "Track Order", "emailSent": "A confirmation email with the rental agreement has been sent to your registered address."
+  },
+  "rentals": {
+    "tabActive": "Active", "tabCompleted": "Completed", "tabCancelled": "Cancelled",
+    "empty": "No rentals yet", "browse": "Browse costumes →", "loadFailed": "Couldn't load rentals"
+  },
+  "tracking": {
+    "order": "Order", "paymentConfirmed": "Payment confirmed", "escrowSecured": "Funds held in escrow",
+    "itemShipped": "Item shipped", "onTheWay": "On the way to you", "itemReturned": "Item returned",
+    "awaitInspect": "Awaiting inspection", "completedStep": "Completed", "escrowReleased": "Funds released to shop",
+    "shipmentStatus": "Shipment status", "markReturned": "Mark as returned", "reportProblem": "Report a problem / dispute",
+    "payBalance": "Pay balance", "cancel": "Cancel booking", "reschedule": "Reschedule",
+    "penaltyBill": "Penalty bill", "payBill": "Pay bill"
+  },
+  "review": {
+    "title": "Review & Rating", "howWas": "How was your rental?",
+    "poor": "Poor", "fair": "Fair", "good": "Good", "great": "Great", "excellent": "Excellent!",
+    "quickTags": "Quick Tags", "tagCondition": "Great condition", "tagFast": "Fast shipping", "tagAccurate": "Accurate description",
+    "tagQuality": "Beautiful quality", "tagAgain": "Would rent again", "writeReview": "Write a Review",
+    "placeholder": "Share your experience…", "submit": "Submit Review", "submitted": "Thanks for your review!"
+  },
+  "returnUpload": {
+    "title": "Return Verification", "desc": "Photograph the item as you pack it for return, to confirm its condition",
+    "addPhoto": "Add photo", "submit": "Confirm return", "submitted": "Return evidence submitted"
+  },
+  "notifications": { "title": "Notifications", "empty": "No notifications yet", "emptyDesc": "Booking updates will show up here" },
+  "chat": { "title": "Chat", "empty": "No messages yet", "placeholder": "Type a message…", "send": "Send" },
   "profile": {
-    "title": "Cosaki",
-    "verified": "✓ Identity Verified",
-    "unverified": "Identity not verified",
-    "trust_score": "Trust Score",
-    "my_shop": "My Shop",
-    "manage_shop": "Manage listings, orders & earnings",
-    "current_mode": "Current mode:",
-    "selling": "Selling",
-    "buying": "Buying",
-    "switch_mode": "Switch between renting and selling",
-    "btn_buy": "Buy",
-    "btn_sell": "Sell",
-    "earn_extra": "EARN EXTRA",
-    "sell_own": "Sell your own costumes",
-    "open_shop": "Open your own shop and start monetizing your wardrobe today.",
-    "get_started": "Get Started",
-    "sign_out": "Sign Out",
-    "menu": {
-      "rentals": "My Rentals",
-      "saved": "Saved Outfits",
-      "payments": "Payment Methods",
-      "addresses": "My Addresses",
-      "settings": "Account Settings",
-      "support": "Help & Support"
-    }
+    "title": "Cosaki", "verified": "✓ Identity Verified", "unverified": "Identity not verified",
+    "trust_score": "Trust Score", "my_shop": "My Shop", "manage_shop": "Manage listings, orders & earnings",
+    "current_mode": "Current mode:", "selling": "Selling", "buying": "Buying",
+    "switch_mode": "Switch between renting and selling", "btn_buy": "Buy", "btn_sell": "Sell",
+    "earn_extra": "EARN EXTRA", "sell_own": "Sell your own costumes",
+    "open_shop": "Open your own shop and start monetizing your wardrobe today", "get_started": "Get Started",
+    "sign_out": "Sign Out", "roleRenter": "Cosplayer & Stylist", "roleSeller": "Cosplayer & Shop Owner",
+    "menu": { "rentals": "My Rentals", "saved": "Saved Outfits", "payments": "Payment Methods",
+      "addresses": "My Addresses", "settings": "Account Settings", "support": "Help & Support" }
   },
-  "calendar": {
-    "title": "My Schedule",
-    "upcoming": "Upcoming Rentals",
-    "no_upcoming": "No upcoming rentals",
-    "close": "Close"
+  "edit": {
+    "displayName": "Display Name", "phone": "Phone", "saveChanges": "Save Changes",
+    "nameRequired": "Name is required", "updated": "Profile updated", "saveFailed": "Couldn't save",
+    "bodyMeasure": "Body measurements (cm)", "bust": "Bust", "waist": "Waist", "hip": "Hip", "height": "Height",
+    "measureHint": "Used to auto-match sizes and shown under your reviews", "photoFailed": "Couldn't read image"
+  },
+  "payments": { "title": "Payment Methods", "promptpayReady": "PromptPay ready",
+    "promptpayDesc": "Scan the QR at checkout — no card needed", "cardSoon": "Credit cards coming soon" },
+  "support": { "title": "Help & Support", "faq": "FAQ", "contact": "Contact us",
+    "chatUs": "Chat with our team", "email": "Email", "phone": "Phone" },
+  "saved": { "title": "Saved Outfits", "empty": "No saved outfits yet", "emptyDesc": "Tap the heart to save costumes you love" },
+  "address": {
+    "myAddresses": "My Addresses", "empty": "No addresses yet — add your first one", "addNew": "Add new address",
+    "editTitle": "Edit Address", "newTitle": "New Address", "default": "Default", "setDefault": "Set as default",
+    "name": "Full name", "namePlaceholder": "Recipient name", "phone": "Phone number",
+    "region": "Province, District, Subdistrict, Postal code", "regionPlaceholder": "Select province, district, subdistrict, postal code",
+    "detail": "House no., soi, moo, road, subdistrict", "detailPlaceholder": "e.g. 85 Soi Pracha Uthit 27, Bang Mot, Thung Khru",
+    "labelAs": "Label as (optional)", "home": "Home", "work": "Work", "setAsDefault": "Set as default address",
+    "saved": "Address saved", "deleted": "Address deleted", "loadFailed": "Couldn't load addresses",
+    "reqName": "Please enter a full name", "reqPhone": "Please enter a phone number", "reqRegion": "Please select province/district/subdistrict",
+    "reqDetail": "Please enter house no./road", "pinLocation": "Pin your location — used for delivery (sample)",
+    "approxCoord": "Approx. coordinates:", "selectRegion": "Select location", "regionSearch": "Search",
+    "provinceTab": "Province", "districtTab": "District", "subdistrictTab": "Subdistrict", "postalTab": "Postal code",
+    "selectPrev": "Select the previous level first"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Cosaki", "welcomeDesc": "Join our community of cosplay renters and shops",
+    "phone": "Phone number", "phonePlaceholder": "Enter phone number", "continue": "Continue",
+    "google": "Continue with Google", "facebook": "Continue with Facebook",
+    "terms": "By continuing, you agree to Cosaki's Terms of Service and Privacy Policy",
+    "otpTitle": "Enter Verification Code", "otpDesc": "We sent a 6-digit code to {{phone}}",
+    "otpDemo": "Demo — tap to fill", "otpResend": "Resend code", "otpResendIn": "Resend code in {{time}}",
+    "otpResent": "Code resent", "otpResendFail": "Couldn't resend code", "verify": "Verify",
+    "enterPhone": "Please enter your phone number", "sendFailed": "Failed to send OTP",
+    "invalidOtp": "Invalid or expired code", "loginFailed": "Login failed",
+    "fandomTitle": "Pick your favorite fandoms", "fandomDesc": "So we can recommend costumes you'll love (pick at least 1)",
+    "fandomSave": "Get started", "loadingWorld": "Loading your world…"
+  },
+  "calendar": { "title": "My Schedule", "upcoming": "Upcoming Rentals", "no_upcoming": "No upcoming rentals", "close": "Close",
+    "allItems": "All", "noBookings": "No bookings this month", "rentDate": "Rental date", "returnDate": "Return date",
+    "total": "Total", "viewDetail": "View booking details" },
+  "kyc": {
+    "title": "Identity", "idPhoto": "Photo of your ID card", "selfie": "Selfie with your ID",
+    "dob": "Date of birth", "realName": "Legal full name", "submit": "Verify identity", "verifying": "Verifying…",
+    "verified": "Identity verified", "minorTitle": "Parental consent required",
+    "parentPhone": "Parent's phone", "requestConsent": "Request consent", "consentSent": "Consent link sent",
+    "ageError": "You must be at least 15 years old to use the app", "uploadFailed": "Upload failed"
+  },
+  "consent": {
+    "title": "Parental Consent", "loading": "Loading…", "invalid": "Invalid or expired link",
+    "intro": "The following minor requests parental consent to use Cosaki",
+    "approve": "Approve & give consent", "approved": "Consent granted",
+    "approvedDesc": "The minor's account is now active"
+  },
+  "seller": {
+    "scheduler": "Inventory Scheduler", "schedulerDesc": "Track your rentals and costume availability",
+    "manageShop": "Manage shop profile & rules", "newOrders": "📥 {{count}} new orders awaiting acceptance",
+    "frozenTitle": "Shop temporarily suspended", "frozenDesc": "Unlocks{{date}} — you can't list items or accept new orders",
+    "strikeTitle": "{{count}} strike(s) this month", "strikeDesc": "5 strikes freezes the shop for 2 weeks",
+    "droppedRec": "Removed from recommended · ", "totalEarnings": "Total Earnings", "active": "Active",
+    "rentalsDone": "{{count}} rentals completed · after 10% service fee", "todo": "To-Do List",
+    "readyShip": "Ready to ship", "waitInspect": "Waiting for inspection", "listings": "Listings", "activeRentals": "Active Rentals",
+    "campaignTag": "MARKETING TOOL", "createPromo": "Create a promotion", "campaignBuilder": "🎯 Campaign Builder",
+    "myListings": "My Listings", "myShopLabel": "MY SHOP", "addProduct": "Add Product", "addShort": "Add",
+    "noCostumes": "No costumes yet", "noCostumesDesc": "Add your first costume to start renting", "pendingShip": "Pending Shipments", "newBadge": "NEW",
+    "shipItem": "Ship \"{{name}}\"", "noPendingShip": "No pending shipments", "quickInsights": "Quick Insights",
+    "occupancy": "Occupancy", "topEarner": "Top Earner", "revenue": "Revenue", "completed": "Completed",
+    "wallet": "My Wallet", "availableBalance": "Available Balance", "earnedAllTime": "฿{{amount}} earned all-time (after 10% service fee",
+    "billEarn": " + penalty bills ฿{{amount}}", "nextPayout": "💸 Next payout to bank: Monday {{date}}",
+    "withdraw": "Withdraw", "bankDetails": "Bank Details", "totalEarned": "Total Earned", "withdrawn": "Withdrawn",
+    "withdrawHistory": "Withdrawal History", "noWithdraw": "No withdrawals yet", "withdrawDesc": "Withdraw your earnings to your bank",
+    "withdrawToBank": "Withdrawal to bank", "confirmWithdraw": "Confirm Withdrawal", "withdrawAll": "Withdraw all",
+    "withdrawn2": "฿{{amount}} withdrawn", "withdrawFail": "Withdrawal failed", "bankName": "Bank",
+    "accountName": "Account name", "accountNumber": "Account number", "bankSaved": "Bank details saved",
+    "bankReq": "Select a bank and enter the account number", "availableColon": "Available: ฿{{amount}}"
   }
 }
