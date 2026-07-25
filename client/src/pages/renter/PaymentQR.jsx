@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, Loader } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import { createCharge } from '@/api/payments';
@@ -16,9 +17,10 @@ function fakeQr(seed) {
   return { N, cells, corner };
 }
 
-const STEPS = ['รอชำระเงิน', 'ชำระสำเร็จ (รอยืนยัน)', 'ร้านค้ายืนยันรับคิว'];
+const STEPS = ['payment.step0', 'payment.step1', 'payment.step2'];
 
 export default function PaymentQR() {
+  const { t } = useTranslation();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -38,14 +40,14 @@ export default function PaymentQR() {
       setTimeout(() => setStage(2), 900);            // simulate shop auto-confirm
       setTimeout(() => navigate(`/bookings/${bookingId}/success`), 1700);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ชำระเงินไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('payment.failed'));
       setLoading(false);
     }
   };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="สแกนจ่ายผ่าน PromptPay" />
+      <PageHeader title={t('header.paymentQr')} />
       <div className="px-4 pt-4 space-y-4">
         {/* QR card */}
         <div className="rounded-2xl bg-white p-5 shadow-sm text-center">
@@ -58,31 +60,31 @@ export default function PaymentQR() {
               return <div key={i} className={on ? 'bg-gray-900' : 'bg-white'} style={{ aspectRatio: '1' }} />;
             })}
           </div>
-          <p className="mt-3 text-xs text-gray-400">บัญชีปลายทาง: Cosaki (ยอดถูกล็อก)</p>
+          <p className="mt-3 text-xs text-gray-400">{t('payment.account')}</p>
           <p className="mt-1 text-3xl font-bold text-brand-purple">฿{Number(amount || 0).toFixed(2)}</p>
-          <p className="text-xs text-gray-400">อ้างอิง: {ref}</p>
+          <p className="text-xs text-gray-400">{t('payment.ref', { ref })}</p>
         </div>
 
         {/* Webhook status stepper */}
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-gray-700">สถานะการชำระเงิน (Real-time)</p>
+          <p className="mb-3 text-sm font-semibold text-gray-700">{t('payment.statusRealtime')}</p>
           <div className="space-y-3">
             {STEPS.map((s, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className={`flex h-7 w-7 items-center justify-center rounded-full ${stage >= i ? 'bg-brand-purple text-white' : 'bg-gray-100 text-gray-400'}`}>
                   {stage > i ? <CheckCircle size={15} /> : stage === i && loading ? <Loader size={14} className="animate-spin" /> : i + 1}
                 </div>
-                <span className={`text-sm ${stage >= i ? 'font-medium text-gray-800' : 'text-gray-400'}`}>{s}</span>
+                <span className={`text-sm ${stage >= i ? 'font-medium text-gray-800' : 'text-gray-400'}`}>{t(s)}</span>
               </div>
             ))}
           </div>
         </div>
 
         {stage === 0 && (
-          <Button className="w-full" loading={loading} onClick={handlePaid}>จ่ายแล้ว (เดโม)</Button>
+          <Button className="w-full" loading={loading} onClick={handlePaid}>{t('payment.paidDemo')}</Button>
         )}
         {stage > 0 && (
-          <p className="text-center text-sm font-medium text-green-600">✓ ชำระเงินสำเร็จ กำลังไปหน้าถัดไป…</p>
+          <p className="text-center text-sm font-medium text-green-600">{t('payment.goingNext')}</p>
         )}
       </div>
     </div>

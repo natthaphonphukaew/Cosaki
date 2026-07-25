@@ -54,7 +54,7 @@
     "shippingNote": "🚚 Allow {{ship}} days for shipping · return within {{ret}} days after use",
     "returnCouriers": "📦 Accepted return couriers: {{list}}",
     "queueNote": "📅 {{count}} time slots already booked — unavailable dates are disabled at date selection",
-    "agreementTitle": "Rental Agreement", "agreeRules": "the shop's rental rules", "agreeRulesRest": "(no cutting/washing wigs, test price is in-room only, no subletting)",
+    "agreementTitle": "Rental Agreement", "iAccept": "I accept", "agreeRules": "the shop's rental rules", "agreeRulesRest": "(no cutting/washing wigs, test price is in-room only, no subletting)",
     "agreePenalty": "Cosaki's standard penalty schedule", "agreePenaltyRest": "(damage / late / loss)",
     "reviews": "Reviews", "noReviews": "No reviews yet — be the first to rent and review", "reviewerMeasure": "Reviewer's measurements:",
     "accept": "Accept the agreement", "bookNow": "Book Now", "ownItem": "This is your shop's item", "chat": "Chat",
@@ -101,8 +101,17 @@
     "itemShipped": "Item shipped", "onTheWay": "On the way to you", "itemReturned": "Item returned",
     "awaitInspect": "Awaiting inspection", "completedStep": "Completed", "escrowReleased": "Funds released to shop",
     "shipmentStatus": "Shipment status", "markReturned": "Mark as returned", "reportProblem": "Report a problem / dispute",
-    "payBalance": "Pay balance", "cancel": "Cancel booking", "reschedule": "Reschedule",
-    "penaltyBill": "Penalty bill", "payBill": "Pay bill"
+    "payBalance": "Pay the balance", "cancel": "Cancel booking", "reschedule": "Reschedule",
+    "penaltyBill": "Penalty bill", "payBill": "Pay the fine", "order": "Order",
+    "confirmReceived": "Confirm item received", "uploadPhotos": "Upload return photos",
+    "disputeReview": "Dispute under review", "disputeReviewDesc": "Our team will resolve this within 24–48 hours",
+    "leaveReview": "Leave a review", "reservedBalance": "Reserved — ฿{{amount}} due",
+    "payBeforeShip": "Pay in full before the ship date", "rescheduleFree": "Reschedule (1 free)",
+    "describeIssue": "Describe the issue:", "disputeOpened": "Dispute opened — our team will review within 24h",
+    "disputeFailed": "Could not open dispute", "billPaid": "Penalty bill paid", "payFailed": "Payment failed",
+    "balancePaid": "Balance paid successfully", "cancelConfirm": "Cancel booking? The ฿100 booking fee is non-refundable",
+    "cancelledRefund": "Cancelled — refunded ฿{{amount}}", "cancelFailed": "Couldn't cancel",
+    "returnConfirmed": "Return confirmed!", "penaltyBillAmount": "🧾 Penalty bill ฿{{amount}}"
   },
   "review": {
     "title": "Review & Rating", "howWas": "How was your rental?",

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import { useEffect } from 'react';
@@ -11,6 +12,7 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, addDays, getHou
          eachDayOfInterval, isSameMonth, isSameDay, isAfter, isBefore, startOfToday } from 'date-fns';
 
 export default function SelectDates() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -73,7 +75,7 @@ export default function SelectDates() {
   const handleDay = (day) => {
     if (isBefore(day, minBookableDate)) return;
     if (startConflicts(day)) {
-      toast.error('ช่วงวันนี้ติดคิวเช่า/รอบพักผ้า กรุณาเลือกวันอื่น');
+      toast.error(t('dates.slotBusy'));
       return;
     }
     // Return-by date = start + the shop's return_days.
@@ -90,7 +92,7 @@ export default function SelectDates() {
   const nights = startDate && endDate ? 1 : 0;
 
   const handleBook = async () => {
-    if (!startDate || !endDate) return toast.error('Please select dates');
+    if (!startDate || !endDate) return toast.error(t('dates.selectDatesFirst'));
     try {
       setLoading(true);
       const s = format(startDate, 'yyyy-MM-dd');
@@ -99,7 +101,7 @@ export default function SelectDates() {
       // Reschedule an existing booking (free once) instead of creating a new one.
       if (rescheduleId) {
         await rescheduleBooking(rescheduleId, s, e);
-        toast.success('เลื่อนคิวเรียบร้อย');
+        toast.success(t('dates.rescheduled'));
         navigate(`/bookings/${rescheduleId}/tracking`);
         return;
       }
@@ -120,7 +122,7 @@ export default function SelectDates() {
         navigate(checkoutUrl);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not create booking');
+      toast.error(err.response?.data?.message || t('dates.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -128,16 +130,16 @@ export default function SelectDates() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Select Dates" />
+      <PageHeader title={t('header.selectDates')} />
 
       <div className="px-4 pb-32">
         {item?.express_delivery && (
           <div className="mb-4 mt-2 rounded-xl border border-brand-purple/20 bg-brand-light/30 p-3">
             <label className="flex items-center justify-between cursor-pointer">
               <div>
-                <p className="text-sm font-semibold text-brand-purple">🚀 รับส่งด่วนในจังหวัด (Express)</p>
+                <p className="text-sm font-semibold text-brand-purple">{t('dates.expressTitle')}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {nowHour < 12 ? 'จองก่อนเที่ยง รับของวันนี้ได้เลย' : 'จองหลังเที่ยง รับของได้เร็วสุดวันพรุ่งนี้'}
+                  {nowHour < 12 ? t('dates.expressBefore') : t('dates.expressAfter')}
                 </p>
               </div>
               <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isExpress ? 'bg-brand-purple' : 'bg-gray-200'}`}>
@@ -155,9 +157,9 @@ export default function SelectDates() {
         <div className="mb-4 flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs text-gray-600">
           <span>📦</span>
           {isExpress ? (
-            <span>ส่งด่วน — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
+            <span>{t('dates.expressHint')} <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
           ) : (
-            <span>เผื่อระยะเวลาขนส่ง {SHIP_BUFFER_DAYS} วัน — จองได้ตั้งแต่ <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
+            <span>{t('dates.bufferHint', { days: SHIP_BUFFER_DAYS })} <b className="text-brand-purple">{format(minBookableDate, 'd MMM')}</b></span>
           )}
         </div>
 
@@ -215,18 +217,18 @@ export default function SelectDates() {
           <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Check-in</p>
-                <p className="mt-1 font-semibold text-gray-800">{format(startDate, 'MMM d, yyyy')}</p>
+                <p className="text-xs text-gray-400 uppercase tracking-wider">{t('dates.checkIn')}</p>
+                <p className="mt-1 font-semibold text-gray-800">{format(startDate, 'd MMM yyyy')}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Check-out</p>
-                <p className="mt-1 font-semibold text-gray-800">{endDate ? format(endDate, 'MMM d, yyyy') : '—'}</p>
+                <p className="text-xs text-gray-400 uppercase tracking-wider">{t('dates.checkOut')}</p>
+                <p className="mt-1 font-semibold text-gray-800">{endDate ? format(endDate, 'd MMM yyyy') : '—'}</p>
               </div>
             </div>
             {nights > 0 && (
               <div className="mt-3 border-t border-gray-100 pt-3 flex justify-between text-sm">
-                <span className="text-gray-500">{nights} day{nights > 1 ? 's' : ''}</span>
-                <span className="font-semibold text-brand-purple">Tap confirm to continue</span>
+                <span className="text-gray-500">{nights} {t('common.day')}</span>
+                <span className="font-semibold text-brand-purple">{t('dates.tapConfirm')}</span>
               </div>
             )}
           </div>
@@ -236,7 +238,7 @@ export default function SelectDates() {
       {/* Sticky footer */}
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" onClick={handleBook} loading={loading} disabled={!startDate || !endDate}>
-          {nights > 0 ? `Confirm ${nights} day${nights > 1 ? 's' : ''}` : 'Select dates'}
+          {nights > 0 ? t('dates.confirmDays', { n: nights }) : t('dates.selectDates')}
         </Button>
       </div>
     </div>

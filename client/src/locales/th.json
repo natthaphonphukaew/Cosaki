@@ -54,7 +54,7 @@
     "shippingNote": "🚚 เผื่อระยะเวลาขนส่ง {{ship}} วัน · ส่งคืนภายใน {{ret}} วันหลังใช้งาน",
     "returnCouriers": "📦 ขนส่งขากลับที่รับ: {{list}}",
     "queueNote": "📅 มีคิวจองแล้ว {{count}} ช่วง — ระบบจะปิดวันที่ไม่ว่างในหน้าเลือกวัน",
-    "agreementTitle": "ข้อตกลงก่อนเช่า", "agreeRules": "กฎของร้านเช่า", "agreeRulesRest": "(ห้ามตัด/ซักวิก, ราคาเทสใส่ในห้องเท่านั้น, ไม่ให้ผู้อื่นเช่าแทน)",
+    "agreementTitle": "ข้อตกลงก่อนเช่า", "iAccept": "ยอมรับ", "agreeRules": "กฎของร้านเช่า", "agreeRulesRest": "(ห้ามตัด/ซักวิก, ราคาเทสใส่ในห้องเท่านั้น, ไม่ให้ผู้อื่นเช่าแทน)",
     "agreePenalty": "ตารางค่าปรับมาตรฐาน Cosaki", "agreePenaltyRest": "(เสียหาย/ส่งช้า/ของหาย)",
     "reviews": "รีวิว", "noReviews": "ยังไม่มีรีวิว — เป็นคนแรกที่เช่าและรีวิว", "reviewerMeasure": "สัดส่วนผู้รีวิว:",
     "accept": "ยอมรับข้อตกลง", "bookNow": "จองเลย", "ownItem": "นี่คือสินค้าของร้านคุณ", "chat": "แชท",
@@ -101,8 +101,17 @@
     "itemShipped": "จัดส่งสินค้าแล้ว", "onTheWay": "กำลังจัดส่งถึงคุณ", "itemReturned": "คืนสินค้าแล้ว",
     "awaitInspect": "รอตรวจสอบ", "completedStep": "เสร็จสิ้น", "escrowReleased": "ปล่อยเงินให้ร้านแล้ว",
     "shipmentStatus": "สถานะการจัดส่ง", "markReturned": "แจ้งว่าส่งคืนแล้ว", "reportProblem": "แจ้งปัญหา/เปิดข้อพิพาท",
-    "payBalance": "ชำระยอดคงเหลือ", "cancel": "ยกเลิกการจอง", "reschedule": "เลื่อนวันเช่า",
-    "penaltyBill": "บิลค่าปรับ", "payBill": "ชำระบิล"
+    "payBalance": "จ่ายส่วนที่เหลือ", "cancel": "ยกเลิกการจอง", "reschedule": "เลื่อนวันเช่า",
+    "penaltyBill": "บิลค่าปรับ", "payBill": "ชำระค่าปรับ", "order": "ออเดอร์",
+    "confirmReceived": "ยืนยันว่าได้รับสินค้าแล้ว", "uploadPhotos": "อัปโหลดรูปตอนคืนสินค้า",
+    "disputeReview": "ข้อพิพาทอยู่ระหว่างตรวจสอบ", "disputeReviewDesc": "ทีมงานจะไกล่เกลี่ยภายใน 24–48 ชั่วโมง",
+    "leaveReview": "เขียนรีวิว", "reservedBalance": "จองคิวแล้ว — ค้างชำระ ฿{{amount}}",
+    "payBeforeShip": "ต้องชำระให้ครบก่อนวันจัดส่ง", "rescheduleFree": "เลื่อนคิว (ฟรี 1 ครั้ง)",
+    "describeIssue": "อธิบายปัญหาที่พบ:", "disputeOpened": "เปิดข้อพิพาทแล้ว — ทีมงานจะตรวจสอบภายใน 24 ชม.",
+    "disputeFailed": "เปิดข้อพิพาทไม่สำเร็จ", "billPaid": "ชำระบิลค่าปรับแล้ว", "payFailed": "ชำระไม่สำเร็จ",
+    "balancePaid": "ชำระยอดคงเหลือสำเร็จ", "cancelConfirm": "ยกเลิกการจอง? ค่าจองคิว ฿100 ไม่คืน",
+    "cancelledRefund": "ยกเลิกแล้ว — คืนเงิน ฿{{amount}}", "cancelFailed": "ยกเลิกไม่สำเร็จ",
+    "returnConfirmed": "ยืนยันการคืนแล้ว!", "penaltyBillAmount": "🧾 บิลค่าปรับ ฿{{amount}}"
   },
   "review": {
     "title": "รีวิวและให้คะแนน", "howWas": "การเช่าครั้งนี้เป็นอย่างไรบ้าง?",
