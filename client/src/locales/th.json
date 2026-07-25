@@ -212,5 +212,11 @@
     "withdrawn2": "ถอนเงิน ฿{{amount}} แล้ว", "withdrawFail": "ถอนเงินไม่สำเร็จ", "bankName": "ธนาคาร",
     "accountName": "ชื่อบัญชี", "accountNumber": "เลขบัญชี", "bankSaved": "บันทึกบัญชีธนาคารแล้ว",
     "bankReq": "กรุณาเลือกธนาคารและกรอกเลขบัญชี", "availableColon": "ยอดที่ถอนได้: ฿{{amount}}"
+  },
+  "shopP": {
+    "allProducts": "สินค้าทั้งหมด", "reviewsTab": "รีวิว", "shipping": "การจัดส่ง", "shipBy": "จัดส่งโดย",
+    "returnVia": "รับคืนผ่าน", "searchInShop": "ค้นหาในร้าน {{shop}}...", "noProducts": "ไม่พบสินค้า",
+    "noReviews": "ยังไม่มีรีวิว", "followers": "ผู้ติดตาม", "itemsCount": "ชุด", "followBtn": "+ ติดตาม",
+    "followingBtn": "กำลังติดตาม"
   }
 }

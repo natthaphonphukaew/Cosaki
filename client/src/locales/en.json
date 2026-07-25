@@ -212,5 +212,11 @@
     "withdrawn2": "฿{{amount}} withdrawn", "withdrawFail": "Withdrawal failed", "bankName": "Bank",
     "accountName": "Account name", "accountNumber": "Account number", "bankSaved": "Bank details saved",
     "bankReq": "Select a bank and enter the account number", "availableColon": "Available: ฿{{amount}}"
+  },
+  "shopP": {
+    "allProducts": "All items", "reviewsTab": "Reviews", "shipping": "Shipping", "shipBy": "Ships via",
+    "returnVia": "Returns via", "searchInShop": "Search in {{shop}}…", "noProducts": "No items found",
+    "noReviews": "No reviews yet", "followers": "followers", "itemsCount": "items", "followBtn": "+ Follow",
+    "followingBtn": "Following"
   }
 }
