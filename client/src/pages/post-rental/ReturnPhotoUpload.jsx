@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Camera, CheckCircle, Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import { uploadEvidence } from '@/api/disputes';
 import toast from 'react-hot-toast';
 
 export default function ReturnPhotoUpload() {
+  const { t } = useTranslation();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [files, setFiles]   = useState([]);
@@ -20,7 +22,7 @@ export default function ReturnPhotoUpload() {
   };
 
   const handleSubmit = async () => {
-    if (!files.length) return toast.error('Upload at least one photo');
+    if (!files.length) return toast.error(t('returnUpload.uploadAtLeastOne'));
     try {
       setLoading(true);
       const fd = new FormData();
@@ -30,7 +32,7 @@ export default function ReturnPhotoUpload() {
       await uploadEvidence(fd);
       setDone(true);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Upload failed');
+      toast.error(err.response?.data?.message || t('returnUpload.uploadFailed'));
     } finally {
       setLoading(false);
     }
@@ -39,28 +41,28 @@ export default function ReturnPhotoUpload() {
   if (done) return (
     <div className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col items-center justify-center bg-surface-base px-6 text-center">
       <CheckCircle size={72} className="mb-4 text-green-500" strokeWidth={1.5} />
-      <h2 className="text-2xl font-bold text-gray-900">Photos Submitted!</h2>
-      <p className="mt-2 text-sm text-gray-500">Your return evidence has been recorded and secured.</p>
+      <h2 className="text-2xl font-bold text-gray-900">{t('returnUpload.photosSubmitted')}</h2>
+      <p className="mt-2 text-sm text-gray-500">{t('returnUpload.photosSubmittedDesc')}</p>
       <Button className="mt-8 w-full" onClick={() => navigate(`/bookings/${bookingId}/tracking`)}>
-        Back to Tracking
+        {t('returnUpload.backToTracking')}
       </Button>
     </div>
   );
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Return Verification" right={
+      <PageHeader title={t('returnUpload.title')} right={
         <div className="flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-          <Shield size={12} /> SECURE PROOF
+          <Shield size={12} /> {t('returnUpload.secureProof')}
         </div>
       } />
 
       <div className="px-4 pb-32 space-y-5">
         {/* Instruction */}
         <div className="text-center pt-2">
-          <h2 className="text-xl font-bold text-gray-900">Verify Condition</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t('returnUpload.verifyCondition')}</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Take photos of the item from all angles before packing. Cosaki uses this as proof to protect your refund.
+            {t('returnUpload.verifyConditionDesc')}
           </p>
         </div>
 
@@ -89,8 +91,8 @@ export default function ReturnPhotoUpload() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-light">
                   <Camera size={32} className="text-brand-purple" />
                 </div>
-                <p className="text-sm font-semibold text-brand-purple">Tap to take photos</p>
-                <p className="text-xs text-gray-400">Up to 5 photos</p>
+                <p className="text-sm font-semibold text-brand-purple">{t('returnUpload.tapTakePhotos')}</p>
+                <p className="text-xs text-gray-400">{t('returnUpload.upToPhotos')}</p>
               </div>
             )}
           </div>
@@ -110,24 +112,24 @@ export default function ReturnPhotoUpload() {
 
         {/* Stage badge */}
         <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-          <Shield size={12} /> Recognised Proof Collection
+          <Shield size={12} /> {t('returnUpload.proofCollection')}
         </div>
 
         {/* Requirements */}
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="text-sm font-semibold text-gray-800 mb-2">Photo Tips</p>
+          <p className="text-sm font-semibold text-gray-800 mb-2">{t('returnUpload.photoTips')}</p>
           <ul className="space-y-1.5 text-xs text-gray-500">
-            <li>• Photograph in good lighting, no shadows</li>
-            <li>• Include all parts of the costume</li>
-            <li>• Capture any existing damage clearly</li>
-            <li>• Original item only — no digital copies</li>
+            <li>• {t('returnUpload.tip1')}</li>
+            <li>• {t('returnUpload.tip2')}</li>
+            <li>• {t('returnUpload.tip3')}</li>
+            <li>• {t('returnUpload.tip4')}</li>
           </ul>
         </div>
       </div>
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" onClick={handleSubmit} loading={loading} disabled={!files.length}>
-          Complete Verification
+          {t('returnUpload.completeVerification')}
         </Button>
       </div>
     </div>

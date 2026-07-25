@@ -118,14 +118,26 @@
     "poor": "Poor", "fair": "Fair", "good": "Good", "great": "Great", "excellent": "Excellent!",
     "quickTags": "Quick Tags", "tagCondition": "Great condition", "tagFast": "Fast shipping", "tagAccurate": "Accurate description",
     "tagQuality": "Beautiful quality", "tagAgain": "Would rent again", "writeReview": "Write a Review",
-    "placeholder": "Share your experience…", "submit": "Submit Review", "submitted": "Thanks for your review!"
+    "placeholder": "Share your experience…", "submit": "Submit Review", "submitted": "Thanks for your review!",
+    "selectRating": "Please select a rating", "submitFailed": "Could not submit review"
   },
   "returnUpload": {
     "title": "Return Verification", "desc": "Photograph the item as you pack it for return, to confirm its condition",
-    "addPhoto": "Add photo", "submit": "Confirm return", "submitted": "Return evidence submitted"
+    "addPhoto": "Add photo", "submit": "Confirm return", "submitted": "Return evidence submitted",
+    "uploadAtLeastOne": "Upload at least one photo", "uploadFailed": "Upload failed",
+    "photosSubmitted": "Photos Submitted!", "photosSubmittedDesc": "Your return evidence has been recorded and secured.", "backToTracking": "Back to Tracking",
+    "secureProof": "SECURE PROOF", "verifyCondition": "Verify Condition",
+    "verifyConditionDesc": "Take photos of the item from all angles before packing. Cosaki uses this as proof to protect your refund.",
+    "tapTakePhotos": "Tap to take photos", "upToPhotos": "Up to 5 photos", "proofCollection": "Recognised Proof Collection",
+    "photoTips": "Photo Tips", "tip1": "Photograph in good lighting, no shadows", "tip2": "Include all parts of the costume",
+    "tip3": "Capture any existing damage clearly", "tip4": "Original item only — no digital copies",
+    "completeVerification": "Complete Verification"
   },
   "notifications": { "title": "Notifications", "empty": "No notifications yet", "emptyDesc": "Booking updates will show up here" },
-  "chat": { "title": "Chat", "empty": "No messages yet", "placeholder": "Type a message…", "send": "Send" },
+  "chat": { "title": "Chat", "empty": "No messages yet", "placeholder": "Type a message…", "send": "Send",
+    "noConversations": "No conversations yet", "startHint": "Tap \"Chat with shop\" on an item page to start", "startConversation": "Start the conversation…",
+    "typeMessage": "Type a message…", "loadFailed": "Couldn't load chat", "sendFailed": "Couldn't send message",
+    "roomEmpty": "Start the conversation — ask about the item or your order", "attachOrder": "Attach order:" },
   "profile": {
     "title": "Cosaki", "verified": "✓ Identity Verified", "unverified": "Identity not verified",
     "trust_score": "Trust Score", "my_shop": "My Shop", "manage_shop": "Manage listings, orders & earnings",
@@ -144,9 +156,19 @@
     "measureHint": "Used to auto-match sizes and shown under your reviews", "photoFailed": "Couldn't read image"
   },
   "payments": { "title": "Payment Methods", "promptpayReady": "PromptPay ready",
-    "promptpayDesc": "Scan the QR at checkout — no card needed", "cardSoon": "Credit cards coming soon" },
+    "promptpayDesc": "Scan the QR at checkout — no card needed", "cardSoon": "Credit cards coming soon",
+    "noCards": "No cards saved", "addCard": "Add Card", "cardNumber": "Card number", "cardholder": "Cardholder name",
+    "expiry": "Expiry", "demoNote": "For demo only — no real card is charged.", "cardAdded": "Card added",
+    "invalidCard": "Enter a valid card number", "cardholderDefault": "Cardholder" },
   "support": { "title": "Help & Support", "faq": "FAQ", "contact": "Contact us",
-    "chatUs": "Chat with our team", "email": "Email", "phone": "Phone" },
+    "chatUs": "Chat with our team", "email": "Email", "phone": "Phone",
+    "emailSupport": "Email support", "liveChat": "Live chat", "liveChatDesc": "Typically replies within minutes", "liveChatSoon": "Live chat coming soon",
+    "faqs": [
+      { "q": "How does the escrow deposit work?", "a": "Your security deposit is held safely in escrow during the rental and refunded after the item is returned in good condition." },
+      { "q": "When do I get paid as a seller?", "a": "Funds are released to your wallet once a rental is completed. You can then withdraw to your bank from the Wallet page." },
+      { "q": "What if an item is damaged?", "a": "Open a dispute from the rental tracking page. The shop reviews evidence in the Resolution Center and a fair deduction is applied." },
+      { "q": "How do I verify my identity?", "a": "You will be asked to upload an ID and a selfie the first time you book. Verification is quick." }
+    ] },
   "saved": { "title": "Saved Outfits", "empty": "No saved outfits yet", "emptyDesc": "Tap the heart to save costumes you love" },
   "address": {
     "myAddresses": "My Addresses", "empty": "No addresses yet — add your first one", "addNew": "Add new address",
@@ -155,7 +177,7 @@
     "region": "Province, District, Subdistrict, Postal code", "regionPlaceholder": "Select province, district, subdistrict, postal code",
     "detail": "House no., soi, moo, road, subdistrict", "detailPlaceholder": "e.g. 85 Soi Pracha Uthit 27, Bang Mot, Thung Khru",
     "labelAs": "Label as (optional)", "home": "Home", "work": "Work", "setAsDefault": "Set as default address",
-    "saved": "Address saved", "deleted": "Address deleted", "loadFailed": "Couldn't load addresses",
+    "saved": "Address saved", "deleted": "Address deleted", "loadFailed": "Couldn't load addresses", "deleteFailed": "Couldn't delete", "actionFailed": "Action failed", "edit": "Edit", "delete": "Delete", "notFound": "Address not found", "saveFailed": "Couldn't save", "confirm": "Confirm",
     "reqName": "Please enter a full name", "reqPhone": "Please enter a phone number", "reqRegion": "Please select province/district/subdistrict",
     "reqDetail": "Please enter house no./road", "pinLocation": "Pin your location — used for delivery (sample)",
     "approxCoord": "Approx. coordinates:", "selectRegion": "Select location", "regionSearch": "Search",
@@ -173,8 +195,13 @@
     "enterPhone": "Please enter your phone number", "sendFailed": "Failed to send OTP",
     "invalidOtp": "Invalid or expired code", "loginFailed": "Login failed",
     "fandomTitle": "Pick your favorite fandoms", "fandomDesc": "So we can recommend costumes you'll love (pick at least 1)",
-    "fandomSave": "Get started", "loadingWorld": "Loading your world…"
+    "fandomSave": "Get started", "loadingWorld": "Loading your world…",
+    "fandomSaved": "Fandoms saved", "fandomSaveFailed": "Couldn't save", "reqOneFandom": "Pick at least one fandom",
+    "fandomQ": "Which fandoms are you in?", "fandomHint": "Pick at least one you love — we'll tailor your Home feed to match",
+    "fandomMin": "Pick at least one fandom", "fandomStartCount": "Get started ({{n}} selected)"
   },
+  "fandom": { "manageTitle": "Manage Fandoms", "searchPlaceholder": "Search fandoms...", "notFound": "No fandoms found",
+    "saveChanges": "Save changes" },
   "calendar": { "title": "My Schedule", "upcoming": "Upcoming Rentals", "no_upcoming": "No upcoming rentals", "close": "Close",
     "allItems": "All", "noBookings": "No bookings this month", "rentDate": "Rental date", "returnDate": "Return date",
     "total": "Total", "viewDetail": "View booking details" },
@@ -183,13 +210,36 @@
     "dob": "Date of birth", "realName": "Legal full name", "submit": "Verify identity", "verifying": "Verifying…",
     "verified": "Identity verified", "minorTitle": "Parental consent required",
     "parentPhone": "Parent's phone", "requestConsent": "Request consent", "consentSent": "Consent link sent",
-    "ageError": "You must be at least 15 years old to use the app", "uploadFailed": "Upload failed"
+    "ageError": "You must be at least 15 years old to use the app", "uploadFailed": "Upload failed",
+    "bothPhotosReq": "Both photos required", "enterDob": "Please enter your date of birth",
+    "enterParentPhone": "Enter a parent phone number", "couldNotSend": "Could not send", "consentSentToParent": "Link sent to parent",
+    "minorDesc": "You're under 18 — enter a parent's phone to send an approval link so you can rent 18+ items.",
+    "sendToParent": "Send link to parent", "skipForNow": "Skip for now (standard items only)",
+    "parentLinkDemo": "🧪 Parent link (demo)", "linkCopied": "Link copied",
+    "openAsParent": "Open this link as the parent to approve", "openApprovalPage": "Open approval page (demo)", "goHome": "Go to Home",
+    "verifiedTitle": "Identity Verified!", "submittedTitle": "Submitted!",
+    "verifiedDesc": "You can now complete your rental.", "submittedDesc": "Your identity is being verified. This usually takes a few minutes.",
+    "continueCheckout": "Continue to Checkout", "goToHome": "Go to Home",
+    "verifyTitle": "Verify your Identity", "idHint": "Position the front of your ID card within the frame.", "selfieHint": "Take a clear selfie to match your ID.",
+    "realNameLabel": "Legal full name (must match ID)", "realNamePlaceholder": "First Last", "dobLabel": "Date of Birth *",
+    "minorHint": "Under 18 requires parental consent",
+    "tapUploadId": "Tap to upload ID card", "tapSelfie": "Tap to take selfie",
+    "scanFront": "SCANNING FRONT SIDE", "livenessCheck": "LIVENESS CHECK", "uploadGallery": "UPLOAD FROM GALLERY",
+    "secureSsl": "Secure SSL", "gdpr": "GDPR Compliant", "idVerified": "Identity Verified",
+    "photoReqTitle": "Photo Requirements", "photoReqDesc": "Keep the document within the frame and avoid shadows or glare. The document must be original and not a digital copy.",
+    "submitBtn": "Submit"
   },
   "consent": {
     "title": "Parental Consent", "loading": "Loading…", "invalid": "Invalid or expired link",
     "intro": "The following minor requests parental consent to use Cosaki",
-    "approve": "Approve & give consent", "approved": "Consent granted",
-    "approvedDesc": "The minor's account is now active"
+    "approve": "Approve & give consent", "approved": "Approved",
+    "approvedDesc": "Your child's account has been verified by a parent",
+    "actionFailed": "Action failed", "linkInvalid": "Link unavailable",
+    "rejected": "Rejected", "rejectedDesc": "This account won't be able to rent 18+ items",
+    "headerTitle": "Cosaki — Parental Consent", "minorRequest": "Minor identity verification request",
+    "wantsToRent": "Item to rent:",
+    "agreementText": "By confirming, you certify that you are the parent/guardian and permit this minor to use Cosaki's costume rental service, including 18+ items.",
+    "confirmApprove": "Confirm approval", "reject": "Reject"
   },
   "seller": {
     "scheduler": "Inventory Scheduler", "schedulerDesc": "Track your rentals and costume availability",

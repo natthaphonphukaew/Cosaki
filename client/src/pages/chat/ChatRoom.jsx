@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Send, Package, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Spinner from '@/components/ui/Spinner';
 import Badge from '@/components/ui/Badge';
@@ -10,6 +11,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 export default function ChatRoom() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -32,8 +34,8 @@ export default function ChatRoom() {
   useEffect(() => {
     load().finally?.(() => setLoading(false));
     setLoading(false);
-    const t = setInterval(load, 5000);
-    return () => clearInterval(t);
+    const timer = setInterval(load, 5000);
+    return () => clearInterval(timer);
   }, [id]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
@@ -46,7 +48,7 @@ export default function ChatRoom() {
       setText(''); setAttach(null);
       await load();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ส่งไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('chat.sendFailed'));
     } finally { setSending(false); }
   };
 
@@ -54,7 +56,7 @@ export default function ChatRoom() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col bg-surface-base">
-      <PageHeader title={convo?.counterpart_name || 'แชท'} />
+      <PageHeader title={convo?.counterpart_name || t('chat.title')} />
 
       {/* Order context chips (PRD §4.2 — show which order is being discussed) */}
       {orders.length > 0 && (
@@ -76,7 +78,7 @@ export default function ChatRoom() {
       {/* Messages */}
       <div className="flex-1 space-y-2 overflow-y-auto px-4 pb-4">
         {messages.length === 0 && (
-          <p className="py-10 text-center text-sm text-gray-400">เริ่มบทสนทนา — สอบถามรายละเอียดชุดหรือออเดอร์ได้เลย</p>
+          <p className="py-10 text-center text-sm text-gray-400">{t('chat.roomEmpty')}</p>
         )}
         {messages.map((m) => {
           const mine = m.sender_id === user?.id;
@@ -119,7 +121,7 @@ export default function ChatRoom() {
         {attach && (
           <div className="mb-2 flex items-center gap-2 rounded-xl bg-brand-light/50 px-3 py-1.5 text-xs text-brand-purple">
             <Package size={13} />
-            <span className="flex-1 truncate">แนบออเดอร์: {orders.find((o) => o.id === attach)?.item_name}</span>
+            <span className="flex-1 truncate">{t('chat.attachOrder')} {orders.find((o) => o.id === attach)?.item_name}</span>
             <button onClick={() => setAttach(null)}><X size={13} /></button>
           </div>
         )}
@@ -128,7 +130,7 @@ export default function ChatRoom() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="พิมพ์ข้อความ…"
+            placeholder={t('chat.typeMessage')}
             className="flex-1 rounded-full border border-gray-200 bg-surface-base px-4 py-2.5 text-sm outline-none focus:border-brand-purple"
           />
           <button

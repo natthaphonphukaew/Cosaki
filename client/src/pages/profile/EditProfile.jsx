@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -10,6 +11,7 @@ import { fileToDataUrl } from '@/utils/image';
 import toast from 'react-hot-toast';
 
 export default function EditProfile() {
+  const { t } = useTranslation();
   const { user, updateUser } = useAuthStore();
   const navigate = useNavigate();
   const [name, setName]     = useState(user?.display_name || '');
@@ -30,13 +32,13 @@ export default function EditProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     try { setAvatar(await fileToDataUrl(file, 400)); }
-    catch { toast.error('Could not read image'); }
+    catch { toast.error(t('edit.photoFailed')); }
   };
 
   const num = (v) => (v === '' || v === null ? null : Number(v));
 
   const handleSave = async () => {
-    if (!name.trim()) return toast.error('Name is required');
+    if (!name.trim()) return toast.error(t('edit.nameRequired'));
     try {
       setBusy(true);
       const { data } = await updateMe({
@@ -44,16 +46,16 @@ export default function EditProfile() {
         bust: num(m.bust), waist: num(m.waist), hip: num(m.hip), height: num(m.height),
       });
       updateUser({ display_name: data.data.user.display_name, avatar_url: data.data.user.avatar_url });
-      toast.success('Profile updated');
+      toast.success(t('edit.updated'));
       navigate('/profile');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not save');
+      toast.error(err.response?.data?.message || t('edit.saveFailed'));
     } finally { setBusy(false); }
   };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Edit Profile" />
+      <PageHeader title={t('header.editProfile')} />
       <div className="px-4 pt-4 pb-10 space-y-5">
         <div className="flex flex-col items-center">
           <label className="relative cursor-pointer">
@@ -67,20 +69,20 @@ export default function EditProfile() {
           </label>
         </div>
 
-        <Input label="Display Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <Input label="Phone" value={user?.phone || ''} disabled />
+        <Input label={t('edit.displayName')} value={name} onChange={(e) => setName(e.target.value)} />
+        <Input label={t('edit.phone')} value={user?.phone || ''} disabled />
 
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">สัดส่วนร่างกาย (ซม.)</label>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{t('edit.bodyMeasure')}</label>
           <div className="grid grid-cols-4 gap-2">
-            {[['bust','อก'],['waist','เอว'],['hip','สะโพก'],['height','สูง']].map(([k, l]) => (
-              <Input key={k} label={l} type="number" value={m[k]} onChange={(e) => setM({ ...m, [k]: e.target.value })} />
+            {[['bust','edit.bust'],['waist','edit.waist'],['hip','edit.hip'],['height','edit.height']].map(([k, l]) => (
+              <Input key={k} label={t(l)} type="number" value={m[k]} onChange={(e) => setM({ ...m, [k]: e.target.value })} />
             ))}
           </div>
-          <p className="mt-1 text-xs text-gray-400">ใช้จับคู่ไซส์ชุดอัตโนมัติ และแสดงใต้รีวิวของคุณ</p>
+          <p className="mt-1 text-xs text-gray-400">{t('edit.measureHint')}</p>
         </div>
 
-        <Button className="w-full" loading={busy} onClick={handleSave}>Save Changes</Button>
+        <Button className="w-full" loading={busy} onClick={handleSave}>{t('edit.saveChanges')}</Button>
       </div>
     </div>
   );

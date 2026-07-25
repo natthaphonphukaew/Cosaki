@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button';
 import { updateMe } from '@/api/users';
 import useAuthStore from '@/store/authStore';
@@ -17,6 +18,7 @@ const ALL_FANDOMS = [
 ];
 
 export default function ManageFandomsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, updateUser } = useAuthStore();
   const [picked, setPicked] = useState(user?.fandoms || []);
@@ -31,10 +33,10 @@ export default function ManageFandomsPage() {
       setBusy(true);
       await updateMe({ fandoms: picked });
       updateUser({ fandoms: picked });
-      toast.success('บันทึก Fandom สำเร็จ');
+      toast.success(t('onboarding.fandomSaved'));
       navigate(-1);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'บันทึกไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('onboarding.fandomSaveFailed'));
     } finally { 
       setBusy(false); 
     }
@@ -52,7 +54,7 @@ export default function ManageFandomsPage() {
         <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-700">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-lg font-bold text-gray-900">จัดการ Fandom</h1>
+        <h1 className="text-lg font-bold text-gray-900">{t('fandom.manageTitle')}</h1>
         <div className="w-10" />
       </div>
 
@@ -62,7 +64,7 @@ export default function ManageFandomsPage() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="ค้นหาชื่อ Fandom..."
+            placeholder={t('fandom.searchPlaceholder')}
             className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:border-brand-purple"
           />
         </div>
@@ -86,14 +88,14 @@ export default function ManageFandomsPage() {
         
         {filteredFandoms.length === 0 && (
           <div className="mt-10 text-center text-sm text-gray-500">
-            ไม่พบ Fandom ที่ค้นหา
+            {t('fandom.notFound')}
           </div>
         )}
       </div>
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" loading={busy} onClick={handleSave}>
-          บันทึกการเปลี่ยนแปลง ({picked.length})
+          {t('fandom.saveChanges')} ({picked.length})
         </Button>
       </div>
     </div>
