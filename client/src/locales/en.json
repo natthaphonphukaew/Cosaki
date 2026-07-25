@@ -307,6 +307,47 @@
       "loadFailed": "Could not load item", "updated": "Listing updated", "updateFailedShort": "Could not update",
       "deleteConfirm": "Delete this listing? This cannot be undone.", "deleted": "Listing deleted", "deleteFailed": "Could not delete",
       "visibleToRenters": "Visible to renters", "listingLive": "Listing is live", "hiddenFromSearch": "Hidden from search"
+    },
+    "campaign": {
+      "reqCodeValue": "Enter a code and discount value", "created": "Campaign created", "createFailed": "Could not create", "toggleFailed": "Could not change status",
+      "builder": "Campaign Builder", "shopCodesTitle": "Create shop-only discount codes",
+      "shopCodesDesc": "e.g. 7.7 sale, semester-break promo, birthday codes — customers enter them at checkout",
+      "createNew": "Create new campaign", "noCampaigns": "No campaigns yet",
+      "discountLabel": "Save", "minSpendShort": "min ฿{{amount}}", "usedTimes": "used {{count}} times",
+      "codeLabel": "Code (A-Z, 0-9)", "codePlaceholder": "e.g. SUMMER77", "discountType": "Discount type",
+      "typePercent": "Percentage (%)", "typeFixed": "Fixed amount (฿)", "discountPercent": "Discount (%)", "discountBaht": "Discount (฿)", "minSpendLabel": "Minimum spend (฿)"
+    },
+    "resolution": {
+      "noDispute": "No open dispute for this booking", "resolvedToast": "Resolved — ฿{{deduct}} deducted, ฿{{refund}} refunded to renter",
+      "resolveFailed": "Could not resolve dispute", "resolutionNote": "{{percent}}% deducted from deposit (฿{{deduct}}); ฿{{refund}} refunded to renter.",
+      "disputeBadge": "DISPUTE", "primaryEvidence": "PRIMARY EVIDENCE",
+      "booking": "Booking", "renterLabel": "Renter:",
+      "penaltyMatrix": "Penalty Matrix", "penaltyBase": "Penalty Matrix", "minorStain": "Minor Stain/Mark", "minorTear": "Minor Fabric Tear", "fullReplace": "Full Replacement",
+      "escrowBalance": "Escrow Deposit Balance", "deduction": "Deduction", "deductFor": "Deduct {{percent}}% for Minor Stain", "renterRefund": "Renter refund:",
+      "contactAdmin": "Contact Admin", "disputeResolved": "Dispute Resolved", "confirmDeduction": "Confirm Deduction — ฿{{amount}}"
+    },
+    "shopOnboard": {
+      "photoReadFailed": "Could not read image", "nameYourShop": "Please name your shop", "createFailed": "Could not create shop",
+      "shopLive": "Your shop is live! 🎉", "readyIn": "{{shop}} is ready. You're now in", "sellingMode": "Selling mode",
+      "goDashboard": "Go to Dashboard", "addFirstCostume": "Add Your First Costume",
+      "addCoverPhoto": "Add cover photo", "logo": "Logo",
+      "shopNameLabel": "Shop Name *", "shopNamePlaceholder": "e.g. Studio Hanjiku",
+      "aboutShop": "About Your Shop", "aboutPlaceholder": "Tell renters about your collection, specialty, and style...",
+      "location": "Location", "cityPlaceholder": "City", "whatRent": "What do you rent?",
+      "catAnime": "Anime", "catGame": "Game", "catMovie": "Movie & TV", "catKpop": "K-Pop", "catOriginal": "Original Design", "catProps": "Props & Wigs",
+      "switchAnytime": "You can switch anytime", "switchDesc": "Keep renting as a buyer and jump into Selling mode whenever you want — all from your Profile.",
+      "createShop": "Create Shop"
+    },
+    "shopEdit": {
+      "loadFailed": "Could not load shop details", "photoReadFailed": "Could not read image", "nameRequired": "Please name your shop", "saved": "Shop profile saved", "saveFailed": "Could not save",
+      "shopNameLabel": "Shop Name *", "shopNamePlaceholder": "e.g. Studio Hanjiku", "aboutShop": "About the shop",
+      "aboutPlaceholder": "Tell renters about your collection, style, and what makes your shop stand out...",
+      "bankSection": "Bank account (for payouts)", "bankLabel": "Bank", "selectBank": "Select a bank",
+      "accountNumber": "Account number", "accountNumberPlaceholder": "Account number", "accountName": "Account name", "accountNamePlaceholder": "Account holder name",
+      "categoriesLabel": "Categories you rent", "shipCouriersLabel": "Couriers the shop ships with", "returnCouriersLabel": "Couriers the shop accepts for returns",
+      "rulesLabel": "Shop rules (shown on item pages)", "rulesPlaceholder": "e.g. no cutting/washing wigs, test rate is in-room only, no subletting... (an image alone is fine too)",
+      "addRulesImage": "Add a shop-rules image (optional)", "removeRulesImage": "Remove rules image",
+      "infoNote": "This information appears on your shop profile and every item you list.", "save": "Save"
     }
   },
   "shopP": {

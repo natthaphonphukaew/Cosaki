@@ -307,6 +307,47 @@
       "loadFailed": "โหลดสินค้าไม่สำเร็จ", "updated": "อัปเดตสินค้าแล้ว", "updateFailedShort": "อัปเดตไม่สำเร็จ",
       "deleteConfirm": "ลบสินค้านี้? ไม่สามารถกู้คืนได้", "deleted": "ลบสินค้าแล้ว", "deleteFailed": "ลบไม่สำเร็จ",
       "visibleToRenters": "แสดงให้ผู้เช่าเห็น", "listingLive": "สินค้าเผยแพร่อยู่", "hiddenFromSearch": "ซ่อนจากการค้นหา"
+    },
+    "campaign": {
+      "reqCodeValue": "กรอกโค้ดและมูลค่าส่วนลด", "created": "สร้างแคมเปญแล้ว", "createFailed": "สร้างไม่สำเร็จ", "toggleFailed": "เปลี่ยนสถานะไม่สำเร็จ",
+      "builder": "สร้างแคมเปญ", "shopCodesTitle": "สร้างโค้ดส่วนลดเฉพาะร้าน",
+      "shopCodesDesc": "เช่น โปร 7.7, โปรปิดเทอม, โปรเดือนเกิดลูกค้า — ลูกค้าใส่โค้ดตอน Checkout",
+      "createNew": "สร้างแคมเปญใหม่", "noCampaigns": "ยังไม่มีแคมเปญ",
+      "discountLabel": "ลด", "minSpendShort": "ขั้นต่ำ ฿{{amount}}", "usedTimes": "ใช้แล้ว {{count}} ครั้ง",
+      "codeLabel": "โค้ด (A-Z, 0-9)", "codePlaceholder": "เช่น SUMMER77", "discountType": "ประเภทส่วนลด",
+      "typePercent": "เปอร์เซ็นต์ (%)", "typeFixed": "จำนวนเงิน (฿)", "discountPercent": "ส่วนลด (%)", "discountBaht": "ส่วนลด (฿)", "minSpendLabel": "ยอดขั้นต่ำ (฿)"
+    },
+    "resolution": {
+      "noDispute": "ไม่มีข้อพิพาทที่เปิดอยู่สำหรับการจองนี้", "resolvedToast": "ไกล่เกลี่ยแล้ว — หัก ฿{{deduct}}, คืน ฿{{refund}} ให้ผู้เช่า",
+      "resolveFailed": "ไกล่เกลี่ยไม่สำเร็จ", "resolutionNote": "หัก {{percent}}% จากเงินมัดจำ (฿{{deduct}}); คืน ฿{{refund}} ให้ผู้เช่า",
+      "disputeBadge": "ข้อพิพาท", "primaryEvidence": "หลักฐานหลัก",
+      "booking": "การจอง", "renterLabel": "ผู้เช่า:",
+      "penaltyMatrix": "ตารางค่าปรับ", "penaltyBase": "ค่าปรับพื้นฐาน", "minorStain": "คราบ/รอยเล็กน้อย", "minorTear": "ผ้าฉีกเล็กน้อย", "fullReplace": "เปลี่ยนใหม่ทั้งชุด",
+      "escrowBalance": "ยอดเงินมัดจำใน Escrow", "deduction": "หักเงิน", "deductFor": "หัก {{percent}}% สำหรับความเสียหายเล็กน้อย", "renterRefund": "คืนเงินผู้เช่า:",
+      "contactAdmin": "ติดต่อผู้ดูแล", "disputeResolved": "ไกล่เกลี่ยเรียบร้อย", "confirmDeduction": "ยืนยันการหักเงิน — ฿{{amount}}"
+    },
+    "shopOnboard": {
+      "photoReadFailed": "อ่านรูปไม่สำเร็จ", "nameYourShop": "กรุณาตั้งชื่อร้าน", "createFailed": "สร้างร้านไม่สำเร็จ",
+      "shopLive": "ร้านของคุณเปิดแล้ว! 🎉", "readyIn": "{{shop}} พร้อมแล้ว ตอนนี้คุณอยู่ในโหมด", "sellingMode": "ผู้ให้เช่า",
+      "goDashboard": "ไปที่แดชบอร์ด", "addFirstCostume": "เพิ่มชุดแรกของคุณ",
+      "addCoverPhoto": "เพิ่มรูปปก", "logo": "โลโก้",
+      "shopNameLabel": "ชื่อร้าน *", "shopNamePlaceholder": "เช่น Studio Hanjiku",
+      "aboutShop": "เกี่ยวกับร้านของคุณ", "aboutPlaceholder": "เล่าให้ผู้เช่าฟังเกี่ยวกับคอลเลกชัน ความถนัด และสไตล์ของคุณ...",
+      "location": "ที่ตั้ง", "cityPlaceholder": "เมือง", "whatRent": "คุณปล่อยเช่าอะไรบ้าง?",
+      "catAnime": "อนิเมะ", "catGame": "เกม", "catMovie": "ภาพยนตร์และซีรีส์", "catKpop": "K-Pop", "catOriginal": "ออริจินอล", "catProps": "พร็อพและวิก",
+      "switchAnytime": "สลับโหมดได้ตลอดเวลา", "switchDesc": "เช่าชุดในฐานะผู้เช่าต่อได้ และสลับเข้าโหมดผู้ให้เช่าเมื่อไหร่ก็ได้ — ทั้งหมดจากหน้าโปรไฟล์",
+      "createShop": "สร้างร้าน"
+    },
+    "shopEdit": {
+      "loadFailed": "โหลดข้อมูลร้านไม่สำเร็จ", "photoReadFailed": "อ่านรูปไม่สำเร็จ", "nameRequired": "กรุณาตั้งชื่อร้าน", "saved": "บันทึกโปรไฟล์ร้านแล้ว", "saveFailed": "บันทึกไม่สำเร็จ",
+      "shopNameLabel": "ชื่อร้าน *", "shopNamePlaceholder": "เช่น Studio Hanjiku", "aboutShop": "เกี่ยวกับร้าน",
+      "aboutPlaceholder": "เล่าเกี่ยวกับคอลเลกชัน สไตล์ และจุดเด่นของร้าน...",
+      "bankSection": "บัญชีธนาคาร (รับเงินโอน)", "bankLabel": "ธนาคาร", "selectBank": "เลือกธนาคาร",
+      "accountNumber": "เลขบัญชี", "accountNumberPlaceholder": "เลขที่บัญชี", "accountName": "ชื่อบัญชี", "accountNamePlaceholder": "ชื่อเจ้าของบัญชี",
+      "categoriesLabel": "หมวดหมู่ที่ให้เช่า", "shipCouriersLabel": "ขนส่งที่ร้านจัดส่งให้ลูกค้า", "returnCouriersLabel": "ขนส่งที่ร้านอนุญาตให้ลูกค้าส่งคืน",
+      "rulesLabel": "กฎของร้าน (แสดงบนหน้าสินค้า)", "rulesPlaceholder": "เช่น ห้ามตัด/ซักวิก, ราคาเทสใส่ในห้องเท่านั้น, ไม่ให้ผู้อื่นเช่าแทน... (จะใส่แค่รูปก็ได้)",
+      "addRulesImage": "เพิ่มรูปกฎของร้าน (ไม่บังคับ)", "removeRulesImage": "ลบรูปกฎ",
+      "infoNote": "ข้อมูลนี้จะแสดงในหน้าโปรไฟล์ร้านและบนสินค้าทุกชิ้นของคุณ", "save": "บันทึก"
     }
   },
   "shopP": {

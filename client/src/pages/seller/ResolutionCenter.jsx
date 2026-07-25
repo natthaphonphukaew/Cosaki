@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Shield, AlertTriangle, Phone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import { getBooking } from '@/api/bookings';
 import { getDisputeByBooking, resolveDispute } from '@/api/disputes';
 import toast from 'react-hot-toast';
 
-const PENALTY_ITEMS = [
-  { label: 'Penalty Matrix',   value: '5%'   },
-  { label: 'Minor Stain/Mark', value: '15%'  },
-  { label: 'Minor Fabric Tear', value: '30%' },
-  { label: 'Full Replacement', value: '100%' },
-];
-
 export default function ResolutionCenter() {
+  const { t } = useTranslation();
+  const PENALTY_ITEMS = [
+    { label: t('seller.resolution.penaltyBase'), value: '5%'   },
+    { label: t('seller.resolution.minorStain'),  value: '15%'  },
+    { label: t('seller.resolution.minorTear'),   value: '30%'  },
+    { label: t('seller.resolution.fullReplace'), value: '100%' },
+  ];
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking]     = useState(null);
@@ -33,7 +34,7 @@ export default function ResolutionCenter() {
   const resolved    = booking && booking.status !== 'disputed';
 
   const handleConfirm = async () => {
-    if (!dispute) return toast.error('No open dispute for this booking');
+    if (!dispute) return toast.error(t('seller.resolution.noDispute'));
     try {
       setLoading(true);
       // Any deduction means the shop is compensated; zero means full refund.
@@ -41,12 +42,12 @@ export default function ResolutionCenter() {
       await resolveDispute(dispute.id, {
         resolution,
         compensation_amount: Number(deductAmt),
-        resolution_note: `${deduction}% deducted from deposit (฿${deductAmt}); ฿${refundAmt} refunded to renter.`,
+        resolution_note: t('seller.resolution.resolutionNote', { percent: deduction, deduct: deductAmt, refund: refundAmt }),
       });
-      toast.success(`Resolved — ฿${deductAmt} deducted, ฿${refundAmt} refunded to renter`);
+      toast.success(t('seller.resolution.resolvedToast', { deduct: deductAmt, refund: refundAmt }));
       navigate(-1);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not resolve dispute');
+      toast.error(err.response?.data?.message || t('seller.resolution.resolveFailed'));
     } finally {
       setLoading(false);
     }
@@ -54,8 +55,8 @@ export default function ResolutionCenter() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Resolution Center" right={
-        <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">DISPUTE</span>
+      <PageHeader title={t('header.resolution')} right={
+        <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">{t('seller.resolution.disputeBadge')}</span>
       } />
 
       <div className="px-4 pb-32 space-y-4">
@@ -68,16 +69,16 @@ export default function ResolutionCenter() {
             </div>
           </div>
           <div className="absolute bottom-3 left-3 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
-            PRIMARY EVIDENCE
+            {t('seller.resolution.primaryEvidence')}
           </div>
         </div>
 
         {/* Booking info */}
         {booking && (
           <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="text-xs text-gray-400 uppercase tracking-wider">Booking</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider">{t('seller.resolution.booking')}</p>
             <p className="font-bold text-gray-800">{booking.item_name}</p>
-            <p className="text-xs text-gray-400 mt-1">Renter: {booking.renter_name}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('seller.resolution.renterLabel')} {booking.renter_name}</p>
             {dispute?.reason && (
               <p className="mt-2 rounded-lg bg-red-50 p-2 text-xs text-red-600">“{dispute.reason}”</p>
             )}
@@ -88,7 +89,7 @@ export default function ResolutionCenter() {
         <div className="rounded-2xl bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle size={16} className="text-amber-500" />
-            <p className="text-sm font-semibold text-gray-800">Penalty Matrix</p>
+            <p className="text-sm font-semibold text-gray-800">{t('seller.resolution.penaltyMatrix')}</p>
           </div>
           <div className="space-y-2">
             {PENALTY_ITEMS.map(({ label, value }) => (
@@ -110,7 +111,7 @@ export default function ResolutionCenter() {
 
         {/* Deduction calculation */}
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-gray-800">Escrow Deposit Balance</p>
+          <p className="mb-3 text-sm font-semibold text-gray-800">{t('seller.resolution.escrowBalance')}</p>
           <div className="flex items-center justify-between mb-4">
             <span className="text-2xl font-bold text-gray-900">฿{deposit.toFixed(2)}</span>
             <Shield size={20} className="text-brand-purple" />
@@ -119,7 +120,7 @@ export default function ResolutionCenter() {
           {/* Slider */}
           <div className="mb-3">
             <div className="flex justify-between text-xs text-gray-400 mb-1">
-              <span>Deduction</span>
+              <span>{t('seller.resolution.deduction')}</span>
               <span className="font-semibold text-brand-purple">{deduction}%</span>
             </div>
             <input
@@ -130,21 +131,21 @@ export default function ResolutionCenter() {
           </div>
 
           <div className="rounded-xl bg-brand-light p-3 text-center">
-            <p className="text-xs text-gray-500">Deduct <span className="font-bold text-brand-purple">{deduction}%</span> for Minor Stain</p>
+            <p className="text-xs text-gray-500">{t('seller.resolution.deductFor', { percent: deduction })}</p>
             <p className="text-xl font-bold text-brand-purple mt-1">฿{deductAmt}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Renter refund: ฿{refundAmt}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('seller.resolution.renterRefund')} ฿{refundAmt}</p>
           </div>
         </div>
 
         {/* Contact admin */}
         <button onClick={() => navigate('/support')} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white py-3.5 text-sm font-medium text-gray-700 shadow-sm">
-          <Phone size={16} /> Contact Admin
+          <Phone size={16} /> {t('seller.resolution.contactAdmin')}
         </button>
       </div>
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" onClick={handleConfirm} loading={loading} disabled={resolved}>
-          {resolved ? 'Dispute Resolved' : `Confirm Deduction — ฿${deductAmt}`}
+          {resolved ? t('seller.resolution.disputeResolved') : t('seller.resolution.confirmDeduction', { amount: deductAmt })}
         </Button>
       </div>
     </div>

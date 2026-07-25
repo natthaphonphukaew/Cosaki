@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, Camera, ImagePlus, CheckCircle, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -9,9 +10,9 @@ import { createShop } from '@/api/shops';
 import { fileToDataUrl } from '@/utils/image';
 import toast from 'react-hot-toast';
 
-const CATEGORIES = ['Anime', 'Game', 'Movie & TV', 'K-Pop', 'Original Design', 'Props & Wigs'];
-
 export default function ShopOnboarding() {
+  const { t } = useTranslation();
+  const CATEGORIES = [t('seller.shopOnboard.catAnime'), t('seller.shopOnboard.catGame'), t('seller.shopOnboard.catMovie'), t('seller.shopOnboard.catKpop'), t('seller.shopOnboard.catOriginal'), t('seller.shopOnboard.catProps')];
   const navigate = useNavigate();
   const { applyShopCreated } = useAuthStore();
   const [step, setStep]     = useState(0);   // 0 = details, 1 = success
@@ -35,12 +36,12 @@ export default function ShopOnboarding() {
     try {
       setter(await fileToDataUrl(file));
     } catch {
-      toast.error('Could not read image');
+      toast.error(t('seller.shopOnboard.photoReadFailed'));
     }
   };
 
   const handleCreate = async () => {
-    if (!form.shop_name.trim()) return toast.error('Please name your shop');
+    if (!form.shop_name.trim()) return toast.error(t('seller.shopOnboard.nameYourShop'));
     setLoading(true);
     try {
       const { data } = await createShop({
@@ -55,7 +56,7 @@ export default function ShopOnboarding() {
       applyShopCreated(data.data);
       setStep(1);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not create shop');
+      toast.error(err.response?.data?.message || t('seller.shopOnboard.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -67,13 +68,13 @@ export default function ShopOnboarding() {
       <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-green-100">
         <CheckCircle size={56} className="text-green-500" strokeWidth={1.5} />
       </div>
-      <h2 className="text-2xl font-bold text-gray-900">Your shop is live! 🎉</h2>
+      <h2 className="text-2xl font-bold text-gray-900">{t('seller.shopOnboard.shopLive')}</h2>
       <p className="mt-2 text-sm text-gray-500">
-        {form.shop_name} is ready. You're now in <span className="font-semibold text-brand-purple">Selling mode</span>.
+        {t('seller.shopOnboard.readyIn', { shop: form.shop_name })} <span className="font-semibold text-brand-purple">{t('seller.shopOnboard.sellingMode')}</span>.
       </p>
-      <Button className="mt-8 w-full" onClick={() => navigate('/seller/dashboard')}>Go to Dashboard</Button>
+      <Button className="mt-8 w-full" onClick={() => navigate('/seller/dashboard')}>{t('seller.shopOnboard.goDashboard')}</Button>
       <Button variant="secondary" className="mt-3 w-full" onClick={() => navigate('/seller/items/new')}>
-        Add Your First Costume
+        {t('seller.shopOnboard.addFirstCostume')}
       </Button>
     </div>
   );
@@ -81,7 +82,7 @@ export default function ShopOnboarding() {
   /* ── Form ── */
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Open Your Shop" />
+      <PageHeader title={t('header.openShop')} />
 
       <div className="pb-32">
         {/* Cover + logo */}
@@ -91,7 +92,7 @@ export default function ShopOnboarding() {
               ? <img src={cover} alt="cover" className="h-full w-full object-cover" />
               : <div className="flex h-full flex-col items-center justify-center gap-1 text-brand-purple">
                   <ImagePlus size={26} />
-                  <span className="text-xs font-medium">Add cover photo</span>
+                  <span className="text-xs font-medium">{t('seller.shopOnboard.addCoverPhoto')}</span>
                 </div>
             }
             <input type="file" accept="image/*" className="hidden" onChange={pick(setCover)} />
@@ -103,7 +104,7 @@ export default function ShopOnboarding() {
               ? <img src={logo} alt="logo" className="h-full w-full object-cover" />
               : <div className="flex flex-col items-center text-brand-purple">
                   <Camera size={20} />
-                  <span className="text-[9px] font-medium">Logo</span>
+                  <span className="text-[9px] font-medium">{t('seller.shopOnboard.logo')}</span>
                 </div>
             }
             <input type="file" accept="image/*" className="hidden" onChange={pick(setLogo)} />
@@ -112,17 +113,17 @@ export default function ShopOnboarding() {
 
         <div className="space-y-5 px-4">
           <Input
-            label="Shop Name *"
-            placeholder="e.g. Studio Hanjiku"
+            label={t('seller.shopOnboard.shopNameLabel')}
+            placeholder={t('seller.shopOnboard.shopNamePlaceholder')}
             value={form.shop_name}
             onChange={(e) => set('shop_name', e.target.value)}
           />
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">About Your Shop</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{t('seller.shopOnboard.aboutShop')}</label>
             <textarea
               rows={3}
-              placeholder="Tell renters about your collection, specialty, and style..."
+              placeholder={t('seller.shopOnboard.aboutPlaceholder')}
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
               className="w-full resize-none rounded-xl border border-gray-200 bg-white p-3 text-sm outline-none focus:border-brand-purple"
@@ -130,20 +131,20 @@ export default function ShopOnboarding() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">Location</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{t('seller.shopOnboard.location')}</label>
             <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-3">
               <MapPin size={16} className="text-brand-purple" />
               <input
                 value={form.location}
                 onChange={(e) => set('location', e.target.value)}
-                placeholder="City"
+                placeholder={t('seller.shopOnboard.cityPlaceholder')}
                 className="flex-1 text-sm outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">What do you rent?</label>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{t('seller.shopOnboard.whatRent')}</label>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((c) => (
                 <button
@@ -164,9 +165,9 @@ export default function ShopOnboarding() {
           <div className="flex items-start gap-3 rounded-2xl bg-brand-light p-4">
             <Store size={18} className="mt-0.5 flex-shrink-0 text-brand-purple" />
             <div>
-              <p className="text-sm font-semibold text-brand-purple">You can switch anytime</p>
+              <p className="text-sm font-semibold text-brand-purple">{t('seller.shopOnboard.switchAnytime')}</p>
               <p className="mt-0.5 text-xs text-brand-purple/80">
-                Keep renting as a buyer and jump into Selling mode whenever you want — all from your Profile.
+                {t('seller.shopOnboard.switchDesc')}
               </p>
             </div>
           </div>
@@ -176,7 +177,7 @@ export default function ShopOnboarding() {
       {/* Footer */}
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" loading={loading} onClick={handleCreate}>
-          Create Shop
+          {t('seller.shopOnboard.createShop')}
         </Button>
       </div>
     </div>
