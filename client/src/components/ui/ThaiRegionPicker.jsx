@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Shopee-style region picker: a single read-only field that opens a bottom-sheet
 // with a search box + 4 tabs (จังหวัด → เขต/อำเภอ → แขวง/ตำบล → รหัสไปรษณีย์).
@@ -8,13 +9,14 @@ import { ChevronRight, Search, X } from 'lucide-react';
 //   value / onChange = { province, district, subdistrict, postal_code, latitude, longitude }
 // Region names are Thai (name_in_thai). Built on the @bilions/thailand-address dataset.
 const TABS = [
-  { key: 'province',    label: 'จังหวัด' },
-  { key: 'district',    label: 'เขต/อำเภอ' },
-  { key: 'subdistrict', label: 'แขวง/ตำบล' },
-  { key: 'postal',      label: 'รหัสไปรษณีย์' },
+  { key: 'province',    label: 'address.provinceTab' },
+  { key: 'district',    label: 'address.districtTab' },
+  { key: 'subdistrict', label: 'address.subdistrictTab' },
+  { key: 'postal',      label: 'address.postalTab' },
 ];
 
 export default function ThaiRegionPicker({ value, onChange }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [tab, setTab]   = useState('province');
   const [q, setQ]       = useState('');
@@ -99,11 +101,11 @@ export default function ThaiRegionPicker({ value, onChange }) {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
-        จังหวัด, เขต, แขวง, รหัสไปรษณีย์
+        {t('address.region')}
       </label>
       <button type="button" onClick={() => setOpen(true)}
         className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-3 text-left text-sm outline-none focus:border-brand-purple">
-        <span className={display ? 'text-gray-800' : 'text-gray-400'}>{display || 'เลือกจังหวัด, เขต, แขวง, รหัสไปรษณีย์'}</span>
+        <span className={display ? 'text-gray-800' : 'text-gray-400'}>{display || t('address.regionPlaceholder')}</span>
         <ChevronRight size={16} className="text-gray-400" />
       </button>
 
@@ -114,12 +116,12 @@ export default function ThaiRegionPicker({ value, onChange }) {
             {/* header + search */}
             <div className="px-4 pt-4">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-base font-bold text-gray-900">เลือกที่อยู่</h3>
+                <h3 className="text-base font-bold text-gray-900">{t('address.selectRegion')}</h3>
                 <button onClick={() => setOpen(false)} className="text-gray-400"><X size={20} /></button>
               </div>
               <div className="relative mb-3">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหา"
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('address.regionSearch')}
                   className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-brand-purple focus:bg-white" />
               </div>
               {/* tabs */}
@@ -134,8 +136,8 @@ export default function ThaiRegionPicker({ value, onChange }) {
                     <button key={tb.key} disabled={!enabled} onClick={() => enabled && setTab(tb.key)}
                       className={`flex-shrink-0 border-b-2 pb-2 font-medium ${tab === tb.key ? 'border-brand-purple text-brand-purple' : 'border-transparent text-gray-400'} disabled:opacity-40`}>
                       {tb.key === 'province' && value?.province && done ? value.province
-                        : tb.key === 'district' && done ? (districts.find((d) => d.id === Number(distId))?.name_in_thai || tb.label)
-                        : tb.label}
+                        : tb.key === 'district' && done ? (districts.find((d) => d.id === Number(distId))?.name_in_thai || t(tb.label))
+                        : t(tb.label)}
                     </button>
                   );
                 })}
@@ -157,7 +159,7 @@ export default function ThaiRegionPicker({ value, onChange }) {
                 <Row label={`${selectedSub.zip_code}`} sub={selectedSub.name_in_thai} active onClick={confirm} />
               )}
               {((tab === 'district' && !provId) || (tab === 'subdistrict' && !distId)) && (
-                <p className="px-3 py-6 text-center text-sm text-gray-400">เลือกระดับก่อนหน้าก่อน</p>
+                <p className="px-3 py-6 text-center text-sm text-gray-400">{t('address.selectPrev')}</p>
               )}
             </div>
 
@@ -165,7 +167,7 @@ export default function ThaiRegionPicker({ value, onChange }) {
             <div className="border-t border-gray-100 bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
               <button onClick={confirm} disabled={!selectedSub}
                 className="w-full rounded-full bg-brand-gradient py-3.5 text-sm font-semibold text-white disabled:opacity-40">
-                ยืนยัน
+                {t('address.confirm')}
               </button>
             </div>
           </div>

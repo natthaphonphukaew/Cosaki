@@ -1,14 +1,16 @@
 import { MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Decorative mock map (no external SDK). Shows a pin over a grid; if the picked
 // sub-district carries lat/lng we surface it as the caption.
 export default function MockMap({ latitude, longitude, className = '' }) {
+  const { t } = useTranslation();
   const hasCoords = latitude != null && longitude != null;
   return (
     <div className={`overflow-hidden rounded-2xl border border-gray-200 ${className}`}>
       <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 text-xs text-amber-700">
         <span>📍</span>
-        <span>ปักหมุดตำแหน่งของคุณ — ระบบใช้ตำแหน่งนี้เพื่อจัดส่ง (ตัวอย่าง)</span>
+        <span>{t('address.pinLocation')}</span>
       </div>
       <div
         className="relative h-40 w-full bg-[#eef2f7]"
@@ -29,7 +31,7 @@ export default function MockMap({ latitude, longitude, className = '' }) {
       </div>
       {hasCoords && (
         <p className="bg-white px-3 py-1.5 text-[11px] text-gray-400">
-          พิกัดโดยประมาณ: {Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)}
+          {t('address.approxCoord')} {Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)}
         </p>
       )}
     </div>
