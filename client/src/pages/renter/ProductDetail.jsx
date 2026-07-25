@@ -103,7 +103,7 @@ export default function ProductDetail() {
   const protectionFee = Math.round(selectedRate * 0.10);
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[390px] bg-white">
+    <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
       {/* Hero carousel */}
       <div className="relative h-72">
         {(() => {

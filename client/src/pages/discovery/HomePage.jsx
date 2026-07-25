@@ -114,7 +114,7 @@ export default function HomePage() {
                   : 'border border-gray-200 bg-white text-gray-600'
               }`}
             >
-              {f}
+              {f === 'All' ? t('common.all') : f}
             </button>
           ))}
           <button 
