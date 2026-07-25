@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, parseISO, startOfDay, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
          eachDayOfInterval, isSameDay, isSameMonth, differenceInCalendarDays } from 'date-fns';
@@ -8,10 +9,6 @@ import { buildColorMap } from '@/utils/itemColor';
 
 const MAX_LANES = 3;
 const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-const STATUS_LABEL = {
-  pending_kyc: 'รอยืนยันตัวตน', pending_payment: 'รอชำระเงิน', escrowed: 'ชำระแล้ว',
-  shipped: 'จัดส่งแล้ว', returned: 'คืนแล้ว', completed: 'เสร็จสิ้น', disputed: 'พิพาท',
-};
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 // The API serializes DATE columns as full UTC timestamps (pg → local-midnight →
 // UTC), so parseISO recovers the correct local calendar day (matches the rest of
@@ -20,6 +17,7 @@ const dateOnly = (s) => startOfDay(parseISO(s));
 const fmt = (s) => format(parseISO(s), 'd MMM yyyy');
 
 export default function GanttCalendar({ bookings = [], onOpenDetail }) {
+  const { t } = useTranslation();
   const [month, setMonth]     = useState(new Date());
   const [filterId, setFilterId] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -107,7 +105,7 @@ export default function GanttCalendar({ bookings = [], onOpenDetail }) {
         </div>
         <select value={filterId || ''} onChange={(e) => setFilterId(e.target.value || null)}
           className="max-w-[130px] truncate rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 outline-none focus:border-brand-purple">
-          <option value="">ทั้งหมด</option>
+          <option value="">{t('calendar.allItems')}</option>
           {legendItems.map((it) => <option key={it.item_id} value={it.item_id}>{it.item_name}</option>)}
         </select>
       </div>
@@ -178,7 +176,7 @@ export default function GanttCalendar({ bookings = [], onOpenDetail }) {
       })}
 
       {active.length === 0 && (
-        <p className="py-6 text-center text-sm text-gray-400">ยังไม่มีการจองในเดือนนี้</p>
+        <p className="py-6 text-center text-sm text-gray-400">{t('calendar.noBookings')}</p>
       )}
 
       {/* Booking popup */}
@@ -193,20 +191,20 @@ export default function GanttCalendar({ bookings = [], onOpenDetail }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-gray-900">{selected.item_name}</p>
                 {selected.shop_name && <p className="truncate text-xs text-gray-400">{selected.shop_name}</p>}
-                <div className="mt-1"><Badge status={selected.status} label={STATUS_LABEL[selected.status] || selected.status} /></div>
+                <div className="mt-1"><Badge status={selected.status} /></div>
               </div>
             </div>
             <div className="mt-3 space-y-2 rounded-xl bg-gray-50 p-3 text-sm">
-              <Row label="วันที่เช่า" value={fmt(selected.rental_start)} />
-              <Row label="วันที่คืน" value={fmt(selected.rental_end)} />
-              <Row label="ยอดรวม" value={`฿${Number(selected.total_amount || 0).toFixed(2)}`} strong />
+              <Row label={t('calendar.rentDate')} value={fmt(selected.rental_start)} />
+              <Row label={t('calendar.returnDate')} value={fmt(selected.rental_end)} />
+              <Row label={t('calendar.total')} value={`฿${Number(selected.total_amount || 0).toFixed(2)}`} strong />
             </div>
             <button onClick={() => onOpenDetail?.(selected)}
               className="mt-4 w-full rounded-full bg-brand-gradient py-3 text-sm font-semibold text-white">
-              ดูรายละเอียดการจอง
+              {t('calendar.viewDetail')}
             </button>
             <button onClick={() => setSelected(null)}
-              className="mt-2 w-full rounded-full py-2.5 text-sm font-medium text-gray-500">ปิด</button>
+              className="mt-2 w-full rounded-full py-2.5 text-sm font-medium text-gray-500">{t('common.close')}</button>
           </div>
         </div>
       )}

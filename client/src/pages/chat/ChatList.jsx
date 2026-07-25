@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Store, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { listChats } from '@/api/chats';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function ChatList() {
+  const { t } = useTranslation();
   const [chats, setChats]     = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -20,15 +22,15 @@ export default function ChatList() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="แชท" />
+      <PageHeader title={t('chat.title')} />
       <div className="px-4 pb-10 space-y-2">
         {loading && <><CardSkeleton /><CardSkeleton /><CardSkeleton /></>}
 
         {!loading && chats.length === 0 && (
           <div className="flex flex-col items-center py-20 text-center">
             <MessageCircle size={44} className="mb-3 text-gray-300" />
-            <p className="font-semibold text-gray-600">ยังไม่มีบทสนทนา</p>
-            <p className="mt-1 text-sm text-gray-400">กด "แชทกับร้าน" ในหน้าสินค้าเพื่อเริ่มคุย</p>
+            <p className="font-semibold text-gray-600">{t('chat.noConversations')}</p>
+            <p className="mt-1 text-sm text-gray-400">{t('chat.startHint')}</p>
           </div>
         )}
 
@@ -53,7 +55,7 @@ export default function ChatList() {
                 )}
               </div>
               <div className="mt-0.5 flex items-center justify-between">
-                <p className="truncate text-xs text-gray-400">{c.last_message || 'เริ่มบทสนทนา…'}</p>
+                <p className="truncate text-xs text-gray-400">{c.last_message || t('chat.startConversation')}</p>
                 {c.unread > 0 && (
                   <span className="ml-2 flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-pink px-1.5 text-[10px] font-bold text-white">
                     {c.unread > 9 ? '9+' : c.unread}

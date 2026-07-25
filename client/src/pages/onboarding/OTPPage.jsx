@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import { verifyOTP, sendOTP } from '@/api/auth';
@@ -7,6 +8,7 @@ import useAuthStore from '@/store/authStore';
 import { Delete } from 'lucide-react';
 
 export default function OTPPage() {
+  const { t } = useTranslation();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const submitting = useRef(false);
@@ -34,7 +36,7 @@ export default function OTPPage() {
       else if (!u.fandoms || u.fandoms.length === 0) navigate('/onboarding/fandoms');
       else navigate('/home');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid OTP');
+      toast.error(err.response?.data?.message || t('onboarding.invalidOtp'));
       setCode('');
       submitting.current = false;
     } finally {
@@ -58,10 +60,10 @@ export default function OTPPage() {
     if (secondsLeft > 0) return;
     try {
       await sendOTP(phone);
-      toast.success('OTP resent');
+      toast.success(t('onboarding.otpResent'));
       setSecondsLeft(59);
     } catch {
-      toast.error('Could not resend OTP');
+      toast.error(t('onboarding.otpResendFail'));
     }
   };
 
@@ -69,15 +71,15 @@ export default function OTPPage() {
     <div className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col bg-surface-base">
       <PageHeader />
       <div className="flex flex-col items-center px-6 pt-6">
-        <h2 className="text-2xl font-bold text-gray-900">Enter Verification Code</h2>
-        <p className="mt-2 text-sm text-gray-500">We sent a 6-digit code to {phone}</p>
+        <h2 className="text-2xl font-bold text-gray-900">{t('onboarding.otpTitle')}</h2>
+        <p className="mt-2 text-sm text-gray-500">{t('onboarding.otpDesc', { phone })}</p>
 
         {demoCode && (
           <button
             onClick={() => setCode(demoCode)}
             className="mt-3 rounded-full bg-amber-50 border border-amber-200 px-4 py-1.5 text-xs font-semibold text-amber-700"
           >
-            🧪 Demo code: {demoCode} — tap to fill
+            🧪 {t('onboarding.otpDemo')}: {demoCode}
           </button>
         )}
 
@@ -98,7 +100,7 @@ export default function OTPPage() {
         </div>
 
         <button onClick={handleResend} disabled={secondsLeft > 0} className={`mt-4 text-sm font-semibold ${secondsLeft > 0 ? 'text-gray-400' : 'text-brand-pink'}`}>
-          {secondsLeft > 0 ? `Resend code in 0:${String(secondsLeft).padStart(2, '0')}` : 'Resend code'}
+          {secondsLeft > 0 ? t('onboarding.otpResendIn', { time: `0:${String(secondsLeft).padStart(2, '0')}` }) : t('onboarding.otpResend')}
         </button>
 
         {/* Decoration */}
@@ -134,7 +136,7 @@ export default function OTPPage() {
           {loading && (
             <span className="flex items-center gap-2 text-sm font-medium text-brand-purple">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-purple border-t-transparent" />
-              Verifying…
+              {t('common.verifying')}
             </span>
           )}
         </div>

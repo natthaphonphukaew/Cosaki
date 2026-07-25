@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Pencil } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import AppShell from '@/components/layout/AppShell';
 import ProductImage from '@/components/ui/ProductImage';
 import { ItemGridSkeleton } from '@/components/ui/Skeleton';
 import { listMyItems } from '@/api/items';
 
 export default function MyListings() {
+  const { t } = useTranslation();
   const [items, setItems]   = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate            = useNavigate();
@@ -23,14 +25,14 @@ export default function MyListings() {
       <div className="px-4 pt-5 pb-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-400">MY SHOP</p>
-            <h2 className="text-xl font-bold text-gray-900">Listings</h2>
+            <p className="text-xs text-gray-400">{t('seller.myShopLabel')}</p>
+            <h2 className="text-xl font-bold text-gray-900">{t('seller.listings')}</h2>
           </div>
           <button
             onClick={() => navigate('/seller/items/new')}
             className="flex items-center gap-1.5 rounded-full bg-brand-gradient px-4 py-2 text-sm font-semibold text-white shadow-md active:opacity-90"
           >
-            <Plus size={16} /> Add
+            <Plus size={16} /> {t('seller.addShort')}
           </button>
         </div>
 
@@ -39,13 +41,13 @@ export default function MyListings() {
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
             <span className="mb-3 text-5xl">🪄</span>
-            <p className="font-semibold text-gray-600">No costumes yet</p>
-            <p className="mt-1 text-sm text-gray-400">Add your first costume to start renting</p>
+            <p className="font-semibold text-gray-600">{t('seller.noCostumes')}</p>
+            <p className="mt-1 text-sm text-gray-400">{t('seller.noCostumesDesc')}</p>
             <button
               onClick={() => navigate('/seller/items/new')}
               className="mt-5 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-md"
             >
-              + Add Product
+              + {t('seller.addProduct')}
             </button>
           </div>
         ) : (
@@ -62,7 +64,7 @@ export default function MyListings() {
                   </button>
                   {!item.is_available && (
                     <span className="absolute left-2 top-2 rounded-full bg-gray-800/80 px-2 py-0.5 text-[10px] font-semibold text-white">
-                      Hidden
+                      {t('common.hidden')}
                     </span>
                   )}
                 </div>

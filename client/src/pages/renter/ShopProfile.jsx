@@ -9,12 +9,14 @@ import { getShopReviews } from '@/api/reviews';
 import { openChat } from '@/api/chats';
 import useAuthStore from '@/store/authStore';
 import useRequireAuth from '@/hooks/useRequireAuth';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 
-const TABS = ['สินค้าทั้งหมด', 'รีวิว'];
+const TABS = [{ key: 'products', label: 'shopP.allProducts' }, { key: 'reviews', label: 'shopP.reviewsTab' }];
 
 // Public shop profile (§2.3): items + search-in-shop, rating, followers.
 export default function ShopProfile() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, accessToken } = useAuthStore();
@@ -22,7 +24,7 @@ export default function ShopProfile() {
   const [shop, setShop]       = useState(null);
   const [items, setItems]     = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [tab, setTab]         = useState('สินค้าทั้งหมด');
+  const [tab, setTab]         = useState('products');
   const [q, setQ]             = useState('');
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,10 +42,10 @@ export default function ShopProfile() {
 
   // Search-in-shop (debounced-lite).
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       getShopItems(id, q.trim() || undefined).then(({ data }) => setItems(data.data.items)).catch(() => {});
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [q, id]);
 
   const handleFollow = () => requireAuth(async () => {
@@ -52,7 +54,7 @@ export default function ShopProfile() {
       setFollowing(data.data.following);
       setShop((s) => ({ ...s, follower_count: data.data.follower_count }));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ทำรายการไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('product.actionFailed'));
     }
   });
 
@@ -61,7 +63,7 @@ export default function ShopProfile() {
       const { data } = await openChat(id);
       navigate(`/chats/${data.data.conversation.id}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'เปิดแชทไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('product.chatFailed'));
     }
   });
 
@@ -89,8 +91,8 @@ export default function ShopProfile() {
                   <Star size={12} fill="currentColor" /> {Number(shop.rating || 5).toFixed(1)}
                   <span className="text-gray-400">({shop.review_count || 0})</span>
                 </span>
-                <span className="flex items-center gap-1"><Users size={12} /> {shop.follower_count} ผู้ติดตาม</span>
-                <span>{shop.item_count} ชุด</span>
+                <span className="flex items-center gap-1"><Users size={12} /> {shop.follower_count} {t('shopP.followers')}</span>
+                <span>{shop.item_count} {t('shopP.itemsCount')}</span>
               </div>
             </div>
           </div>
@@ -105,11 +107,11 @@ export default function ShopProfile() {
             <div className="mt-3 flex gap-2">
               <button onClick={handleFollow}
                 className={`flex-1 rounded-full py-2 text-sm font-semibold ${following ? 'border border-gray-200 text-gray-500' : 'bg-brand-gradient text-white'}`}>
-                {following ? 'กำลังติดตาม' : '+ ติดตาม'}
+                {following ? t('shopP.followingBtn') : t('shopP.followBtn')}
               </button>
               <button onClick={handleChat}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brand-purple py-2 text-sm font-semibold text-brand-purple">
-                <MessageCircle size={15} /> แชท
+                <MessageCircle size={15} /> {t('product.chat')}
               </button>
             </div>
           )}
@@ -119,11 +121,11 @@ export default function ShopProfile() {
         {(shop.ship_couriers?.length > 0 || shop.return_couriers?.length > 0) && (
           <div className="mt-3 rounded-2xl bg-white p-4 shadow-sm">
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <Truck size={16} className="text-brand-purple" /> การจัดส่ง
+              <Truck size={16} className="text-brand-purple" /> {t('shopP.shipping')}
             </h3>
             {shop.ship_couriers?.length > 0 && (
               <div className="mb-2">
-                <p className="mb-1 text-xs text-gray-400">จัดส่งโดย</p>
+                <p className="mb-1 text-xs text-gray-400">{t('shopP.shipBy')}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {shop.ship_couriers.map((c) => (
                     <span key={c} className="rounded-full bg-brand-light px-2.5 py-0.5 text-xs font-medium text-brand-purple">{c}</span>
@@ -133,7 +135,7 @@ export default function ShopProfile() {
             )}
             {shop.return_couriers?.length > 0 && (
               <div>
-                <p className="mb-1 text-xs text-gray-400">รับคืนผ่าน</p>
+                <p className="mb-1 text-xs text-gray-400">{t('shopP.returnVia')}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {shop.return_couriers.map((c) => (
                     <span key={c} className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">{c}</span>
@@ -147,36 +149,36 @@ export default function ShopProfile() {
         {/* Shop rules */}
         {(shop.rules_text || shop.rules_image_url) && (
           <div className="mt-3 rounded-2xl border border-brand-purple/15 bg-brand-light/30 p-4">
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900">📋 กฎของร้าน</h3>
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-900">📋 {t('product.shopRules')}</h3>
             {shop.rules_text && <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600">{shop.rules_text}</p>}
             {shop.rules_image_url && (
-              <img src={shop.rules_image_url} alt="กฎของร้าน" className="mt-3 w-full rounded-xl border border-gray-100 object-cover" />
+              <img src={shop.rules_image_url} alt={t('product.shopRules')} className="mt-3 w-full rounded-xl border border-gray-100 object-cover" />
             )}
           </div>
         )}
 
         {/* Tabs */}
         <div className="mt-4 flex gap-2">
-          {TABS.map((t) => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
-              {t}
+          {TABS.map((x) => (
+            <button key={x.key} onClick={() => setTab(x.key)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === x.key ? 'bg-brand-purple text-white' : 'border border-gray-200 bg-white text-gray-600'}`}>
+              {t(x.label)}
             </button>
           ))}
         </div>
 
-        {tab === 'สินค้าทั้งหมด' && (
+        {tab === 'products' && (
           <>
             {/* Search in shop (§2.3) */}
             <div className="relative mt-3">
               <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input value={q} onChange={(e) => setQ(e.target.value)}
-                placeholder={`ค้นหาในร้าน ${shop.shop_name}...`}
+                placeholder={t('shopP.searchInShop', { shop: shop.shop_name })}
                 className="w-full rounded-2xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-purple" />
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-3 pb-10">
-              {items.length === 0 && <p className="col-span-2 py-10 text-center text-sm text-gray-400">ไม่พบสินค้า</p>}
+              {items.length === 0 && <p className="col-span-2 py-10 text-center text-sm text-gray-400">{t('shopP.noProducts')}</p>}
               {items.map((item) => (
                 <div key={item.id} onClick={() => navigate(`/items/${item.id}`)}
                   className="cursor-pointer overflow-hidden rounded-2xl bg-white shadow-sm active:scale-[0.97] transition-transform">
@@ -184,7 +186,7 @@ export default function ShopProfile() {
                   <div className="p-3">
                     <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                     <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
-                    <p className="mt-1 text-sm font-bold text-brand-purple">฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                    <p className="mt-1 text-sm font-bold text-brand-purple">฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> {t('common.perDay')}</span></p>
                   </div>
                 </div>
               ))}
@@ -192,9 +194,9 @@ export default function ShopProfile() {
           </>
         )}
 
-        {tab === 'รีวิว' && (
+        {tab === 'reviews' && (
           <div className="mt-3 space-y-3 pb-10">
-            {reviews.length === 0 && <p className="py-10 text-center text-sm text-gray-400">ยังไม่มีรีวิว</p>}
+            {reviews.length === 0 && <p className="py-10 text-center text-sm text-gray-400">{t('shopP.noReviews')}</p>}
             {reviews.map((r) => (
               <div key={r.id} className="rounded-2xl bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between">

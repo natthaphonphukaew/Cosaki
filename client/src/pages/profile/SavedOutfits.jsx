@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import ProductImage from '@/components/ui/ProductImage';
 import { getFavorites, toggleFavorite } from '@/utils/favorites';
 
 export default function SavedOutfits() {
+  const { t } = useTranslation();
   const [items, setItems] = useState(getFavorites);
   const navigate = useNavigate();
 
@@ -17,13 +19,13 @@ export default function SavedOutfits() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Saved Outfits" />
+      <PageHeader title={t('header.saved')} />
       <div className="px-4 pt-4">
         {items.length === 0 ? (
           <div className="flex flex-col items-center py-20 text-center">
             <Heart size={44} className="mb-3 text-gray-300" />
-            <p className="font-semibold text-gray-600">No saved outfits yet</p>
-            <button onClick={() => navigate('/home')} className="mt-3 text-sm font-semibold text-brand-purple">Browse costumes →</button>
+            <p className="font-semibold text-gray-600">{t('saved.empty')}</p>
+            <button onClick={() => navigate('/home')} className="mt-3 text-sm font-semibold text-brand-purple">{t('rentals.browse')}</button>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
@@ -36,7 +38,7 @@ export default function SavedOutfits() {
                 <div className="relative h-40">
                   {item.express_delivery && (
                     <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                      🚀 ส่งด่วน
+                      🚀 {t('common.expressShort')}
                     </div>
                   )}
                   <ProductImage item={item} emojiClassName="text-5xl" />
@@ -48,8 +50,8 @@ export default function SavedOutfits() {
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
                   <p className="truncate text-xs text-gray-400">{item.fandom || 'Cosplay'}</p>
                   <div className="mt-1 flex flex-col">
-                    <p className="text-[13px] font-bold text-brand-purple">เทส ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
-                    <p className="text-[13px] font-bold text-brand-pink">ไพร ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> / day</span></p>
+                    <p className="text-[13px] font-bold text-brand-purple">{t('common.test_rate')} ฿{item.test_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> {t('common.perDay')}</span></p>
+                    <p className="text-[13px] font-bold text-brand-pink">{t('common.private_rate')} ฿{item.private_rate ?? item.daily_rate}<span className="font-normal text-gray-400"> {t('common.perDay')}</span></p>
                   </div>
                 </div>
               </div>

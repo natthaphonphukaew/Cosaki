@@ -9,7 +9,6 @@ import { searchItems } from '@/api/items';
 import { getFavorites, toggleFavorite } from '@/utils/favorites';
 import useAuthStore from '@/store/authStore';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { POPULAR_FANDOMS } from '@/constants/fandoms';
 
 export default function HomePage() {
@@ -64,7 +63,6 @@ export default function HomePage() {
           </div>
         </button>
         <div className="flex items-center gap-2">
-          <LanguageSwitcher />
           {accessToken ? (
             <>
               <ChatButton size={20} className="h-10 w-10 bg-white shadow-sm" />
@@ -116,7 +114,7 @@ export default function HomePage() {
                   : 'border border-gray-200 bg-white text-gray-600'
               }`}
             >
-              {f}
+              {f === 'All' ? t('common.all') : f}
             </button>
           ))}
           <button 

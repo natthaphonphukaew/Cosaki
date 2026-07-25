@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Megaphone, Plus, Tag, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast';
 
 // Shop Campaign Builder (§3.4) — create shop-scoped discount codes.
 export default function Campaigns() {
+  const { t } = useTranslation();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding]   = useState(false);
@@ -22,7 +24,7 @@ export default function Campaigns() {
   useEffect(() => { load(); }, []);
 
   const handleCreate = async () => {
-    if (!form.code.trim() || !form.discount_value) return toast.error('กรอกโค้ดและมูลค่าส่วนลด');
+    if (!form.code.trim() || !form.discount_value) return toast.error(t('seller.campaign.reqCodeValue'));
     try {
       setBusy(true);
       await createShopCoupon({
@@ -31,12 +33,12 @@ export default function Campaigns() {
         discount_value: Number(form.discount_value),
         min_spend: Number(form.min_spend) || 0,
       });
-      toast.success('สร้างแคมเปญแล้ว');
+      toast.success(t('seller.campaign.created'));
       setAdding(false);
       setForm({ code: '', discount_type: 'percent', discount_value: '', min_spend: '' });
       load();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'สร้างไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('seller.campaign.createFailed'));
     } finally { setBusy(false); }
   };
 
@@ -44,25 +46,25 @@ export default function Campaigns() {
     try {
       const { data } = await toggleShopCoupon(id);
       setCoupons((list) => list.map((c) => (c.id === id ? data.data.coupon : c)));
-    } catch { toast.error('เปลี่ยนสถานะไม่สำเร็จ'); }
+    } catch { toast.error(t('seller.campaign.toggleFailed')); }
   };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Campaign Builder" />
+      <PageHeader title={t('seller.campaign.builder')} />
       <div className="px-4 pb-10 space-y-4">
         {/* Idea banner */}
         <div className="rounded-2xl bg-brand-gradient p-4 text-white">
           <div className="flex items-center gap-2">
             <Megaphone size={18} />
-            <p className="text-sm font-bold">สร้างโค้ดส่วนลดเฉพาะร้าน</p>
+            <p className="text-sm font-bold">{t('seller.campaign.shopCodesTitle')}</p>
           </div>
-          <p className="mt-1 text-xs opacity-80">เช่น โปร 7.7, โปรปิดเทอม, โปรเดือนเกิดลูกค้า — ลูกค้าใส่โค้ดตอน Checkout</p>
+          <p className="mt-1 text-xs opacity-80">{t('seller.campaign.shopCodesDesc')}</p>
         </div>
 
         <button onClick={() => setAdding(true)}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-purple/30 bg-brand-light/30 py-4 text-sm font-semibold text-brand-purple">
-          <Plus size={18} /> สร้างแคมเปญใหม่
+          <Plus size={18} /> {t('seller.campaign.createNew')}
         </button>
 
         {loading ? (
@@ -70,7 +72,7 @@ export default function Campaigns() {
         ) : coupons.length === 0 ? (
           <div className="flex flex-col items-center rounded-2xl bg-white py-10 text-center shadow-sm">
             <Tag size={32} className="mb-2 text-gray-300" />
-            <p className="text-sm font-medium text-gray-600">ยังไม่มีแคมเปญ</p>
+            <p className="text-sm font-medium text-gray-600">{t('seller.campaign.noCampaigns')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -82,8 +84,8 @@ export default function Campaigns() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-800">{c.code}</p>
                   <p className="text-xs text-gray-400">
-                    ลด {c.discount_type === 'percent' ? `${Number(c.discount_value)}%` : `฿${Number(c.discount_value)}`}
-                    {Number(c.min_spend) > 0 ? ` · ขั้นต่ำ ฿${Number(c.min_spend)}` : ''} · ใช้แล้ว {c.used_count} ครั้ง
+                    {t('seller.campaign.discountLabel')} {c.discount_type === 'percent' ? `${Number(c.discount_value)}%` : `฿${Number(c.discount_value)}`}
+                    {Number(c.min_spend) > 0 ? ` · ${t('seller.campaign.minSpendShort', { amount: Number(c.min_spend) })}` : ''} · {t('seller.campaign.usedTimes', { count: c.used_count })}
                   </p>
                 </div>
                 <button onClick={() => handleToggle(c.id)}
@@ -101,15 +103,15 @@ export default function Campaigns() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30" onClick={() => setAdding(false)}>
           <div className="w-full max-w-[390px] space-y-3 rounded-t-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">สร้างแคมเปญ</h3>
+              <h3 className="text-lg font-bold text-gray-900">{t('seller.campaign.builder')}</h3>
               <button onClick={() => setAdding(false)} className="text-gray-400"><X size={20} /></button>
             </div>
-            <Input label="โค้ด (A-Z, 0-9)" value={form.code}
-              onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="เช่น SUMMER77" />
+            <Input label={t('seller.campaign.codeLabel')} value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder={t('seller.campaign.codePlaceholder')} />
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">ประเภทส่วนลด</label>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">{t('seller.campaign.discountType')}</label>
               <div className="flex gap-2">
-                {[['percent', 'เปอร์เซ็นต์ (%)'], ['fixed', 'จำนวนเงิน (฿)']].map(([v, l]) => (
+                {[['percent', t('seller.campaign.typePercent')], ['fixed', t('seller.campaign.typeFixed')]].map(([v, l]) => (
                   <button key={v} onClick={() => setForm({ ...form, discount_type: v })}
                     className={`flex-1 rounded-xl py-2.5 text-sm font-medium ${form.discount_type === v ? 'bg-brand-purple text-white' : 'border border-gray-200 text-gray-600'}`}>
                     {l}
@@ -118,12 +120,12 @@ export default function Campaigns() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Input label={form.discount_type === 'percent' ? 'ส่วนลด (%)' : 'ส่วนลด (฿)'} type="number"
+              <Input label={form.discount_type === 'percent' ? t('seller.campaign.discountPercent') : t('seller.campaign.discountBaht')} type="number"
                 value={form.discount_value} onChange={(e) => setForm({ ...form, discount_value: e.target.value })} />
-              <Input label="ยอดขั้นต่ำ (฿)" type="number"
+              <Input label={t('seller.campaign.minSpendLabel')} type="number"
                 value={form.min_spend} onChange={(e) => setForm({ ...form, min_spend: e.target.value })} />
             </div>
-            <Button className="mt-2 w-full" loading={busy} onClick={handleCreate}>สร้างแคมเปญ</Button>
+            <Button className="mt-2 w-full" loading={busy} onClick={handleCreate}>{t('seller.campaign.builder')}</Button>
           </div>
         </div>
       )}

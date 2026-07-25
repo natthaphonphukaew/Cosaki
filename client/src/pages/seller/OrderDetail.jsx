@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Package, Truck, CheckCircle, User, Calendar, ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -14,12 +15,13 @@ import toast from 'react-hot-toast';
 
 // Next action the shop can take once the queue is accepted.
 const NEXT_ACTION = {
-  escrowed: { to: 'shipped',   label: 'Mark as Shipped',   icon: Truck },
-  shipped:  { to: 'returned',  label: 'Mark as Returned',  icon: Package },
-  returned: { to: 'completed', label: 'ตรวจผ่าน (No Damage) & ปล่อยเงิน', icon: CheckCircle },
+  escrowed: { to: 'shipped',   label: 'seller.order.markShipped',   icon: Truck },
+  shipped:  { to: 'returned',  label: 'seller.order.markReturned',  icon: Package },
+  returned: { to: 'completed', label: 'seller.order.inspectRelease', icon: CheckCircle },
 };
 
 export default function OrderDetail() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
@@ -41,9 +43,9 @@ export default function OrderDetail() {
       setActing(true);
       const { data } = await updateStatus(id, to);
       setBooking((b) => ({ ...b, status: data.data.booking.status }));
-      toast.success('Order updated');
+      toast.success(t('seller.order.orderUpdated'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not update order');
+      toast.error(err.response?.data?.message || t('seller.order.updateFailed'));
     } finally {
       setActing(false);
     }
@@ -54,21 +56,21 @@ export default function OrderDetail() {
       setActing(true);
       await acceptBooking(id);
       setBooking((b) => ({ ...b, accepted_at: new Date().toISOString() }));
-      toast.success('รับคิวแล้ว — พร้อมจัดส่ง');
+      toast.success(t('seller.order.acceptedReady'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not accept');
+      toast.error(err.response?.data?.message || t('seller.order.acceptFailed'));
     } finally { setActing(false); }
   };
 
   const handleReject = async () => {
-    if (!window.confirm('ปฏิเสธคิวนี้? ระบบจะคืนเงินให้ลูกค้าเต็มจำนวน')) return;
+    if (!window.confirm(t('seller.order.rejectConfirm'))) return;
     try {
       setActing(true);
-      await rejectBooking(id, 'ร้านไม่สะดวกรับคิวนี้');
+      await rejectBooking(id, t('seller.order.rejectReason'));
       setBooking((b) => ({ ...b, status: 'cancelled' }));
-      toast.success('ปฏิเสธและคืนเงินแล้ว');
+      toast.success(t('seller.order.rejectedRefunded'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not reject');
+      toast.error(err.response?.data?.message || t('seller.order.rejectFailed'));
     } finally { setActing(false); }
   };
 
@@ -76,15 +78,15 @@ export default function OrderDetail() {
 
   // Generate a penalty bill (§3.4) — sent straight to the renter's screen.
   const handleBill = async () => {
-    const amount = window.prompt('จำนวนเงินค่าปรับ (฿):');
+    const amount = window.prompt(t('seller.order.billAmountPrompt'));
     if (!amount) return;
-    const reason = window.prompt('เหตุผล (เช่น วิกเปื้อนคราบหนัก):');
+    const reason = window.prompt(t('seller.order.billReasonPrompt'));
     if (!reason) return;
     try {
       await createBill(id, Number(amount), reason);
-      toast.success(`ส่งบิล ฿${Number(amount).toFixed(2)} ให้ลูกค้าแล้ว`);
+      toast.success(t('seller.order.billSent', { amount: Number(amount).toFixed(2) }));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ออกบิลไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('seller.order.billFailed'));
     }
   };
 
@@ -93,8 +95,8 @@ export default function OrderDetail() {
   );
   if (error || !booking) return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Order" />
-      <ErrorState message="Could not load this order" onRetry={load} />
+      <PageHeader title={t('header.orderDetail')} />
+      <ErrorState message={t('seller.order.loadFailed')} onRetry={load} />
     </div>
   );
 
@@ -102,7 +104,7 @@ export default function OrderDetail() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Order Detail" />
+      <PageHeader title={t('header.orderDetail')} />
 
       <div className="px-4 pb-32 space-y-4">
         {/* Item */}
@@ -113,9 +115,9 @@ export default function OrderDetail() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm font-bold text-gray-900">{booking.item_name}</p>
-              <Badge status={booking.status} label={booking.status.replace(/_/g,' ').toUpperCase()} />
+              <Badge status={booking.status} />
             </div>
-            <p className="mt-1 text-xs text-gray-400">Order #{String(booking.id).slice(0, 8)}</p>
+            <p className="mt-1 text-xs text-gray-400">{t('seller.order.orderNumPrefix')}{String(booking.id).slice(0, 8)}</p>
             <p className="mt-2 text-lg font-bold text-brand-purple">฿{booking.total_amount}</p>
           </div>
         </div>
@@ -127,7 +129,7 @@ export default function OrderDetail() {
               <User size={16} className="text-brand-purple" />
             </div>
             <div className="flex-1">
-              <p className="text-xs text-gray-400">Renter</p>
+              <p className="text-xs text-gray-400">{t('seller.order.renter')}</p>
               <p className="text-sm font-semibold text-gray-800">{booking.renter_name || '—'}</p>
             </div>
             {booking.renter_trust_score != null && (
@@ -141,7 +143,7 @@ export default function OrderDetail() {
               <Calendar size={16} className="text-brand-purple" />
             </div>
             <div>
-              <p className="text-xs text-gray-400">Rental Period</p>
+              <p className="text-xs text-gray-400">{t('seller.order.rentalPeriod')}</p>
               <p className="text-sm font-semibold text-gray-800">
                 {booking.rental_start && format(parseISO(booking.rental_start), 'MMM d')} –{' '}
                 {booking.rental_end && format(parseISO(booking.rental_end), 'MMM d, yyyy')}
@@ -152,25 +154,25 @@ export default function OrderDetail() {
 
         {/* Payment breakdown */}
         <div className="rounded-2xl bg-white p-4 shadow-sm space-y-2">
-          <p className="text-sm font-semibold text-gray-800">Payment</p>
-          <Row label="ค่าเช่า" value={`฿${booking.rental_fee}`} />
-          <Row label="ค่าคุ้มครอง (10%)" value={`฿${booking.cosaki_fee}`} />
-          {booking.shipping_fee != null && <Row label="ค่าส่ง" value={`฿${booking.shipping_fee}`} />}
-          <Row label="ค่าจองคิว" value={`฿${booking.booking_fee}`} />
+          <p className="text-sm font-semibold text-gray-800">{t('seller.order.payment')}</p>
+          <Row label={t('seller.order.rentalFee')} value={`฿${booking.rental_fee}`} />
+          <Row label={t('seller.order.protectionFee')} value={`฿${booking.cosaki_fee}`} />
+          {booking.shipping_fee != null && <Row label={t('seller.order.shippingFee')} value={`฿${booking.shipping_fee}`} />}
+          <Row label={t('seller.order.bookingFee')} value={`฿${booking.booking_fee}`} />
           <div className="my-1 border-t border-gray-100" />
-          <Row label="ยอดที่ลูกค้าจ่าย" value={`฿${booking.total_amount}`} bold />
-          <Row label="ร้านได้รับ (หัก 10%)" value={`฿${booking.seller_payout}`} />
+          <Row label={t('seller.order.customerPaid')} value={`฿${booking.total_amount}`} bold />
+          <Row label={t('seller.order.shopReceives')} value={`฿${booking.seller_payout}`} />
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-purple-50 p-3">
             <ShieldCheck size={16} className="text-brand-purple" />
             <p className="text-xs text-purple-700">
-              เงินถูกกักใน Escrow และปล่อยให้ร้านเมื่อกด "ตรวจผ่าน (No Damage)"
+              {t('seller.order.escrowNote')}
             </p>
           </div>
         </div>
 
         {booking.notes && (
           <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="text-xs text-gray-400 mb-1">Note from renter</p>
+            <p className="text-xs text-gray-400 mb-1">{t('seller.order.noteFromRenter')}</p>
             <p className="text-sm text-gray-700">{booking.notes}</p>
           </div>
         )}
@@ -180,27 +182,27 @@ export default function OrderDetail() {
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4 space-y-2">
         {needsAcceptance ? (
           <>
-            <p className="text-center text-xs text-gray-400">ออเดอร์ใหม่ — ตรวจสอบลูกค้าแล้วเลือกรับหรือปฏิเสธคิว</p>
+            <p className="text-center text-xs text-gray-400">{t('seller.order.newOrderHint')}</p>
             <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" loading={acting} onClick={handleReject}>ปฏิเสธคิว</Button>
-              <Button className="flex-1" loading={acting} onClick={handleAccept}>รับคิว</Button>
+              <Button variant="secondary" className="flex-1" loading={acting} onClick={handleReject}>{t('seller.order.rejectQueue')}</Button>
+              <Button className="flex-1" loading={acting} onClick={handleAccept}>{t('seller.order.acceptQueue')}</Button>
             </div>
           </>
         ) : action ? (
           <Button className="w-full" loading={acting} icon={<action.icon size={18} />} onClick={() => advance(action.to)}>
-            {action.label}
+            {t(action.label)}
           </Button>
         ) : (
-          <p className="py-2 text-center text-sm text-gray-400">No actions available for this order</p>
+          <p className="py-2 text-center text-sm text-gray-400">{t('seller.order.noActions')}</p>
         )}
         {['shipped','returned','disputed','completed'].includes(booking.status) && (
           <button onClick={handleBill} className="w-full rounded-full border border-amber-300 bg-amber-50 py-2.5 text-sm font-semibold text-amber-700">
-            🧾 ออกบิลค่าปรับ (Generate Bill)
+            {t('seller.order.generateBill')}
           </button>
         )}
         {['escrowed','shipped'].includes(booking.status) && !needsAcceptance && (
           <Button variant="secondary" className="w-full" onClick={() => navigate(`/seller/disputes/${booking.id}`)}>
-            Report an Issue
+            {t('seller.order.reportIssue')}
           </Button>
         )}
       </div>

@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '@/store/authStore';
 
 export default function SplashScreen() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { accessToken } = useAuthStore();
 
@@ -40,7 +42,7 @@ export default function SplashScreen() {
         <div className="h-1.5 w-1.5 rounded-full bg-white" />
         <div className="h-1.5 w-1.5 rounded-full bg-white/40" />
       </div>
-      <p className="mt-4 text-xs text-white/60">Loading your world...</p>
+      <p className="mt-4 text-xs text-white/60">{t('onboarding.loadingWorld')}</p>
     </div>
   );
 }

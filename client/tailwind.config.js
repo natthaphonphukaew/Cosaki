@@ -23,7 +23,13 @@ export default {
         'brand-gradient-br': 'linear-gradient(to bottom right, #7C3AED, #EC4899)',
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Real SF Pro / Thonburi first (Apple devices); bundled look-alikes
+        // (Inter + Noto Sans Thai) render consistently everywhere else. Latin
+        // glyphs resolve to SF Pro/Inter; Thai falls through to Thonburi/Noto Sans Thai.
+        sans: [
+          '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"SF Pro Display"',
+          'Inter', 'Thonburi', '"Noto Sans Thai"', 'system-ui', 'sans-serif',
+        ],
       },
     },
   },

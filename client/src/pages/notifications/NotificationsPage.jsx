@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Package, CreditCard, Truck, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { listNotifications, markAllRead } from '@/api/notifications';
@@ -16,6 +17,7 @@ const ICON = {
 };
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -31,15 +33,15 @@ export default function NotificationsPage() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Notifications" />
+      <PageHeader title={t('header.notifications')} />
       <div className="px-4 pb-10 space-y-2">
         {loading && <><CardSkeleton /><CardSkeleton /><CardSkeleton /></>}
 
         {!loading && items.length === 0 && (
           <div className="flex flex-col items-center py-20 text-center">
             <Bell size={44} className="mb-3 text-gray-300" />
-            <p className="font-semibold text-gray-600">No notifications yet</p>
-            <p className="mt-1 text-sm text-gray-400">Booking updates will show up here.</p>
+            <p className="font-semibold text-gray-600">{t('notifications.empty')}</p>
+            <p className="mt-1 text-sm text-gray-400">{t('notifications.emptyDesc')}</p>
           </div>
         )}
 

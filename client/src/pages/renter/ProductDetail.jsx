@@ -10,6 +10,7 @@ import { toggleFollowShop, getFollowState } from '@/api/shops';
 import { isFavorite, toggleFavorite } from '@/utils/favorites';
 import useRequireAuth from '@/hooks/useRequireAuth';
 import useAuthStore from '@/store/authStore';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { MessageCircle } from 'lucide-react';
 
@@ -29,6 +30,7 @@ function convertMeasurement(value, fromUnit, toUnit) {
 }
 
 export default function ProductDetail() {
+  const { t }       = useTranslation();
   const { id }      = useParams();
   const navigate    = useNavigate();
   const requireAuth = useRequireAuth();
@@ -61,7 +63,7 @@ export default function ProductDetail() {
     const url = window.location.href;
     try {
       if (navigator.share) await navigator.share({ title: item?.name, url });
-      else { await navigator.clipboard.writeText(url); toast.success('Link copied to clipboard'); }
+      else { await navigator.clipboard.writeText(url); toast.success(t('product.linkCopied')); }
     } catch { /* user cancelled share */ }
   };
 
@@ -76,9 +78,9 @@ export default function ProductDetail() {
     try {
       const { data } = await toggleFollowShop(item.shop_id);
       setFollowing(data.data.following);
-      toast.success(data.data.following ? `Following ${item.shop_name}` : 'Unfollowed');
+      toast.success(data.data.following ? `${t('product.following')} ${item.shop_name}` : t('product.follow'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ทำรายการไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('product.actionFailed'));
     }
   });
 
@@ -92,7 +94,7 @@ export default function ProductDetail() {
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-purple border-t-transparent" />
     </div>
   );
-  if (!item) return <div className="flex h-screen items-center justify-center text-gray-400">Item not found</div>;
+  if (!item) return <div className="flex h-screen items-center justify-center text-gray-400">{t('common.notFound')}</div>;
 
   // Two rates (fall back to legacy daily_rate); renter also pays a 10% protection fee.
   const testRate     = Number(item.test_rate ?? item.daily_rate ?? 0);
@@ -101,7 +103,7 @@ export default function ProductDetail() {
   const protectionFee = Math.round(selectedRate * 0.10);
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[390px] bg-white">
+    <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
       {/* Hero carousel */}
       <div className="relative h-72">
         {(() => {
@@ -175,15 +177,15 @@ export default function ProductDetail() {
                   const { data } = await openChat(item.shop_id);
                   navigate(`/chats/${data.data.conversation.id}`);
                 } catch (err) {
-                  toast.error(err.response?.data?.message || 'เปิดแชทไม่สำเร็จ');
+                  toast.error(err.response?.data?.message || t('product.chatFailed'));
                 }
               })}
               className="flex items-center gap-1 rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand-purple"
             >
-              <MessageCircle size={13} /> แชท
+              <MessageCircle size={13} /> {t('product.chat')}
             </button>
             <button onClick={toggleFollow} className={`text-xs font-semibold ${following ? 'text-gray-400' : 'text-brand-purple'}`}>
-              {following ? 'FOLLOWING' : 'FOLLOW'}
+              {following ? t('product.following') : t('product.follow')}
             </button>
           </div>
         </div>
@@ -196,7 +198,7 @@ export default function ProductDetail() {
           >
             <div className="flex items-center gap-2">
               <Truck size={16} className={rateType === 'test' ? 'text-brand-purple' : 'text-gray-400'} />
-              <span className="text-sm font-medium text-gray-700">เทสที่บ้าน (Test at Home)</span>
+              <span className="text-sm font-medium text-gray-700">{t('product.testAtHome')}</span>
             </div>
             <span className={`font-bold ${rateType === 'test' ? 'text-brand-purple' : 'text-gray-700'}`}>฿{testRate}</span>
           </button>
@@ -206,7 +208,7 @@ export default function ProductDetail() {
           >
             <div className="flex items-center gap-2">
               <Zap size={16} className={rateType === 'private' ? 'text-brand-purple' : 'text-gray-400'} />
-              <span className="text-sm font-medium text-gray-700">ไพรเวท / ออกงาน (Event)</span>
+              <span className="text-sm font-medium text-gray-700">{t('product.eventRate')}</span>
             </div>
             <span className={`font-bold ${rateType === 'private' ? 'text-brand-purple' : 'text-gray-700'}`}>฿{privateRate}</span>
           </button>
@@ -216,42 +218,42 @@ export default function ProductDetail() {
         <div className="mt-4 flex items-center gap-3 rounded-xl bg-purple-50 p-3">
           <Shield size={20} className="text-brand-purple flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-brand-purple">ค่าธรรมเนียมคุ้มครองความเสียหาย 10%</p>
-            <p className="text-xs text-gray-500 mt-0.5">เก็บเพิ่ม ฿{protectionFee} (10% ของค่าเช่า) เข้ากองทุนประกันกลาง Cosaki — ไม่มีเงินมัดจำ</p>
+            <p className="text-xs font-semibold text-brand-purple">{t('product.protectionTitle')}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{t('product.protectionDesc', { fee: protectionFee })}</p>
           </div>
         </div>
 
         {/* Badges + rented stat */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {item.rented_count > 0 && (
-            <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand-purple">🔥 เช่าไปแล้ว {item.rented_count} ครั้ง</span>
+            <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-semibold text-brand-purple">{t('product.rentedTimes', { count: item.rented_count })}</span>
           )}
-          {item.allow_event && <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">🎭 ออกงานได้</span>}
-          {item.express_delivery && <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">⚡ ส่งด่วนในจังหวัด</span>}
+          {item.allow_event && <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{t('product.allowEvent')}</span>}
+          {item.express_delivery && <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{t('product.express')}</span>}
         </div>
 
         {/* Measurements */}
         <div className="mt-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">สัดส่วนชุด</h3>
+            <h3 className="font-semibold text-gray-900">{t('product.measurements')}</h3>
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
               <button 
                 onClick={() => setDisplayUnit('cm')} 
                 className={`px-3 py-1 text-xs font-semibold rounded-md ${displayUnit === 'cm' ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500'}`}
               >
-                ซม.
+                {t('product.cm')}
               </button>
-              <button 
-                onClick={() => setDisplayUnit('inch')} 
+              <button
+                onClick={() => setDisplayUnit('inch')}
                 className={`px-3 py-1 text-xs font-semibold rounded-md ${displayUnit === 'inch' ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500'}`}
               >
-                นิ้ว
+                {t('product.inch')}
               </button>
             </div>
           </div>
           {(item.bust || item.waist || item.hip || item.height_recommended) ? (
             <div className="grid grid-cols-4 gap-2">
-              {[['อก', item.bust],['เอว', item.waist],['สะโพก', item.hip]].map(([l, v]) => {
+              {[[t('edit.bust'), item.bust],[t('edit.waist'), item.waist],[t('edit.hip'), item.hip]].map(([l, v]) => {
                 const cv = convertMeasurement(v, item.measurement_unit || 'cm', displayUnit);
                 return (
                   <div key={l} className="rounded-xl bg-gray-50 p-3 text-center">
@@ -262,17 +264,17 @@ export default function ProductDetail() {
               })}
               <div className="rounded-xl bg-gray-50 p-3 text-center">
                 <p className="text-sm font-bold text-gray-800">{item.height_recommended || '—'}</p>
-                <p className="text-xs text-gray-400">สูงแนะนำ</p>
+                <p className="text-xs text-gray-400">{t('product.recHeight')}</p>
               </div>
             </div>
-          ) : <p className="mt-2 text-sm text-gray-400">ร้านยังไม่ได้ระบุสัดส่วน</p>}
-          {item.sizes?.length > 0 && <p className="mt-2 text-sm text-gray-600">ไซส์: {item.sizes.join(', ')}</p>}
+          ) : <p className="mt-2 text-sm text-gray-400">{t('product.noMeasure')}</p>}
+          {item.sizes?.length > 0 && <p className="mt-2 text-sm text-gray-600">{t('product.size')}: {item.sizes.join(', ')}</p>}
         </div>
 
         {/* Shop rules (กฎของร้าน) — text and/or image set by the shop */}
         {(item.shop_rules_text || item.shop_rules_image) && (
           <div className="mt-5 rounded-2xl border border-brand-purple/15 bg-brand-light/30 p-4">
-            <h3 className="mb-2 flex items-center gap-2 font-semibold text-gray-900">📋 กฎของร้าน</h3>
+            <h3 className="mb-2 flex items-center gap-2 font-semibold text-gray-900">📋 {t('product.shopRules')}</h3>
             {item.shop_rules_text && (
               <p className="whitespace-pre-line text-sm leading-relaxed text-gray-600">{item.shop_rules_text}</p>
             )}
@@ -288,37 +290,37 @@ export default function ProductDetail() {
 
         {/* SLA + couriers */}
         <div className="mt-4 rounded-xl bg-gray-50 p-3 space-y-1 text-xs text-gray-600">
-          <p>🚚 เผื่อระยะเวลาขนส่ง <span className="font-semibold">7</span> วัน · ส่งคืนภายใน <span className="font-semibold">{item.return_days ?? 2}</span> วันหลังใช้งาน</p>
-          {item.return_couriers?.length > 0 && <p>📦 ขนส่งขากลับที่รับ: {item.return_couriers.join(', ')}</p>}
+          <p>{t('product.shippingNote', { ship: 7, ret: item.return_days ?? 2 })}</p>
+          {item.return_couriers?.length > 0 && <p>{t('product.returnCouriers', { list: item.return_couriers.join(', ') })}</p>}
         </div>
 
         {/* Live availability */}
         {booked.length > 0 && (
           <div className="mt-4 rounded-xl bg-amber-50 border border-amber-100 p-3 text-xs text-amber-700">
-            📅 มีคิวจองแล้ว {booked.length} ช่วง — ระบบจะปิดวันที่ไม่ว่างในหน้าเลือกวัน
+            {t('product.queueNote', { count: booked.length })}
           </div>
         )}
 
         {/* Clickwrap agreement (§2.2.5) — must accept both to book */}
         <div className="mt-5 rounded-2xl border border-gray-200 p-4 space-y-3">
-          <p className="text-sm font-semibold text-gray-800">ข้อตกลงก่อนเช่า</p>
+          <p className="text-sm font-semibold text-gray-800">{t('product.agreementTitle')}</p>
           <label className="flex items-start gap-2 text-xs text-gray-600">
             <input type="checkbox" checked={agree1} onChange={(e) => setAgree1(e.target.checked)} className="mt-0.5 accent-brand-purple" />
-            <span>ยอมรับ <span className="font-medium text-brand-purple">กฎของร้านเช่า</span> (ห้ามตัด/ซักวิก, ราคาเทสใส่ในห้องเท่านั้น, ไม่ให้ผู้อื่นเช่าแทน)</span>
+            <span>{t('product.iAccept')} <span className="font-medium text-brand-purple">{t('product.agreeRules')}</span> {t('product.agreeRulesRest')}</span>
           </label>
           <label className="flex items-start gap-2 text-xs text-gray-600">
             <input type="checkbox" checked={agree2} onChange={(e) => setAgree2(e.target.checked)} className="mt-0.5 accent-brand-purple" />
-            <span>ยอมรับ <span className="font-medium text-brand-purple">ตารางค่าปรับมาตรฐาน Cosaki</span> (เสียหาย/ส่งช้า/ของหาย)</span>
+            <span>{t('common.confirm')} <span className="font-medium text-brand-purple">{t('product.agreePenalty')}</span> {t('product.agreePenaltyRest')}</span>
           </label>
         </div>
 
         {/* Reviews */}
         <div className="mt-5">
           <h3 className="font-semibold text-gray-900">
-            Reviews {reviews.length > 0 && <span className="text-sm font-normal text-gray-400">({reviews.length})</span>}
+            {t('product.reviews')} {reviews.length > 0 && <span className="text-sm font-normal text-gray-400">({reviews.length})</span>}
           </h3>
           {reviews.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-400">No reviews yet — be the first to rent &amp; review.</p>
+            <p className="mt-2 text-sm text-gray-400">{t('product.noReviews')}</p>
           ) : (
             <div className="mt-3 space-y-3">
               {reviews.slice(0, 5).map((r) => (
@@ -331,14 +333,14 @@ export default function ProductDetail() {
                   </div>
                   {(r.bust || r.waist || r.hip || r.height) && (
                     <p className="mt-0.5 text-[11px] text-gray-400">
-                      สัดส่วนผู้รีวิว: {[r.bust && `อก ${r.bust}`, r.waist && `เอว ${r.waist}`, r.hip && `สะโพก ${r.hip}`, r.height && `สูง ${r.height}`].filter(Boolean).join(' · ')}
+                      {t('product.reviewerMeasure')} {[r.bust && `${t('edit.bust')} ${r.bust}`, r.waist && `${t('edit.waist')} ${r.waist}`, r.hip && `${t('edit.hip')} ${r.hip}`, r.height && `${t('edit.height')} ${r.height}`].filter(Boolean).join(' · ')}
                     </p>
                   )}
                   {r.comment && <p className="mt-1 text-sm text-gray-600">{r.comment}</p>}
                   {r.tags?.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
-                      {r.tags.map((t) => (
-                        <span key={t} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-brand-purple">{t}</span>
+                      {r.tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-brand-purple">{tag}</span>
                       ))}
                     </div>
                   )}
@@ -353,15 +355,15 @@ export default function ProductDetail() {
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-xs text-gray-400">{rateType === 'private' ? 'ไพรเวท' : 'เทสที่บ้าน'}</span>
-            <p className="text-lg font-bold text-brand-purple">฿{selectedRate}<span className="text-sm font-normal text-gray-400"> / ครั้ง</span></p>
+            <span className="text-xs text-gray-400">{rateType === 'private' ? t('common.private_rate') : t('common.test_rate')}</span>
+            <p className="text-lg font-bold text-brand-purple">฿{selectedRate}<span className="text-sm font-normal text-gray-400"> {t('common.perUse')}</span></p>
           </div>
           {user?.id && item.shop_owner_id === user.id ? (
-            <Button className="w-44" disabled>นี่คือสินค้าของร้านคุณ</Button>
+            <Button className="w-44" disabled>{t('product.ownItem')}</Button>
           ) : (
             <Button className="w-40" disabled={!agree1 || !agree2}
               onClick={() => requireAuth(() => navigate(`/items/${item.id}/dates`, { state: { rateType, item } }))}>
-              {(!agree1 || !agree2) ? 'ยอมรับข้อตกลง' : 'Book Now'}
+              {(!agree1 || !agree2) ? t('product.accept') : t('product.bookNow')}
             </Button>
           )}
         </div>

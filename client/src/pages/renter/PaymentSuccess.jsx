@@ -1,11 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Shield, CheckCircle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button';
 import { getBooking } from '@/api/bookings';
 import { format } from 'date-fns';
 
 export default function PaymentSuccess() {
+  const { t } = useTranslation();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
@@ -29,27 +31,25 @@ export default function PaymentSuccess() {
         </div>
       </div>
 
-      <h1 className="mt-6 text-center text-3xl font-bold text-gray-900">Payment Successful!</h1>
-      <p className="mt-2 text-center text-sm text-gray-500">
-        Your rental is confirmed. The payment is held in escrow and released to the shop once the return is confirmed.
-      </p>
+      <h1 className="mt-6 text-center text-3xl font-bold text-gray-900">{t('payment.successTitle')}</h1>
+      <p className="mt-2 text-center text-sm text-gray-500">{t('payment.successDesc')}</p>
 
       {/* Order card */}
       {booking && (
         <div className="mt-6 rounded-2xl border border-gray-100 p-4 shadow-sm">
           <div className="flex justify-between text-xs">
-            <span className="text-gray-400 uppercase tracking-wider">Order Reference</span>
+            <span className="text-gray-400 uppercase tracking-wider">{t('payment.orderRef')}</span>
             <span className="font-bold text-brand-purple">#CSK-{booking.id.slice(0,8).toUpperCase()}</span>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wider">Rental Period</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wider">{t('payment.rentalPeriod')}</p>
               <p className="mt-1 text-sm font-semibold text-gray-800 flex items-center gap-1">
                 📅 {booking.rental_start ? format(new Date(booking.rental_start), 'MMM d') : '—'} – {booking.rental_end ? format(new Date(booking.rental_end), 'MMM d') : '—'}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wider">Total Paid</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wider">{t('payment.totalPaid')}</p>
               <p className="mt-1 text-sm font-semibold text-gray-800 flex items-center gap-1">
                 💳 ฿{booking.total_amount}
               </p>
@@ -58,30 +58,21 @@ export default function PaymentSuccess() {
           <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 p-3">
             <Shield size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-semibold text-amber-700">Buyer Protection Active</p>
-              <p className="text-xs text-amber-600 mt-0.5">Your funds are protected by our satisfaction guarantee and secure rental insurance.</p>
+              <p className="text-xs font-semibold text-amber-700">{t('payment.protectionActive')}</p>
+              <p className="text-xs text-amber-600 mt-0.5">{t('payment.protectionDesc')}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Badges */}
-      <div className="mt-4 flex justify-center gap-3">
-        {['✅ VERIFIED STYLIST', '🚀 PRIORITY SHIP'].map((b) => (
-          <span key={b} className="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600">{b}</span>
-        ))}
-      </div>
-
       <Button className="mt-6 w-full" onClick={() => navigate(`/bookings/${bookingId}/tracking`)}>
-        Track Order
+        {t('payment.trackOrder')}
       </Button>
       <Button variant="secondary" className="mt-3 w-full" onClick={() => navigate('/home')}>
-        Back to Home
+        {t('payment.backHome')}
       </Button>
 
-      <p className="mt-4 mb-8 text-center text-xs text-gray-400">
-        A confirmation email with the rental agreement has been sent to your registered address.
-      </p>
+      <p className="mt-4 mb-8 text-center text-xs text-gray-400">{t('payment.emailSent')}</p>
     </div>
   );
 }

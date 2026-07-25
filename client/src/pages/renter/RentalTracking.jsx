@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Package, Truck, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -13,15 +14,16 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 const STEPS = [
-  { key: 'escrowed',  label: 'Payment Confirmed',  icon: CheckCircle, desc: 'Escrow secured' },
-  { key: 'shipped',   label: 'Item Shipped',         icon: Truck,        desc: 'On the way to you' },
-  { key: 'returned',  label: 'Item Returned',        icon: Package,      desc: 'Awaiting inspection' },
-  { key: 'completed', label: 'Completed',            icon: CheckCircle,  desc: 'Escrow released' },
+  { key: 'escrowed',  label: 'tracking.paymentConfirmed', icon: CheckCircle, desc: 'tracking.escrowSecured' },
+  { key: 'shipped',   label: 'tracking.itemShipped',      icon: Truck,       desc: 'tracking.onTheWay' },
+  { key: 'returned',  label: 'tracking.itemReturned',     icon: Package,     desc: 'tracking.awaitInspect' },
+  { key: 'completed', label: 'tracking.completedStep',    icon: CheckCircle, desc: 'tracking.escrowReleased' },
 ];
 
 const ORDER = ['escrowed','shipped','returned','completed'];
 
 export default function RentalTracking() {
+  const { t } = useTranslation();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
@@ -39,23 +41,23 @@ export default function RentalTracking() {
     try {
       await payBill(billId);
       setBills((list) => list.filter((b) => b.id !== billId));
-      toast.success('ชำระบิลค่าปรับแล้ว');
+      toast.success(t('tracking.billPaid'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ชำระไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('tracking.payFailed'));
     }
   };
 
   const currentIdx = booking ? ORDER.indexOf(booking.status) : -1;
 
   const handleDispute = async () => {
-    const reason = window.prompt('Describe the issue:');
+    const reason = window.prompt(t('tracking.describeIssue'));
     if (!reason) return;
     try {
       await createDispute(bookingId, reason);
-      toast.success('Dispute opened — our team will review within 24h');
+      toast.success(t('tracking.disputeOpened'));
       setBooking((b) => ({ ...b, status: 'disputed' }));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not open dispute');
+      toast.error(err.response?.data?.message || t('tracking.disputeFailed'));
     }
   };
 
@@ -65,20 +67,20 @@ export default function RentalTracking() {
       await payBalance(bookingId);
       const { data } = await getBooking(bookingId);
       setBooking(data.data.booking);
-      toast.success('ชำระยอดคงเหลือสำเร็จ');
+      toast.success(t('tracking.balancePaid'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ชำระไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('tracking.payFailed'));
     } finally { setLoading(false); }
   };
 
   const handleCancel = async () => {
-    if (!window.confirm('ยกเลิกการจอง? ค่าจองคิว ฿100 ไม่คืน')) return;
+    if (!window.confirm(t('tracking.cancelConfirm'))) return;
     try {
       const { data } = await cancelBooking(bookingId);
-      toast.success(`ยกเลิกแล้ว — คืนเงิน ฿${Number(data.data.refunded).toFixed(2)}`);
+      toast.success(t('tracking.cancelledRefund', { amount: Number(data.data.refunded).toFixed(2) }));
       setBooking((b) => ({ ...b, status: 'cancelled' }));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'ยกเลิกไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('tracking.cancelFailed'));
     }
   };
 
@@ -87,9 +89,9 @@ export default function RentalTracking() {
       setLoading(true);
       await updateStatus(bookingId, 'returned');
       setBooking((b) => ({ ...b, status: 'returned' }));
-      toast.success('Return confirmed!');
+      toast.success(t('tracking.returnConfirmed'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error');
+      toast.error(err.response?.data?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -103,17 +105,17 @@ export default function RentalTracking() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
-      <PageHeader title="Rental Tracking" />
+      <PageHeader title={t('header.tracking')} />
       <div className="px-4 pb-10 space-y-4">
 
         {/* Order card */}
         <div className="rounded-2xl bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wider">Order</p>
+              <p className="text-xs text-gray-400 uppercase tracking-wider">{t('tracking.order')}</p>
               <p className="font-bold text-brand-purple">#CSK-{booking.id.slice(0,8).toUpperCase()}</p>
             </div>
-            <Badge status={booking.status} label={booking.status.replace('_',' ').toUpperCase()} />
+            <Badge status={booking.status} />
           </div>
           <div className="mt-3 flex items-center gap-3">
             <div className="h-14 w-14 overflow-hidden rounded-xl flex-shrink-0">
@@ -131,7 +133,7 @@ export default function RentalTracking() {
 
         {/* Progress steps */}
         <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="mb-4 text-sm font-semibold text-gray-700">Shipment Status</p>
+          <p className="mb-4 text-sm font-semibold text-gray-700">{t('tracking.shipmentStatus')}</p>
           <div className="space-y-4">
             {STEPS.map((step, i) => {
               const done    = currentIdx >= i;
@@ -147,8 +149,8 @@ export default function RentalTracking() {
                     )}
                   </div>
                   <div className="pb-4">
-                    <p className={`text-sm font-semibold ${done ? 'text-gray-800' : 'text-gray-400'}`}>{step.label}</p>
-                    <p className={`text-xs mt-0.5 ${current ? 'text-brand-purple font-medium' : 'text-gray-400'}`}>{step.desc}</p>
+                    <p className={`text-sm font-semibold ${done ? 'text-gray-800' : 'text-gray-400'}`}>{t(step.label)}</p>
+                    <p className={`text-xs mt-0.5 ${current ? 'text-brand-purple font-medium' : 'text-gray-400'}`}>{t(step.desc)}</p>
                   </div>
                 </div>
               );
@@ -160,11 +162,11 @@ export default function RentalTracking() {
         {booking.status === 'shipped' && (
           <div className="space-y-3">
             <Button className="w-full" onClick={handleConfirmReturn} loading={loading}>
-              Confirm Item Received
+              {t('tracking.confirmReceived')}
             </Button>
             <button onClick={() => navigate(`/bookings/${bookingId}/return-upload`)}
               className="flex w-full items-center justify-between rounded-2xl bg-white p-4 shadow-sm text-sm font-medium text-gray-700">
-              Upload Return Photos <ChevronRight size={16} className="text-gray-400" />
+              {t('tracking.uploadPhotos')} <ChevronRight size={16} className="text-gray-400" />
             </button>
           </div>
         )}
@@ -173,8 +175,8 @@ export default function RentalTracking() {
           <div className="rounded-2xl bg-red-50 p-4 flex items-start gap-3">
             <AlertCircle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-red-700">Dispute Under Review</p>
-              <p className="text-xs text-red-500 mt-0.5">Our team will resolve this within 24–48 hours.</p>
+              <p className="text-sm font-semibold text-red-700">{t('tracking.disputeReview')}</p>
+              <p className="text-xs text-red-500 mt-0.5">{t('tracking.disputeReviewDesc')}</p>
             </div>
           </div>
         )}
@@ -182,24 +184,24 @@ export default function RentalTracking() {
         {/* Pending penalty bills (§3.4) */}
         {bills.map((bill) => (
           <div key={bill.id} className="rounded-2xl bg-red-50 border border-red-100 p-4">
-            <p className="text-sm font-semibold text-red-700">🧾 บิลค่าปรับ ฿{Number(bill.amount).toFixed(2)}</p>
+            <p className="text-sm font-semibold text-red-700">{t('tracking.penaltyBillAmount', { amount: Number(bill.amount).toFixed(2) })}</p>
             <p className="text-xs text-red-500 mt-0.5">{bill.reason}</p>
-            <Button className="mt-3 w-full" onClick={() => handlePayBill(bill.id)}>ชำระค่าปรับ</Button>
+            <Button className="mt-3 w-full" onClick={() => handlePayBill(bill.id)}>{t('tracking.payBill')}</Button>
           </div>
         ))}
 
         {/* Reserved — balance due */}
         {booking.status === 'pending_payment' && Number(booking.balance_due) > 0 && (
           <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
-            <p className="text-sm font-semibold text-amber-800">จองคิวแล้ว — ค้างชำระ ฿{Number(booking.balance_due).toFixed(2)}</p>
-            <p className="text-xs text-amber-600 mt-0.5">ต้องชำระให้ครบก่อนวันจัดส่ง</p>
-            <Button className="mt-3 w-full" loading={loading} onClick={handlePayBalance}>จ่ายส่วนที่เหลือ</Button>
+            <p className="text-sm font-semibold text-amber-800">{t('tracking.reservedBalance', { amount: Number(booking.balance_due).toFixed(2) })}</p>
+            <p className="text-xs text-amber-600 mt-0.5">{t('tracking.payBeforeShip')}</p>
+            <Button className="mt-3 w-full" loading={loading} onClick={handlePayBalance}>{t('tracking.payBalance')}</Button>
           </div>
         )}
 
         {booking.status === 'completed' && (
           <Button className="w-full" onClick={() => navigate(`/bookings/${bookingId}/review`)}>
-            Leave a Review
+            {t('tracking.leaveReview')}
           </Button>
         )}
 
@@ -209,18 +211,18 @@ export default function RentalTracking() {
             {!booking.reschedule_used && (
               <button onClick={() => navigate(`/items/${booking.item_id}/dates`, { state: { rescheduleBookingId: bookingId } })}
                 className="flex-1 rounded-2xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700">
-                เลื่อนคิว (ฟรี 1 ครั้ง)
+                {t('tracking.rescheduleFree')}
               </button>
             )}
             <button onClick={handleCancel} className="flex-1 rounded-2xl border border-red-200 bg-white py-3 text-sm font-medium text-red-500">
-              ยกเลิกการจอง
+              {t('tracking.cancel')}
             </button>
           </div>
         )}
 
         {['escrowed','shipped','returned'].includes(booking.status) && (
           <button onClick={handleDispute} className="w-full text-center text-sm font-semibold text-red-500 py-2">
-            Report an Issue
+            {t('tracking.reportProblem')}
           </button>
         )}
       </div>

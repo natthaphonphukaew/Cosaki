@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button';
 import { updateMe } from '@/api/users';
 import useAuthStore from '@/store/authStore';
@@ -14,6 +15,7 @@ const FANDOMS = [
 
 // Mandatory fandom pick (§1.3) — powers the Home feed ordering.
 export default function FandomOnboarding() {
+  const { t } = useTranslation();
   const [picked, setPicked] = useState([]);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
@@ -23,23 +25,23 @@ export default function FandomOnboarding() {
     setPicked((p) => (p.includes(f) ? p.filter((x) => x !== f) : [...p, f]));
 
   const handleSave = async () => {
-    if (!picked.length) return toast.error('เลือกอย่างน้อย 1 ด้อม');
+    if (!picked.length) return toast.error(t('onboarding.fandomMin'));
     try {
       setBusy(true);
       await updateMe({ fandoms: picked });
       updateUser({ fandoms: picked });
       navigate('/home');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'บันทึกไม่สำเร็จ');
+      toast.error(err.response?.data?.message || t('onboarding.fandomSaveFailed'));
     } finally { setBusy(false); }
   };
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
       <div className="px-6 pt-14 pb-32">
-        <h1 className="text-2xl font-bold text-gray-900">คุณอยู่ด้อมไหน?</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('onboarding.fandomQ')}</h1>
         <p className="mt-2 text-sm text-gray-500">
-          เลือกอย่างน้อย 1 ด้อมที่สนใจ — เราจะจัดหน้า Home ให้ตรงใจคุณ
+          {t('onboarding.fandomHint')}
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
@@ -62,7 +64,7 @@ export default function FandomOnboarding() {
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" loading={busy} disabled={!picked.length} onClick={handleSave}>
-          {picked.length ? `เริ่มใช้งาน (เลือกแล้ว ${picked.length})` : 'เลือกอย่างน้อย 1 ด้อม'}
+          {picked.length ? t('onboarding.fandomStartCount', { n: picked.length }) : t('onboarding.fandomMin')}
         </Button>
       </div>
     </div>
