@@ -16,13 +16,11 @@ const slotStillFree = async (booking) => {
   return conflicts.length === 0;
 };
 
-// POST /payments/charge — mock PromptPay/Omise charge. Supports split payment:
-//   pay_mode 'full'    → charge the whole total → escrowed.
-//   pay_mode 'deposit' → charge only the ฿100 booking fee → "reserved"
-//                        (stays pending_payment with a balance due).
+// POST /payments/charge — mock PromptPay/Omise charge. Charges the full total
+// (rental + protection + shipping) and escrows the booking → claims the slot.
 const createCharge = async (req, res, next) => {
   try {
-    const { booking_id, token, pay_mode = 'full', shipping_address_id } = req.body;
+    const { booking_id, token, shipping_address_id } = req.body;
 
     const { rows: bookings } = await db.query(
       'SELECT * FROM bookings WHERE id = $1 AND renter_id = $2',
@@ -45,44 +43,36 @@ const createCharge = async (req, res, next) => {
       if (addr.length) shippingSnapshot = addr[0];
     }
 
-    // Paying in full escrows the booking → claims the slot now. Re-check that no
-    // other paid booking grabbed this item's window (+freeze) since date select.
-    if (pay_mode !== 'deposit' && !(await slotStillFree(booking))) {
+    // Paying escrows the booking → claims the slot now. Re-check that no other paid
+    // booking grabbed this item's window (+freeze) since date select.
+    if (!(await slotStillFree(booking))) {
       return error(res, 'ช่วงวันนี้เพิ่งถูกจองไปแล้ว กรุณาเลือกวันใหม่', 409);
     }
 
-    const total  = Number(booking.total_amount);
-    const charge = pay_mode === 'deposit' ? Number(booking.booking_fee) : total;
+    const total = Number(booking.total_amount);
     const mockGatewayRef = `ch_mock_${Date.now()}`;
 
     const { rows } = await db.query(
       `INSERT INTO payments (booking_id, gateway_ref, amount, escrow_status, paid_at)
        VALUES ($1, $2, $3, 'held', NOW()) RETURNING *`,
-      [booking_id, mockGatewayRef, charge]
+      [booking_id, mockGatewayRef, total]
     );
-
-    const amountPaid = charge;
-    const balanceDue = Number((total - amountPaid).toFixed(2));
-    const fullyPaid  = balanceDue <= 0;
 
     await db.query(
       `UPDATE bookings SET
-         pay_mode = $1, amount_paid = $2, balance_due = $3,
-         status = CASE WHEN $4 THEN 'escrowed'::booking_status ELSE 'pending_payment'::booking_status END,
-         shipping_address = COALESCE($6, shipping_address),
+         pay_mode = 'full', amount_paid = $1, balance_due = 0,
+         status = 'escrowed'::booking_status,
+         shipping_address = COALESCE($3, shipping_address),
          updated_at = NOW()
-       WHERE id = $5`,
-      [pay_mode, amountPaid, balanceDue, fullyPaid, booking_id,
-       shippingSnapshot ? JSON.stringify(shippingSnapshot) : null]
+       WHERE id = $2`,
+      [total, booking_id, shippingSnapshot ? JSON.stringify(shippingSnapshot) : null]
     );
 
-    if (fullyPaid) {
-      const ownerId = await shopOwnerId(booking.shop_id);
-      await notify(ownerId, 'payment_received', 'Payment received',
-        'Funds are held in escrow — ship the item to start the rental.', booking_id);
-    }
+    const ownerId = await shopOwnerId(booking.shop_id);
+    await notify(ownerId, 'payment_received', 'Payment received',
+      'Funds are held in escrow — ship the item to start the rental.', booking_id);
 
-    return success(res, { payment: rows[0], balance_due: balanceDue, fully_paid: fullyPaid }, 201);
+    return success(res, { payment: rows[0], balance_due: 0, fully_paid: true }, 201);
   } catch (err) {
     next(err);
   }

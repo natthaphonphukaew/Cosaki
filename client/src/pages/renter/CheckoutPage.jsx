@@ -21,7 +21,6 @@ export default function CheckoutPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [pickOpen, setPickOpen] = useState(false);
   const [coupon, setCoupon]   = useState('');
-  const [payMode, setPayMode] = useState('full'); // full | deposit
   const [applying, setApplying] = useState(false);
 
   const load = () => getBooking(bookingId).then(({ data }) => {
@@ -67,15 +66,12 @@ export default function CheckoutPage() {
   const end   = booking.rental_end   ? format(new Date(booking.rental_end),   'MMM d') : '—';
   const days  = booking.rental_start && booking.rental_end
     ? differenceInCalendarDays(new Date(booking.rental_end), new Date(booking.rental_start)) : 0;
-  const total   = Number(booking.total_amount);
-  const bookingFee = Number(booking.booking_fee || 100);
-  const dueToday = payMode === 'deposit' ? bookingFee : total;
-  const dueLater = payMode === 'deposit' ? total - bookingFee : 0;
+  const total = Number(booking.total_amount);
 
   const goPay = () => {
     if (!selectedAddress) return toast.error(t('checkout.selectAddressFirst'));
     navigate(`/bookings/${bookingId}/pay`, {
-      state: { payMode, amount: dueToday, shipping_address_id: selectedAddress.id },
+      state: { amount: total, shipping_address_id: selectedAddress.id },
     });
   };
 
@@ -171,23 +167,6 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Payment mode */}
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">{t('checkout.payMode')}</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setPayMode('full')}
-              className={`rounded-xl p-3 text-left text-sm ${payMode === 'full' ? 'border-2 border-brand-purple bg-brand-light/30' : 'border border-gray-200'}`}>
-              <p className="font-semibold text-gray-800">{t('checkout.payFull')}</p>
-              <p className="text-xs text-gray-400">฿{total.toFixed(2)}</p>
-            </button>
-            <button onClick={() => setPayMode('deposit')}
-              className={`rounded-xl p-3 text-left text-sm ${payMode === 'deposit' ? 'border-2 border-brand-purple bg-brand-light/30' : 'border border-gray-200'}`}>
-              <p className="font-semibold text-gray-800">{t('checkout.payDeposit')}</p>
-              <p className="text-xs text-gray-400">฿{bookingFee.toFixed(2)} · {t('checkout.balance', { amount: (total - bookingFee).toFixed(2) })}</p>
-            </button>
-          </div>
-        </div>
-
         {/* Payment summary */}
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">{t('checkout.summary')}</p>
@@ -210,7 +189,6 @@ export default function CheckoutPage() {
               <Row label={t('checkout.shipping')} value={booking.shipping_fee || 0} />
             )}
 
-            <Row label={t('checkout.bookingFee')} value={bookingFee} />
             {Number(booking.discount) > 0 && (
               <div className="flex justify-between text-sm text-green-600">
                 <span>{t('checkout.discount')} ({booking.coupon_code})</span>
@@ -221,11 +199,6 @@ export default function CheckoutPage() {
               <span className="font-semibold text-gray-800">{t('checkout.total')}</span>
               <span className="text-lg font-bold text-brand-purple">฿{total.toFixed(2)}</span>
             </div>
-            {payMode === 'deposit' && (
-              <div className="rounded-xl bg-amber-50 p-2 text-xs text-amber-700">
-                {t('checkout.payToday', { today: dueToday.toFixed(2), later: dueLater.toFixed(2) })}
-              </div>
-            )}
           </div>
         </div>
 
@@ -236,7 +209,7 @@ export default function CheckoutPage() {
 
       <div className="fixed bottom-0 left-1/2 w-full max-w-[390px] -translate-x-1/2 border-t border-gray-100 bg-white p-4">
         <Button className="w-full" onClick={goPay} icon={<Lock size={16} />}>
-          {t('checkout.payViaQr', { amount: dueToday.toFixed(2) })}
+          {t('checkout.payViaQr', { amount: total.toFixed(2) })}
         </Button>
       </div>
     </div>
