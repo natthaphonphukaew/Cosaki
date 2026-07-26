@@ -7,11 +7,12 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { getMe, updateMe } from '@/api/users';
 import useAuthStore from '@/store/authStore';
-import { fileToDataUrl } from '@/utils/image';
+import useImageCropper from '@/hooks/useImageCropper';
 import toast from 'react-hot-toast';
 
 export default function EditProfile() {
   const { t } = useTranslation();
+  const { open, element } = useImageCropper();
   const { user, updateUser } = useAuthStore();
   const navigate = useNavigate();
   const [name, setName]     = useState(user?.display_name || '');
@@ -30,9 +31,12 @@ export default function EditProfile() {
 
   const pickAvatar = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    try { setAvatar(await fileToDataUrl(file, 400)); }
-    catch { toast.error(t('edit.photoFailed')); }
+    try {
+      const url = await open(file, { aspect: 1, round: true, maxDim: 400 });
+      if (url) setAvatar(url);
+    } catch { toast.error(t('edit.photoFailed')); }
   };
 
   const num = (v) => (v === '' || v === null ? null : Number(v));
@@ -55,6 +59,7 @@ export default function EditProfile() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {element}
       <PageHeader title={t('header.editProfile')} />
       <div className="px-4 pt-4 pb-10 space-y-5">
         <div className="flex flex-col items-center">

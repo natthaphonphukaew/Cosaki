@@ -7,12 +7,13 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import useAuthStore from '@/store/authStore';
 import { createShop } from '@/api/shops';
-import { fileToDataUrl } from '@/utils/image';
+import useImageCropper from '@/hooks/useImageCropper';
 import toast from 'react-hot-toast';
 
 export default function ShopOnboarding() {
   const { t } = useTranslation();
   const CATEGORIES = [t('seller.shopOnboard.catAnime'), t('seller.shopOnboard.catGame'), t('seller.shopOnboard.catMovie'), t('seller.shopOnboard.catKpop'), t('seller.shopOnboard.catOriginal'), t('seller.shopOnboard.catProps')];
+  const { open, element } = useImageCropper();
   const navigate = useNavigate();
   const { applyShopCreated } = useAuthStore();
   const [step, setStep]     = useState(0);   // 0 = details, 1 = success
@@ -30,11 +31,13 @@ export default function ShopOnboarding() {
       ? form.categories.filter((x) => x !== c)
       : [...form.categories, c]);
 
-  const pick = (setter) => async (e) => {
+  const pick = (setter, cropOpts) => async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     try {
-      setter(await fileToDataUrl(file));
+      const url = await open(file, cropOpts);
+      if (url) setter(url);
     } catch {
       toast.error(t('seller.shopOnboard.photoReadFailed'));
     }
@@ -82,6 +85,7 @@ export default function ShopOnboarding() {
   /* ── Form ── */
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {element}
       <PageHeader title={t('header.openShop')} />
 
       <div className="pb-32">
@@ -95,7 +99,7 @@ export default function ShopOnboarding() {
                   <span className="text-xs font-medium">{t('seller.shopOnboard.addCoverPhoto')}</span>
                 </div>
             }
-            <input type="file" accept="image/*" className="hidden" onChange={pick(setCover)} />
+            <input type="file" accept="image/*" className="hidden" onChange={pick(setCover, { aspect: 16 / 9 })} />
           </label>
 
           {/* Logo overlapping bottom-left */}
@@ -107,7 +111,7 @@ export default function ShopOnboarding() {
                   <span className="text-[9px] font-medium">{t('seller.shopOnboard.logo')}</span>
                 </div>
             }
-            <input type="file" accept="image/*" className="hidden" onChange={pick(setLogo)} />
+            <input type="file" accept="image/*" className="hidden" onChange={pick(setLogo, { aspect: 1 })} />
           </label>
         </div>
 

@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
 import { getItem, updateItem, deleteItem } from '@/api/items';
-import { fileToDataUrl } from '@/utils/image';
+import useImageCropper from '@/hooks/useImageCropper';
 import { COURIERS } from '@/constants/couriers';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,7 @@ const FANDOMS = ['Genshin Impact', 'Arcane', 'Valorant', 'Demon Slayer', 'Spy x 
 
 export default function EditProduct() {
   const { t } = useTranslation();
+  const { open, element } = useImageCropper();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -58,9 +59,12 @@ export default function EditProduct() {
 
   const addPhotos = async (e) => {
     const files = Array.from(e.target.files).slice(0, 9 - photos.length);
+    e.target.value = '';
     try {
-      const urls = await Promise.all(files.map((f) => fileToDataUrl(f)));
-      setPhotos((p) => [...p, ...urls].slice(0, 9));
+      for (const f of files) {
+        const url = await open(f, { aspect: 1 });
+        if (url) setPhotos((p) => (p.length >= 9 ? p : [...p, url]));
+      }
     } catch { toast.error(t('seller.form.photoReadFailed')); }
   };
 
@@ -106,6 +110,7 @@ export default function EditProduct() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {element}
       <PageHeader
         title={t('seller.form.editListing')}
         right={<button onClick={handleDelete} className="flex h-9 w-9 items-center justify-center rounded-full text-red-500 active:bg-red-50"><Trash2 size={18} /></button>}

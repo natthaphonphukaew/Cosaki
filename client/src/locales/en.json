@@ -138,6 +138,7 @@
     "noConversations": "No conversations yet", "startHint": "Tap \"Chat with shop\" on an item page to start", "startConversation": "Start the conversation…",
     "typeMessage": "Type a message…", "loadFailed": "Couldn't load chat", "sendFailed": "Couldn't send message",
     "roomEmpty": "Start the conversation — ask about the item or your order", "attachOrder": "Attach order:" },
+  "cropper": { "title": "Adjust photo", "apply": "Use photo", "zoom": "Zoom", "free": "Free", "dragHint": "Drag to reposition · slide to zoom" },
   "profile": {
     "title": "Cosaki", "verified": "✓ Identity Verified", "unverified": "Identity not verified",
     "trust_score": "Trust Score", "my_shop": "My Shop", "manage_shop": "Manage listings, orders & earnings",

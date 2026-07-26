@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input';
 import ThaiRegionPicker from '@/components/ui/ThaiRegionPicker';
 import useAuthStore from '@/store/authStore';
 import { getMyShop, updateShop } from '@/api/shops';
-import { fileToDataUrl } from '@/utils/image';
+import useImageCropper from '@/hooks/useImageCropper';
 import { COURIERS } from '@/constants/couriers';
 import { THAI_BANKS } from '@/constants/banks';
 import toast from 'react-hot-toast';
@@ -18,6 +18,7 @@ export default function ShopProfileEdit() {
   const CATEGORIES = [t('seller.shopOnboard.catAnime'), t('seller.shopOnboard.catGame'), t('seller.shopOnboard.catMovie'), t('seller.shopOnboard.catKpop'), t('seller.shopOnboard.catOriginal'), t('seller.shopOnboard.catProps')];
   const navigate = useNavigate();
   const { setShop: setStoreShop } = useAuthStore();
+  const { open, element } = useImageCropper();
   const [loading, setLoading] = useState(false);
   const [ready, setReady]     = useState(false);
   const [cover, setCover]     = useState(null);
@@ -65,10 +66,14 @@ export default function ShopProfileEdit() {
     }).catch(() => toast.error(t('seller.shopEdit.loadFailed'))).finally(() => setReady(true));
   }, []);
 
-  const pick = (setter) => async (e) => {
+  const pick = (setter, cropOpts) => async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    try { setter(await fileToDataUrl(file)); }
+    try {
+      const url = await open(file, cropOpts);
+      if (url) setter(url);
+    }
     catch { toast.error(t('seller.shopEdit.photoReadFailed')); }
   };
 
@@ -120,6 +125,7 @@ export default function ShopProfileEdit() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {element}
       <PageHeader title={t('header.shopEdit')} />
 
       <div className="pb-32">
@@ -132,7 +138,7 @@ export default function ShopProfileEdit() {
                   <ImagePlus size={26} />
                   <span className="text-xs font-medium">{t('seller.shopOnboard.addCoverPhoto')}</span>
                 </div>}
-            <input type="file" accept="image/*" className="hidden" onChange={pick(setCover)} />
+            <input type="file" accept="image/*" className="hidden" onChange={pick(setCover, { aspect: 16 / 9 })} />
           </label>
           <label className="absolute -bottom-8 left-8 flex h-20 w-20 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-4 border-surface-base bg-white shadow-md">
             {logo
@@ -141,7 +147,7 @@ export default function ShopProfileEdit() {
                   <Camera size={20} />
                   <span className="text-[9px] font-medium">{t('seller.shopOnboard.logo')}</span>
                 </div>}
-            <input type="file" accept="image/*" className="hidden" onChange={pick(setLogo)} />
+            <input type="file" accept="image/*" className="hidden" onChange={pick(setLogo, { aspect: 1 })} />
           </label>
         </div>
 
@@ -242,7 +248,7 @@ export default function ShopProfileEdit() {
                     <ImagePlus size={22} />
                     <span className="text-xs font-medium">{t('seller.shopEdit.addRulesImage')}</span>
                   </div>}
-              <input type="file" accept="image/*" className="hidden" onChange={pick(setRulesImage)} />
+              <input type="file" accept="image/*" className="hidden" onChange={pick(setRulesImage, { aspect: null })} />
             </label>
             {rulesImage && (
               <button onClick={() => setRulesImage(null)} className="mt-2 text-xs text-gray-400 underline">{t('seller.shopEdit.removeRulesImage')}</button>

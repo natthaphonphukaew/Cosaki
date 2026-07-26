@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import logoWordmark from '@/assets/logo-wordmark.png';
 
 export default function PageHeader({ title, onBack, right, transparent }) {
   const navigate = useNavigate();
@@ -13,7 +14,9 @@ export default function PageHeader({ title, onBack, right, transparent }) {
       >
         <ArrowLeft size={22} />
       </button>
-      <span className="text-base font-semibold text-brand-purple">{title || 'Cosaki'}</span>
+      {title
+        ? <span className="text-base font-semibold text-brand-purple">{title}</span>
+        : <img src={logoWordmark} alt="Cosaki" className="h-6 w-auto" />}
       {right && <div className="absolute right-4 flex items-center gap-2">{right}</div>}
     </header>
   );
