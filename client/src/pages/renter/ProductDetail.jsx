@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, Share2, Shield, Star, Truck, Zap } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ProductImage from '@/components/ui/ProductImage';
+import ImageLightbox from '@/components/ui/ImageLightbox';
 import { getItem, getAvailability } from '@/api/items';
 import { getShopReviews } from '@/api/reviews';
 import { openChat } from '@/api/chats';
@@ -38,6 +39,7 @@ export default function ProductDetail() {
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [slide, setSlide] = useState(0);
+  const [lightbox, setLightbox] = useState({ open: false, index: 0 });
   const [reviews, setReviews] = useState([]);
   const [faved, setFaved] = useState(false);
   const [rateType, setRateType] = useState('test');
@@ -104,6 +106,15 @@ export default function ProductDetail() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {item.image_urls?.length > 0 && (
+        <ImageLightbox
+          open={lightbox.open}
+          index={lightbox.index}
+          slides={item.image_urls.map((u) => ({ src: u }))}
+          onClose={() => setLightbox((s) => ({ ...s, open: false }))}
+          onIndexChange={(i) => setLightbox((s) => ({ ...s, index: i }))}
+        />
+      )}
       {/* Hero carousel */}
       <div className="relative h-72">
         {(() => {
@@ -111,11 +122,17 @@ export default function ProductDetail() {
           return (
             <div onScroll={onScroll} className="flex h-full snap-x snap-mandatory overflow-x-auto hide-scrollbar">
               {imgs.map((url, i) => (
-                <div key={i} className="h-full w-full flex-shrink-0 snap-center">
-                  <ProductImage
-                    item={url ? { image_urls: [url], name: item.name } : item}
-                    emojiClassName="text-8xl"
-                  />
+                <div key={i} className="relative h-full w-full flex-shrink-0 snap-center overflow-hidden bg-gray-100">
+                  {url ? (
+                    // Fit the whole photo (no crop/distortion) over a blurred copy that
+                    // fills the frame; tap to open the fullscreen zoomable viewer.
+                    <button type="button" onClick={() => setLightbox({ open: true, index: i })} className="block h-full w-full">
+                      <img src={url} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl" />
+                      <img src={url} alt={item.name} className="relative h-full w-full object-contain" />
+                    </button>
+                  ) : (
+                    <ProductImage item={item} emojiClassName="text-8xl" />
+                  )}
                 </div>
               ))}
             </div>

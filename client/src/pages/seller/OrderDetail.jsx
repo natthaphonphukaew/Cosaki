@@ -158,10 +158,12 @@ export default function OrderDetail() {
           <Row label={t('seller.order.rentalFee')} value={`฿${booking.rental_fee}`} />
           <Row label={t('seller.order.protectionFee')} value={`฿${booking.cosaki_fee}`} />
           {booking.shipping_fee != null && <Row label={t('seller.order.shippingFee')} value={`฿${booking.shipping_fee}`} />}
-          <Row label={t('seller.order.bookingFee')} value={`฿${booking.booking_fee}`} />
           <div className="my-1 border-t border-gray-100" />
           <Row label={t('seller.order.customerPaid')} value={`฿${booking.total_amount}`} bold />
           <Row label={t('seller.order.shopReceives')} value={`฿${booking.seller_payout}`} />
+          {Number(booking.shipping_fee) > 0 && (
+            <p className="text-[11px] text-gray-400">{t('seller.order.inclShipping')}</p>
+          )}
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-purple-50 p-3">
             <ShieldCheck size={16} className="text-brand-purple" />
             <p className="text-xs text-purple-700">

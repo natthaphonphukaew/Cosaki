@@ -41,7 +41,7 @@ const applyCoupon = async (req, res, next) => {
     if (!coupons.length) return error(res, 'คูปองไม่ถูกต้องหรือหมดอายุ', 404);
     const coupon = coupons[0];
 
-    const subtotal = Number(b.rental_fee) + Number(b.cosaki_fee) + Number(b.shipping_fee) + Number(b.booking_fee);
+    const subtotal = Number(b.rental_fee) + Number(b.cosaki_fee) + Number(b.shipping_fee);
     if (subtotal < Number(coupon.min_spend)) {
       return error(res, `ยอดขั้นต่ำสำหรับคูปองนี้คือ ฿${coupon.min_spend}`, 422);
     }

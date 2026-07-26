@@ -6,10 +6,10 @@ const getShop = async (userId) => {
   return rows[0] || null;
 };
 
-// Earnings = sum of rental_fee from completed bookings; balance = earnings − payouts.
+// Earnings = sum of seller_payout from completed bookings; balance = earnings − payouts.
 const computeBalance = async (shopId) => {
-  // Earnings = seller payout (rental − 10% commission) of completed bookings
-  // + penalty bills the renters have paid (§3.4).
+  // Earnings = seller payout (rental − 10% commission + shipping) of completed
+  // bookings + penalty bills the renters have paid (§3.4).
   const { rows: [earn] } = await db.query(
     `SELECT COALESCE(SUM(seller_payout), 0)::numeric AS total
      FROM bookings WHERE shop_id = $1 AND status = 'completed'`,

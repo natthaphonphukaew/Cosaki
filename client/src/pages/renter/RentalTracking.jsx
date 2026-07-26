@@ -7,7 +7,6 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import ProductImage from '@/components/ui/ProductImage';
 import { getBooking, updateStatus, cancelBooking } from '@/api/bookings';
-import { payBalance } from '@/api/payments';
 import { createDispute } from '@/api/disputes';
 import { listBills, payBill } from '@/api/bills';
 import toast from 'react-hot-toast';
@@ -61,17 +60,6 @@ export default function RentalTracking() {
     }
   };
 
-  const handlePayBalance = async () => {
-    try {
-      setLoading(true);
-      await payBalance(bookingId);
-      const { data } = await getBooking(bookingId);
-      setBooking(data.data.booking);
-      toast.success(t('tracking.balancePaid'));
-    } catch (err) {
-      toast.error(err.response?.data?.message || t('tracking.payFailed'));
-    } finally { setLoading(false); }
-  };
 
   const handleCancel = async () => {
     if (!window.confirm(t('tracking.cancelConfirm'))) return;
@@ -189,15 +177,6 @@ export default function RentalTracking() {
             <Button className="mt-3 w-full" onClick={() => handlePayBill(bill.id)}>{t('tracking.payBill')}</Button>
           </div>
         ))}
-
-        {/* Reserved — balance due */}
-        {booking.status === 'pending_payment' && Number(booking.balance_due) > 0 && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
-            <p className="text-sm font-semibold text-amber-800">{t('tracking.reservedBalance', { amount: Number(booking.balance_due).toFixed(2) })}</p>
-            <p className="text-xs text-amber-600 mt-0.5">{t('tracking.payBeforeShip')}</p>
-            <Button className="mt-3 w-full" loading={loading} onClick={handlePayBalance}>{t('tracking.payBalance')}</Button>
-          </div>
-        )}
 
         {booking.status === 'completed' && (
           <Button className="w-full" onClick={() => navigate(`/bookings/${bookingId}/review`)}>

@@ -24,7 +24,6 @@ export default function PaymentQR() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
-  const payMode = state?.payMode || 'full';
   const amount = state?.amount;
   const shippingAddressId = state?.shipping_address_id || null;
   const [stage, setStage] = useState(0);   // 0 waiting, 1 paid, 2 confirmed
@@ -35,7 +34,7 @@ export default function PaymentQR() {
   const handlePaid = async () => {
     try {
       setLoading(true);
-      await createCharge(bookingId, payMode, shippingAddressId);   // mock webhook confirms payment
+      await createCharge(bookingId, shippingAddressId);   // mock webhook confirms payment
       setStage(1);
       setTimeout(() => setStage(2), 900);            // simulate shop auto-confirm
       setTimeout(() => navigate(`/bookings/${bookingId}/success`), 1700);

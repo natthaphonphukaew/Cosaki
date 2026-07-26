@@ -103,35 +103,35 @@ const createBooking = async (req, res, next) => {
     });
     if (conflicts.length) return error(res, 'ช่วงวันที่เลือกไม่ว่าง (ติดคิวเช่า/รอบพักผ้า)', 409);
 
-    // Money model (PRD §4.1): renter pays rental + 10% protection fee + shipping;
-    // seller receives rental − 10% commission. No deposit. Rate is flat per usage.
+    // Money model: renter pays rental + 10% protection fee + shipping. The shop
+    // ships the item itself (no courier integration), so the shipping fee passes
+    // through to the shop on top of rental − 10% commission. Flat rate per usage.
     const rate = rate_type === 'private'
       ? (item.private_rate ?? item.test_rate ?? item.daily_rate)
       : (item.test_rate ?? item.daily_rate);
     const rental_fee    = parseFloat(Number(rate).toFixed(2));
     const cosaki_fee    = parseFloat((rental_fee * 0.10).toFixed(2));   // → insurance fund
     const commission    = parseFloat((rental_fee * 0.10).toFixed(2));   // → platform revenue
-    const seller_payout = parseFloat((rental_fee - commission).toFixed(2));
     const shipping_fee  = express ? 0 : parseFloat(Number(item.shipping_fee || 0).toFixed(2));
+    const seller_payout = parseFloat((rental_fee - commission + shipping_fee).toFixed(2));
     const token = generateToken();
 
     // Determine initial status based on renter's KYC
     const { rows: [user] } = await db.query('SELECT kyc_status FROM users WHERE id = $1', [req.user.id]);
     const initialStatus = user.kyc_status === 'verified' ? 'pending_payment' : 'pending_kyc';
 
-    const booking_fee = 100;  // ค่าจองคิว (§5.2) — non-refundable, part of total.
     const { rows } = await db.query(
       `INSERT INTO bookings
          (shop_id, renter_id, item_id, rental_start, rental_end, status,
           payment_link_token, rate_type, rental_fee, cosaki_fee, commission,
-          seller_payout, shipping_fee, booking_fee, deposit_amount, notes, is_express)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,0,$15,$16)
+          seller_payout, shipping_fee, deposit_amount, notes, is_express)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,$14,$15)
        RETURNING *`,
       [
         item.shop_id, req.user.id, item_id,
         rental_start, serverRentalEnd, initialStatus,
         token, rate_type, rental_fee, cosaki_fee, commission,
-        seller_payout, shipping_fee, booking_fee, notes || null,
+        seller_payout, shipping_fee, notes || null,
         express
       ]
     );
@@ -341,7 +341,7 @@ const rejectBooking = async (req, res, next) => {
   }
 };
 
-// POST /bookings/:id/cancel — cancel; booking fee is non-refundable (§5.2).
+// POST /bookings/:id/cancel — cancel before shipping; full refund of what was paid.
 const cancelBooking = async (req, res, next) => {
   try {
     const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
@@ -352,8 +352,8 @@ const cancelBooking = async (req, res, next) => {
       return error(res, 'ยกเลิกไม่ได้ในสถานะนี้', 422);
     }
 
-    // Refund what was paid MINUS the non-refundable booking fee.
-    const refundable = Math.max(0, Number(booking.amount_paid) - Number(booking.booking_fee));
+    // Full refund of what was paid (no non-refundable fee any more).
+    const refundable = Math.max(0, Number(booking.amount_paid));
     if (Number(booking.amount_paid) > 0) {
       await db.query(
         `UPDATE payments SET escrow_status = 'refunded', released_at = NOW()
@@ -366,9 +366,9 @@ const cancelBooking = async (req, res, next) => {
     const ownerId = await shopOwnerId(booking.shop_id);
     await notify(ownerId, 'cancelled', 'ออเดอร์ถูกยกเลิก', `การเช่าถูกยกเลิก`, booking.id);
     await notify(booking.renter_id, 'cancelled', 'ยกเลิกการจองแล้ว',
-      `คืนเงิน ฿${refundable.toFixed(2)} (หักค่าจองคิว ฿${Number(booking.booking_fee).toFixed(2)} ไม่คืน)`, booking.id);
+      `คืนเงิน ฿${refundable.toFixed(2)} เต็มจำนวน`, booking.id);
 
-    return success(res, { message: 'ยกเลิกแล้ว', refunded: refundable, booking_fee_kept: Number(booking.booking_fee) });
+    return success(res, { message: 'ยกเลิกแล้ว', refunded: refundable });
   } catch (err) {
     next(err);
   }
