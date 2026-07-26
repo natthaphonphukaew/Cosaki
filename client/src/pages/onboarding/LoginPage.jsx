@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import Button from '@/components/ui/Button';
 import { sendOTP } from '@/api/auth';
+import logoFull from '@/assets/logo-full.png';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -34,9 +35,7 @@ export default function LoginPage() {
 
       <div className="flex flex-col items-center px-6 pt-20">
         {/* Logo */}
-        <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-light">
-          <span className="text-2xl font-bold text-brand-purple">C</span>
-        </div>
+        <img src={logoFull} alt="Cosaki" className="mb-8 h-24 w-24 object-contain" />
 
         <h1 className="mb-2 text-center text-3xl font-bold text-gray-900">
           {t('onboarding.welcome')}
