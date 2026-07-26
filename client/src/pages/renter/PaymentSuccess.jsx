@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Button from '@/components/ui/Button';
 import { getBooking } from '@/api/bookings';
 import { format } from 'date-fns';
+import logoWordmark from '@/assets/logo-wordmark.png';
 
 export default function PaymentSuccess() {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ export default function PaymentSuccess() {
     <div className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col bg-white px-6">
       {/* Close */}
       <div className="flex justify-between pt-14">
-        <span className="text-xl font-bold text-brand-purple">Cosaki</span>
+        <img src={logoWordmark} alt="Cosaki" className="h-7 w-auto" />
         <button onClick={() => navigate('/home')}><X size={22} className="text-gray-500" /></button>
       </div>
 

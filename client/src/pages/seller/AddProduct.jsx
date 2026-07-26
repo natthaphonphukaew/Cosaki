@@ -6,7 +6,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { createItem } from '@/api/items';
-import { fileToDataUrl } from '@/utils/image';
+import useImageCropper from '@/hooks/useImageCropper';
 import { COURIERS } from '@/constants/couriers';
 import toast from 'react-hot-toast';
 
@@ -15,6 +15,7 @@ const FANDOMS = ['Genshin Impact', 'Arcane', 'Valorant', 'Demon Slayer', 'Spy x 
 
 export default function AddProduct() {
   const { t } = useTranslation();
+  const { open, element } = useImageCropper();
   const navigate = useNavigate();
   const [step, setStep]     = useState(1);   // 1=photos, 2=details, 3=done
   const [photos, setPhotos] = useState([]);  // data URLs
@@ -32,11 +33,15 @@ export default function AddProduct() {
   const toggleCourier = (c) =>
     set('return_couriers', form.return_couriers.includes(c) ? form.return_couriers.filter((x) => x !== c) : [...form.return_couriers, c]);
 
+  // Crop each picked photo (1:1 by default, first = cover) one at a time.
   const addPhotos = async (e) => {
     const files = Array.from(e.target.files).slice(0, 9 - photos.length);
+    e.target.value = '';
     try {
-      const urls = await Promise.all(files.map((f) => fileToDataUrl(f)));
-      setPhotos((p) => [...p, ...urls].slice(0, 9));
+      for (const f of files) {
+        const url = await open(f, { aspect: 1 });
+        if (url) setPhotos((p) => (p.length >= 9 ? p : [...p, url]));
+      }
     } catch {
       toast.error(t('seller.form.photoReadFailed'));
     }
@@ -101,6 +106,7 @@ export default function AddProduct() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {element}
       <PageHeader title={step === 1 ? t('seller.form.addPhotos') : t('seller.form.detailsRules')} />
 
       {/* Step indicator */}

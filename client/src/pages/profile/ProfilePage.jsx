@@ -10,6 +10,7 @@ import useAuthStore from '@/store/authStore';
 import { getMyShop } from '@/api/shops';
 import { getKYCStatus } from '@/api/kyc';
 import { useTranslation } from 'react-i18next';
+import logoWordmark from '@/assets/logo-wordmark.png';
 
 const ACCOUNT_STATUS = {
   pending_parent: { label: 'รอผู้ปกครองยืนยัน', cls: 'bg-amber-100 text-amber-700' },
@@ -60,7 +61,7 @@ export default function ProfilePage() {
       <div className="px-4 pt-8 pb-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <span className="text-xl font-bold text-brand-purple">{t('profile.title', 'Cosaki')}</span>
+          <img src={logoWordmark} alt="Cosaki" className="h-7 w-auto" />
           <div className="flex items-center gap-2">
             <ChatButton />
             <NotificationBell />

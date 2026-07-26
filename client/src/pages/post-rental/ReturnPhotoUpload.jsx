@@ -5,10 +5,13 @@ import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import { uploadEvidence } from '@/api/disputes';
+import useImageCropper from '@/hooks/useImageCropper';
+import { dataUrlToFile } from '@/utils/image';
 import toast from 'react-hot-toast';
 
 export default function ReturnPhotoUpload() {
   const { t } = useTranslation();
+  const { open, element } = useImageCropper();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const [files, setFiles]   = useState([]);
@@ -16,9 +19,16 @@ export default function ReturnPhotoUpload() {
   const [loading, setLoading] = useState(false);
   const [done, setDone]     = useState(false);
 
-  const handleFiles = (e) => {
-    const selected = Array.from(e.target.files);
-    setFiles((prev) => [...prev, ...selected].slice(0, 5));
+  // Crop each evidence photo freely (no forced ratio), one at a time, up to 5.
+  const handleFiles = async (e) => {
+    const selected = Array.from(e.target.files).slice(0, 5 - files.length);
+    e.target.value = '';
+    for (const f of selected) {
+      const url = await open(f, { aspect: null });
+      if (!url) continue;
+      const cropped = await dataUrlToFile(url, f.name);
+      setFiles((prev) => (prev.length >= 5 ? prev : [...prev, cropped]));
+    }
   };
 
   const handleSubmit = async () => {
@@ -51,6 +61,7 @@ export default function ReturnPhotoUpload() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {element}
       <PageHeader title={t('returnUpload.title')} right={
         <div className="flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
           <Shield size={12} /> {t('returnUpload.secureProof')}

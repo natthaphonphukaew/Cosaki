@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import useImageCropper from '@/hooks/useImageCropper';
+import { dataUrlToFile } from '@/utils/image';
 import toast from 'react-hot-toast';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
@@ -11,6 +13,7 @@ import { Upload, Shield, CheckCircle } from 'lucide-react';
 
 export default function KYCPage() {
   const { t } = useTranslation();
+  const { open, element } = useImageCropper();
   const [idFile, setIdFile]       = useState(null);
   const [selfieFile, setSelfie]   = useState(null);
   const [step, setStep]           = useState('id'); // 'id' | 'selfie' | 'done'
@@ -117,6 +120,7 @@ export default function KYCPage() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
+      {element}
       <PageHeader title={t('header.identity')} />
       <div className="px-6 pt-4">
         <h2 className="text-center text-2xl font-bold text-brand-purple">{t('kyc.verifyTitle')}</h2>
@@ -161,7 +165,15 @@ export default function KYCPage() {
           <input
             id="kyc-file-input"
             type="file" accept="image/*" capture={step === 'selfie' ? 'user' : 'environment'} className="hidden"
-            onChange={(e) => { if (!e.target.files[0]) return; step === 'id' ? setIdFile(e.target.files[0]) : setSelfie(e.target.files[0]); }}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              const url = await open(file, { aspect: null });   // free crop — keep full document
+              if (!url) return;
+              const cropped = await dataUrlToFile(url, file.name);
+              step === 'id' ? setIdFile(cropped) : setSelfie(cropped);
+            }}
           />
         </label>
 
