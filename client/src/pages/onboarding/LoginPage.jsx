@@ -35,7 +35,7 @@ export default function LoginPage() {
 
       <div className="flex flex-col items-center px-6 pt-20">
         {/* Logo */}
-        <img src={logoFull} alt="Cosaki" className="mb-8 h-24 w-24 object-contain" />
+        <img src={logoFull} alt="Cosaki" className="mb-4 h-40 w-40 object-contain" />
 
         <h1 className="mb-2 text-center text-3xl font-bold text-gray-900">
           {t('onboarding.welcome')}
