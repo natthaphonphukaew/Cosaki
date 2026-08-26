@@ -34,7 +34,7 @@ export default function EditProfile() {
     e.target.value = '';
     if (!file) return;
     try {
-      const url = await open(file, { aspect: 1, round: true, maxDim: 400 });
+      const url = await open(file, { aspect: 1, round: true, maxDim: 400, folder: 'avatars' });
       if (url) setAvatar(url);
     } catch { toast.error(t('edit.photoFailed')); }
   };

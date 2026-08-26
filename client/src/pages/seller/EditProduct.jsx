@@ -62,7 +62,7 @@ export default function EditProduct() {
     e.target.value = '';
     try {
       for (const f of files) {
-        const url = await open(f, { aspect: 1 });
+        const url = await open(f, { aspect: 1, folder: 'products' });
         if (url) setPhotos((p) => (p.length >= 9 ? p : [...p, url]));
       }
     } catch { toast.error(t('seller.form.photoReadFailed')); }

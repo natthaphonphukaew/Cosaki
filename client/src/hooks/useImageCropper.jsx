@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { readFileAsDataUrl, getCroppedImg } from '@/utils/image';
+import { readFileAsDataUrl, getCroppedImg, dataUrlToFile } from '@/utils/image';
+import { uploadImage } from '@/api/uploads';
 import ImageCropper from '@/components/ui/ImageCropper';
 
 // Promise-based image cropper. Call `open(file, { aspect, round, maxDim })` after a
@@ -14,11 +15,11 @@ export default function useImageCropper() {
   const [state, setState] = useState(null); // { src, aspect, round, maxDim }
   const resolverRef = useRef(null);
 
-  const open = useCallback(async (file, { aspect = 1, round = false, maxDim = 900 } = {}) => {
+  const open = useCallback(async (file, { aspect = 1, round = false, maxDim = 900, folder = 'uploads' } = {}) => {
     const src = await readFileAsDataUrl(file);
     return new Promise((resolve) => {
       resolverRef.current = resolve;
-      setState({ src, aspect, round, maxDim });
+      setState({ src, aspect, round, maxDim, folder });
     });
   }, []);
 
@@ -31,10 +32,21 @@ export default function useImageCropper() {
 
   const handleApply = useCallback(async (areaPixels) => {
     if (!state || !areaPixels) return finish(null);
+    let dataUrl;
     try {
-      finish(await getCroppedImg(state.src, areaPixels, state.maxDim));
+      dataUrl = await getCroppedImg(state.src, areaPixels, state.maxDim);
     } catch {
-      finish(null);
+      return finish(null);
+    }
+    // Upload to object storage → store a short URL. If the upload fails (or the
+    // server has no storage), fall back to the inline data URL so the user is
+    // never blocked.
+    try {
+      const file = await dataUrlToFile(dataUrl, 'photo.jpg');
+      const { data } = await uploadImage(file, state.folder);
+      finish(data?.data?.url || dataUrl);
+    } catch {
+      finish(dataUrl);
     }
   }, [state, finish]);
 

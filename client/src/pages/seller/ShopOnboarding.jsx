@@ -36,7 +36,7 @@ export default function ShopOnboarding() {
     e.target.value = '';
     if (!file) return;
     try {
-      const url = await open(file, cropOpts);
+      const url = await open(file, { ...cropOpts, folder: 'shops' });
       if (url) setter(url);
     } catch {
       toast.error(t('seller.shopOnboard.photoReadFailed'));

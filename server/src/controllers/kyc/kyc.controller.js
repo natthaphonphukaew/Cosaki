@@ -19,25 +19,27 @@ const uploadKYC = async (req, res, next) => {
     }
     const isMinor = age !== null && age < 18;
 
-    // Demo mode: no S3 bucket configured, or non-production. Skip the real
-    // upload and auto-approve so testers can complete a booking without an
-    // SMS/S3/admin-review pipeline. Real prod uploads to S3 and waits for review.
-    const demoMode = !process.env.AWS_S3_BUCKET || process.env.NODE_ENV !== 'production';
+    // Storage and approval are independent: upload the real id/selfie whenever a
+    // storage bucket is configured, but keep auto-approving until an admin review
+    // flow exists (KYC_AUTO_APPROVE). This lets us enable R2 without flipping every
+    // new booking to "pending KYC".
+    const hasStorage  = s3.hasStorage();
+    const autoApprove = process.env.KYC_AUTO_APPROVE !== 'false';
 
     let idKey = 'demo/id', selfieKey = 'demo/selfie';
-    if (!demoMode) {
+    if (hasStorage) {
       [idKey, selfieKey] = await Promise.all([
         s3.upload(req.files.id_image[0].buffer, req.files.id_image[0].mimetype, `kyc/${req.user.id}/id`),
         s3.upload(req.files.selfie[0].buffer,   req.files.selfie[0].mimetype,   `kyc/${req.user.id}/selfie`),
       ]);
     }
 
-    const kycStatus  = demoMode ? 'approved' : 'pending';
-    const userStatus = demoMode ? 'verified' : 'pending';
+    const kycStatus  = autoApprove ? 'approved' : 'pending';
+    const userStatus = autoApprove ? 'verified' : 'pending';
 
     const { rows } = await db.query(
       `INSERT INTO kyc_verifications (user_id, id_image_key, selfie_key, status, verified_at)
-       VALUES ($1, $2, $3, $4, ${demoMode ? 'NOW()' : 'NULL'})
+       VALUES ($1, $2, $3, $4, ${autoApprove ? 'NOW()' : 'NULL'})
        RETURNING *`,
       [req.user.id, idKey, selfieKey, kycStatus]
     );
@@ -59,7 +61,7 @@ const uploadKYC = async (req, res, next) => {
 
     // Auto-advance bookings waiting on KYC once verified — but not for minors
     // still pending parental approval.
-    if (demoMode && !isMinor) {
+    if (autoApprove && !isMinor) {
       await db.query(
         `UPDATE bookings SET status = 'pending_payment', updated_at = NOW()
          WHERE renter_id = $1 AND status = 'pending_kyc'`,
