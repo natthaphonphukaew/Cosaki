@@ -149,7 +149,8 @@
     "open_shop": "Open your own shop and start monetizing your wardrobe today", "get_started": "Get Started",
     "sign_out": "Sign Out", "roleRenter": "Cosplayer & Stylist", "roleSeller": "Cosplayer & Shop Owner",
     "menu": { "rentals": "My Rentals", "saved": "Saved Outfits", "payments": "Payment Methods",
-      "addresses": "My Addresses", "settings": "Account Settings", "support": "Help & Support" }
+      "addresses": "My Addresses", "settings": "Account Settings", "support": "Help & Support",
+      "admin": "Admin queue" }
   },
   "edit": {
     "displayName": "Display Name", "phone": "Phone", "saveChanges": "Save Changes",

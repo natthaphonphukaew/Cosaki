@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Settings, HelpCircle, Heart, ShoppingBag,
-         CreditCard, Store, ArrowLeftRight, Repeat, MapPin } from 'lucide-react';
+         CreditCard, Store, ArrowLeftRight, Repeat, MapPin, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import AppShell from '@/components/layout/AppShell';
 import NotificationBell from '@/components/ui/NotificationBell';
@@ -34,15 +34,18 @@ export default function ProfilePage() {
   const { t } = useTranslation();
 
   const trustScore = user?.trust_score || 5.0;
+  const isAdmin    = user?.role === 'admin';
   const isSeller   = hasShop();
   const [acct, setAcct] = useState({ account_status: user?.account_status, kyc_status: user?.kyc_status });
 
   // Hydrate the cached shop record for sellers (persists "My Shop" across sessions).
+  // Admins are fetched too: an admin who owns a shop keeps the seller/buyer toggle,
+  // and their role alone can't tell us whether a shop exists (404 = none).
   useEffect(() => {
-    if (isSeller && !shop) {
+    if ((isSeller || isAdmin) && !shop) {
       getMyShop().then(({ data }) => setShop(data.data.shop)).catch(() => {});
     }
-  }, [isSeller, shop, setShop]);
+  }, [isSeller, isAdmin, shop, setShop]);
 
   // Fetch fresh account/KYC status (changes after KYC, dispute, parent consent).
   useEffect(() => {
@@ -157,6 +160,20 @@ export default function ProfilePage() {
               {t('profile.get_started', 'Get Started')}
             </button>
           </div>
+        )}
+
+        {/* Admin back office — separate from the seller mode toggle above. */}
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-brand-purple/20 bg-white px-4 py-3.5 shadow-sm active:bg-gray-50"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-purple">
+              <ShieldCheck size={18} className="text-white" />
+            </div>
+            <span className="flex-1 text-left text-sm font-semibold text-brand-purple">{t('profile.menu.admin', 'คิวงาน Admin')}</span>
+            <ChevronRight size={16} className="text-brand-purple/40" />
+          </button>
         )}
 
         {/* Menu */}
