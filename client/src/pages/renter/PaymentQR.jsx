@@ -1,48 +1,68 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, Loader } from 'lucide-react';
+import { CheckCircle, Loader, Upload, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
-import { createCharge } from '@/api/payments';
+import { getPromptPayQr, submitSlip } from '@/api/payments';
+import { uploadImage } from '@/api/uploads';
 import toast from 'react-hot-toast';
-
-// Deterministic QR-like pattern (mock — not a scannable code) from a seed string.
-function fakeQr(seed) {
-  let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const N = 21, cells = [];
-  for (let i = 0; i < N * N; i++) { h = (h * 1103515245 + 12345) & 0x7fffffff; cells.push((h >> 8) & 1); }
-  // Force finder-pattern corners so it reads as a QR.
-  const corner = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= N - 7) || (r >= N - 7 && c < 7);
-  return { N, cells, corner };
-}
-
-const STEPS = ['payment.step0', 'payment.step1', 'payment.step2'];
 
 export default function PaymentQR() {
   const { t } = useTranslation();
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { state } = useLocation();
-  const amount = state?.amount;
-  const shippingAddressId = state?.shipping_address_id || null;
-  const [stage, setStage] = useState(0);   // 0 waiting, 1 paid, 2 confirmed
-  const [loading, setLoading] = useState(false);
-  const ref = `CSK-${bookingId.slice(0, 8).toUpperCase()}`;
-  const { N, cells, corner } = fakeQr(bookingId);
+  const fileRef = useRef(null);
+  const [qr, setQr]         = useState(null);
+  const [amount, setAmount] = useState(state?.amount ?? null);
+  const [ref, setRef]       = useState(`CSK-${bookingId.slice(0, 8).toUpperCase()}`);
+  const [phase, setPhase]   = useState('loading');  // loading | ready | uploading | submitted
+  const [err, setErr]       = useState(null);
 
-  const handlePaid = async () => {
+  // Fetch the PromptPay QR for this booking (amount is authoritative from server).
+  useEffect(() => {
+    getPromptPayQr(bookingId)
+      .then(({ data }) => {
+        setQr(data.data.qr);
+        setAmount(data.data.amount);
+        setRef(data.data.ref);
+        setPhase('ready');
+      })
+      .catch((e) => {
+        setErr(e.response?.data?.message || t('payment.qrFailed'));
+        setPhase('ready');
+      });
+  }, [bookingId]);
+
+  const pickSlip = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
     try {
-      setLoading(true);
-      await createCharge(bookingId, shippingAddressId);   // mock webhook confirms payment
-      setStage(1);
-      setTimeout(() => setStage(2), 900);            // simulate shop auto-confirm
-      setTimeout(() => navigate(`/bookings/${bookingId}/success`), 1700);
-    } catch (err) {
-      toast.error(err.response?.data?.message || t('payment.failed'));
-      setLoading(false);
+      setPhase('uploading');
+      const { data } = await uploadImage(file, 'uploads');
+      const url = data?.data?.url;
+      if (!url) throw new Error('no url');
+      await submitSlip(bookingId, url);
+      setPhase('submitted');
+    } catch (e2) {
+      toast.error(e2.response?.data?.message || t('payment.slipFailed'));
+      setPhase('ready');
     }
   };
+
+  /* ── Submitted: awaiting admin confirmation ── */
+  if (phase === 'submitted') return (
+    <div className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col items-center justify-center bg-surface-base px-6 text-center">
+      <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-amber-100">
+        <Clock size={52} className="text-amber-500" strokeWidth={1.5} />
+      </div>
+      <h2 className="text-xl font-bold text-gray-900">{t('payment.slipSubmitted')}</h2>
+      <p className="mt-2 text-sm text-gray-500">{t('payment.slipSubmittedDesc')}</p>
+      <Button className="mt-8 w-full" onClick={() => navigate('/rentals')}>{t('payment.backToRentals')}</Button>
+    </div>
+  );
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px] bg-surface-base">
@@ -51,40 +71,39 @@ export default function PaymentQR() {
         {/* QR card */}
         <div className="rounded-2xl bg-white p-5 shadow-sm text-center">
           <div className="mx-auto mb-3 w-fit rounded-lg bg-[#003d6a] px-4 py-1.5 text-sm font-bold text-white">PromptPay</div>
-          <div className="mx-auto grid w-52 gap-0 rounded-lg border-4 border-gray-900 p-2"
-            style={{ gridTemplateColumns: `repeat(${N}, 1fr)` }}>
-            {cells.map((v, i) => {
-              const r = Math.floor(i / N), c = i % N;
-              const on = corner(r, c) ? ((r % 6 < 5) && (c % 6 < 5)) : v;
-              return <div key={i} className={on ? 'bg-gray-900' : 'bg-white'} style={{ aspectRatio: '1' }} />;
-            })}
-          </div>
+
+          {phase === 'loading' ? (
+            <div className="mx-auto flex h-52 w-52 items-center justify-center">
+              <Loader size={28} className="animate-spin text-brand-purple" />
+            </div>
+          ) : qr ? (
+            <img src={qr} alt="PromptPay QR" className="mx-auto h-52 w-52 rounded-lg border-4 border-gray-900" />
+          ) : (
+            <div className="mx-auto flex h-52 w-52 items-center justify-center rounded-lg border-2 border-dashed border-gray-200 px-4 text-center text-xs text-gray-400">
+              {err || t('payment.qrFailed')}
+            </div>
+          )}
+
           <p className="mt-3 text-xs text-gray-400">{t('payment.account')}</p>
           <p className="mt-1 text-3xl font-bold text-brand-purple">฿{Number(amount || 0).toFixed(2)}</p>
           <p className="text-xs text-gray-400">{t('payment.ref', { ref })}</p>
+          <p className="mt-2 text-xs text-gray-400">{t('payment.scanToPay')}</p>
         </div>
 
-        {/* Webhook status stepper */}
-        <div className="rounded-2xl bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-gray-700">{t('payment.statusRealtime')}</p>
-          <div className="space-y-3">
-            {STEPS.map((s, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-full ${stage >= i ? 'bg-brand-purple text-white' : 'bg-gray-100 text-gray-400'}`}>
-                  {stage > i ? <CheckCircle size={15} /> : stage === i && loading ? <Loader size={14} className="animate-spin" /> : i + 1}
-                </div>
-                <span className={`text-sm ${stage >= i ? 'font-medium text-gray-800' : 'text-gray-400'}`}>{t(s)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {stage === 0 && (
-          <Button className="w-full" loading={loading} onClick={handlePaid}>{t('payment.paidDemo')}</Button>
-        )}
-        {stage > 0 && (
-          <p className="text-center text-sm font-medium text-green-600">{t('payment.goingNext')}</p>
-        )}
+        {/* Attach slip */}
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickSlip} />
+        <Button
+          className="w-full"
+          loading={phase === 'uploading'}
+          disabled={phase === 'loading'}
+          onClick={() => fileRef.current?.click()}
+        >
+          <span className="inline-flex items-center gap-2"><Upload size={17} />{t('payment.slipUpload')}</span>
+        </Button>
+        <p className="pb-8 text-center text-xs text-gray-400">
+          <CheckCircle size={12} className="mr-1 inline text-green-500" />
+          {t('payment.slipSubmittedDesc')}
+        </p>
       </div>
     </div>
   );

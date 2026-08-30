@@ -89,7 +89,10 @@
     "viewRental": "View rental", "backHome": "Back to Home", "orderRef": "Order Reference", "rentalPeriod": "Rental Period",
     "totalPaid": "Total Paid", "protectionActive": "Buyer Protection Active",
     "protectionDesc": "Your funds are protected by our satisfaction guarantee and secure rental insurance.",
-    "trackOrder": "Track Order", "emailSent": "A confirmation email with the rental agreement has been sent to your registered address."
+    "trackOrder": "Track Order", "emailSent": "A confirmation email with the rental agreement has been sent to your registered address.",
+    "scanToPay": "Scan with your banking app to transfer", "slipUpload": "Attach transfer slip", "changeSlip": "Change slip",
+    "slipSubmitted": "Slip submitted — awaiting confirmation", "slipSubmittedDesc": "Once confirmed, the shop starts shipping. We'll notify you.",
+    "qrFailed": "Couldn't generate QR", "slipFailed": "Slip upload failed", "backToRentals": "Go to my rentals"
   },
   "rentals": {
     "tabActive": "Active", "tabCompleted": "Completed", "tabCancelled": "Cancelled",

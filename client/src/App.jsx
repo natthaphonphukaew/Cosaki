@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthGuard, GuestGuard } from '@/components/layout/AuthGuard';
+import { AuthGuard, GuestGuard, RoleGuard } from '@/components/layout/AuthGuard';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Onboarding
@@ -60,6 +60,9 @@ import OrderDetail      from '@/pages/seller/OrderDetail';
 import MyListings       from '@/pages/seller/MyListings';
 import EditProduct      from '@/pages/seller/EditProduct';
 import Campaigns        from '@/pages/seller/Campaigns';
+
+// Admin (Phase-0 back office)
+import AdminQueue       from '@/pages/admin/AdminQueue';
 
 function OAuthCallback() {
   const params = new URLSearchParams(window.location.search);
@@ -143,6 +146,11 @@ export default function App() {
             <Route path="/seller/items/:id/edit"    element={<EditProduct />} />
             <Route path="/seller/campaigns"         element={<Campaigns />} />
             <Route path="/seller/disputes/:bookingId" element={<ResolutionCenter />} />
+
+            {/* Admin back office */}
+            <Route element={<RoleGuard role="admin" />}>
+              <Route path="/admin" element={<AdminQueue />} />
+            </Route>
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
