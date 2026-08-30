@@ -25,4 +25,14 @@ const shopOwnerId = async (shopId) => {
   }
 };
 
-module.exports = { notify, shopOwnerId };
+// Notify every admin (Phase-0 back office is a person). Never throws.
+const notifyAdmins = async (type, title, body = null, bookingId = null) => {
+  try {
+    const { rows } = await db.query(`SELECT id FROM users WHERE role = 'admin'`);
+    await Promise.all(rows.map((r) => notify(r.id, type, title, body, bookingId)));
+  } catch (err) {
+    console.error('notifyAdmins failed:', err.message);
+  }
+};
+
+module.exports = { notify, shopOwnerId, notifyAdmins };

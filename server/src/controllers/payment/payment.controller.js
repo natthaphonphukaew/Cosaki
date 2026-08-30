@@ -1,8 +1,31 @@
 const crypto = require('crypto');
 const db = require('../../config/db');
 const { success, error } = require('../../utils/response');
-const { notify, shopOwnerId } = require('../../services/notification/notification.service');
+const { notify, shopOwnerId, notifyAdmins } = require('../../services/notification/notification.service');
 const { findCommittedConflicts } = require('../../utils/bookingRules');
+const promptpay = require('../../services/payment/promptpay.service');
+
+// Escrow a paid booking: create the held payment row, flip to 'escrowed', notify
+// the shop. Shared by the mock charge and the admin slip-confirm (Phase 0).
+const escrowBooking = async (booking, gatewayRef) => {
+  const total = Number(booking.total_amount);
+  const { rows } = await db.query(
+    `INSERT INTO payments (booking_id, gateway_ref, amount, escrow_status, paid_at)
+     VALUES ($1, $2, $3, 'held', NOW()) RETURNING *`,
+    [booking.id, gatewayRef, total]
+  );
+  await db.query(
+    `UPDATE bookings SET
+       pay_mode = 'full', amount_paid = $1, balance_due = 0,
+       status = 'escrowed'::booking_status, updated_at = NOW()
+     WHERE id = $2`,
+    [total, booking.id]
+  );
+  const ownerId = await shopOwnerId(booking.shop_id);
+  await notify(ownerId, 'payment_received', 'Payment received',
+    'Funds are held in escrow — ship the item to start the rental.', booking.id);
+  return rows[0];
+};
 
 // The slot is claimed at PAYMENT, not at date selection. Before escrowing, make
 // sure no other PAID booking has taken this item's window (+10-day freeze).
@@ -171,7 +194,9 @@ const handleWebhook = async (req, res, next) => {
   }
 };
 
-// POST /payments/:paymentId/release — admin releases escrow to shop
+// PATCH /payments/:paymentId/release — admin confirms the manual payout to the shop
+// (the admin already transferred via their banking app; this records it). Releases
+// escrow, completes the booking, and books platform revenue + insurance once.
 const releaseEscrow = async (req, res, next) => {
   try {
     const { rows: payments } = await db.query(
@@ -183,10 +208,21 @@ const releaseEscrow = async (req, res, next) => {
     );
     if (!payments.length) return error(res, 'Payment not found or already released', 404);
 
-    await db.query(
-      `UPDATE bookings SET status = 'completed', updated_at = NOW() WHERE id = $1`,
+    const { rows: bk } = await db.query(
+      `UPDATE bookings SET status = 'completed', updated_at = NOW()
+       WHERE id = $1 RETURNING commission, cosaki_fee`,
       [payments[0].booking_id]
     );
+    // Record the platform cut once — guard against a double entry if the booking
+    // was also completed via the status endpoint.
+    if (bk.length) {
+      await db.query(
+        `INSERT INTO platform_ledger (booking_id, revenue_amount, insurance_amount)
+         SELECT $1, $2, $3
+         WHERE NOT EXISTS (SELECT 1 FROM platform_ledger WHERE booking_id = $1)`,
+        [payments[0].booking_id, bk[0].commission || 0, bk[0].cosaki_fee || 0]
+      );
+    }
 
     return success(res, { payment: payments[0] });
   } catch (err) {
@@ -194,4 +230,100 @@ const releaseEscrow = async (req, res, next) => {
   }
 };
 
-module.exports = { createCharge, payBalance, handleWebhook, releaseEscrow };
+// GET /payments/:bookingId/qr — renter fetches the PromptPay QR for their booking.
+// The amount is the authoritative booking total (never trusted from the client).
+const getPromptPayQr = async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, total_amount, status FROM bookings WHERE id = $1 AND renter_id = $2',
+      [req.params.bookingId, req.user.id]
+    );
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const b = rows[0];
+    if (b.status !== 'pending_payment') return error(res, 'Booking is not awaiting payment', 422);
+    if (!promptpay.hasPromptPay()) return error(res, 'ยังไม่ได้ตั้งค่า PromptPay ในระบบ', 503);
+
+    const { qr, payload } = await promptpay.buildQr(b.total_amount);
+    return success(res, {
+      qr, payload,
+      amount: Number(b.total_amount),
+      ref: `CSK-${b.id.slice(0, 8).toUpperCase()}`,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /payments/:bookingId/slip — renter attaches the bank transfer slip. The
+// booking stays 'pending_payment' until an admin confirms it. Admins get notified.
+const submitSlip = async (req, res, next) => {
+  try {
+    const { slip_url } = req.body;
+    if (!slip_url) return error(res, 'No slip provided', 400);
+    const { rows } = await db.query(
+      'SELECT * FROM bookings WHERE id = $1 AND renter_id = $2',
+      [req.params.bookingId, req.user.id]
+    );
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const b = rows[0];
+    if (b.status !== 'pending_payment') return error(res, 'Booking is not awaiting payment', 422);
+
+    await db.query(
+      `UPDATE bookings SET slip_url = $1, slip_submitted_at = NOW(), updated_at = NOW()
+       WHERE id = $2`,
+      [slip_url, b.id]
+    );
+    await notifyAdmins('slip_submitted', 'สลิปใหม่รอยืนยัน',
+      `มีสลิปรอตรวจ ฿${Number(b.total_amount).toFixed(2)}`, b.id);
+    return success(res, { message: 'ส่งสลิปแล้ว รอแอดมินยืนยัน' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /payments/:bookingId/confirm-slip — admin verifies the slip → escrow.
+const confirmSlip = async (req, res, next) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.bookingId]);
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const b = rows[0];
+    if (b.status !== 'pending_payment' || !b.slip_url) {
+      return error(res, 'ไม่มีสลิปที่รอยืนยันสำหรับออเดอร์นี้', 422);
+    }
+    if (Number(b.amount_paid) > 0) return error(res, 'ออเดอร์นี้ชำระแล้ว', 422);
+    if (!(await slotStillFree(b))) {
+      return error(res, 'ช่วงวันนี้เพิ่งถูกจองไปแล้ว — ต้องคืนเงินและให้ลูกค้าจองใหม่', 409);
+    }
+    const payment = await escrowBooking(b, `pp_slip_${Date.now()}`);
+    return success(res, { payment });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PATCH /payments/:bookingId/reject-slip — admin rejects the slip; renter re-uploads.
+const rejectSlip = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const { rows } = await db.query('SELECT * FROM bookings WHERE id = $1', [req.params.bookingId]);
+    if (!rows.length) return error(res, 'Booking not found', 404);
+    const b = rows[0];
+    if (b.status !== 'pending_payment' || !b.slip_url) {
+      return error(res, 'ไม่มีสลิปที่รอยืนยันสำหรับออเดอร์นี้', 422);
+    }
+    await db.query(
+      'UPDATE bookings SET slip_url = NULL, slip_submitted_at = NULL, updated_at = NOW() WHERE id = $1',
+      [b.id]
+    );
+    await notify(b.renter_id, 'slip_rejected', 'สลิปไม่ผ่านการตรวจสอบ',
+      `${reason || 'สลิปไม่ถูกต้อง'} — กรุณาโอนใหม่และแนบสลิปอีกครั้ง`, b.id);
+    return success(res, { message: 'ปฏิเสธสลิปแล้ว' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createCharge, payBalance, handleWebhook, releaseEscrow,
+  getPromptPayQr, submitSlip, confirmSlip, rejectSlip,
+};
